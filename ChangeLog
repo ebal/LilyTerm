@@ -1,4 +1,5 @@
-2026-10-06 (unreleased)
+2026-10-06
+  Version 0.9.9.5.
   Bring LilyTerm up to date with GTK+ 3.24, VTE 0.84, GCC 15+ and Wayland.
 
   New Feature:
@@ -11,6 +12,9 @@
 	* A test suite that runs LilyTerm under a headless X server and a
 	  headless Wayland compositor (docker/run-tests.sh).
 	* PKG_CONFIG, PKG_CONFIG_FLAGS and LIBS are honored when building.
+	* Releases: a static binary and a tarball with an install script are
+	  built and published by a GitHub workflow (docker/package.sh,
+	  docker/install.sh, .github/workflows/build.yml).
 
   FIX:
 	* No terminal could be spawned with vte >= 0.62: the environment array
