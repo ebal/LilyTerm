@@ -105,3 +105,27 @@ load as a plugin is either compiled in, or not available:
 Files that are still read from the host at run time: fonts and
 `/etc/fonts`, the XKB data in `/usr/share/X11/xkb`, cursor and icon themes,
 and the terminfo entry of `$TERM`. Every desktop system has them.
+
+## Releases
+
+`docker/package.sh` turns `dist/` into what a release carries, in `release/`:
+
+| File                                   | What it is                                              |
+|----------------------------------------|---------------------------------------------------------|
+| `lilyterm-x86_64`                      | the bare binary: download, `chmod +x`, run              |
+| `lilyterm-VERSION-linux-x86_64.tar.gz` | the binary, its data files, and `install.sh`            |
+| `SHA256SUMS`                           | checksums of the two                                    |
+
+`install.sh` (from the tarball) installs into `~/.local`, or into `/usr/local`
+when run as root; `PREFIX=...` overrides it and `--uninstall` removes it again.
+
+The GitHub workflow in `.github/workflows/build.yml` runs both test suites on
+every push and pull request, and keeps the packaged files as a workflow
+artifact. Pushing a tag `vX.Y.Z` also publishes them as a GitHub release. The
+tag has to match `VERSION` in `.default`, which is what `lilyterm -v` prints:
+
+```sh
+# after setting VERSION in .default and committing it
+git tag "v$(sed -n 's/^VERSION = //p' .default)"
+git push origin --tags
+```

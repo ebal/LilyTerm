@@ -1,0 +1,178 @@
+# Build and test LilyTerm, and publish a release when a version tag is pushed.
+#
+#   every push / pull request:  dynamic build + tests, static build + tests,
+#                               the packaged files are kept as a workflow artifact
+#   push of a tag vX.Y.Z:       the same, then a GitHub release with
+#                               lilyterm-x86_64, the tarball and SHA256SUMS
+#
+# To release: set VERSION in .default, commit, then
+#   git tag v$(sed -n 's/^VERSION = //p' .default) && git push origin --tags
+
+name: build
+
+on:
+  push:
+    branches: [master, modernize]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  # Build against the distribution's GTK+ 3 / VTE, test on X11 and Wayland
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build the test image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.dev
+          tags: lilyterm-dev
+          load: true
+          cache-from: type=gha,scope=dev
+          cache-to: type=gha,scope=dev,mode=max
+      - name: Build LilyTerm and run the tests
+        run: |
+          mkdir -p test-output
+          docker run --rm -v "$PWD":/src:ro -v "$PWD/test-output":/build/test-output lilyterm-dev
+      - name: Keep the logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-output-dynamic
+          path: test-output
+          if-no-files-found: ignore
+
+  # The static binary: build, test in a clean image, package
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version
+        id: version
+        run: |
+          version=$(sed -n 's/^VERSION = //p' .default)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "epoch=$(git log -1 --format=%ct)" >> "$GITHUB_OUTPUT"
+          # A release must say the same version as the binary does with -v
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::The tag is $GITHUB_REF_NAME, but VERSION in .default is $version (expected the tag v$version)."
+            exit 1
+          fi
+
+      - uses: docker/setup-buildx-action@v4
+
+      # GLib, GTK+, VTE, ... only compile when docker/Dockerfile.static changes:
+      # their layers come back from the cache otherwise.
+      - name: Build the static binary and its test image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.static
+          target: test
+          tags: lilyterm-static-test
+          load: true
+          cache-from: type=gha,scope=static
+          cache-to: type=gha,scope=static,mode=max
+
+      - name: Test the static binary on X11 and Wayland
+        run: |
+          mkdir -p test-output
+          docker run --rm -v "$PWD/test-output":/tmp/test-output lilyterm-static-test
+
+      - name: Keep the logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-output-static
+          path: test-output
+          if-no-files-found: ignore
+
+      - name: Export the binary and its data files
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile.static
+          target: export
+          outputs: type=local,dest=dist
+          cache-from: type=gha,scope=static
+
+      - name: Package
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.version.outputs.epoch }}
+        run: |
+          chmod +x dist/lilyterm
+          docker/package.sh dist release
+          ./release/lilyterm-x86_64 -v
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: lilyterm-${{ steps.version.outputs.version }}-linux-x86_64
+          path: release/
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: [test, static]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: lilyterm-*-linux-x86_64
+          path: release
+          merge-multiple: true
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd release
+          sha256sum -c SHA256SUMS
+          tarball=$(ls lilyterm-*-linux-x86_64.tar.gz)
+          base=https://github.com/$GH_REPO/releases/download/$TAG
+          cat > ../notes.md << EOF
+          A static build of LilyTerm for Linux x86_64: one binary with GTK+ 3 and VTE
+          linked in. It runs on X11 and on Wayland, and needs no library from your system.
+
+          ### Just run it
+
+          \`\`\`sh
+          curl -L -o lilyterm $base/lilyterm-x86_64
+          chmod +x lilyterm
+          ./lilyterm
+          \`\`\`
+
+          ### Install it, with a menu entry, icon and man page
+
+          \`\`\`sh
+          curl -LO $base/$tarball
+          tar xzf $tarball
+          cd ${tarball%.tar.gz}
+          ./install.sh          # for you, in ~/.local   (sudo ./install.sh: for everyone, in /usr/local)
+          \`\`\`
+
+          ### Checksums (SHA-256)
+
+          \`\`\`
+          $(cat SHA256SUMS)
+          \`\`\`
+          EOF
+          gh release create "$TAG" --verify-tag --title "LilyTerm ${TAG#v}" --notes-file ../notes.md \
+            lilyterm-x86_64 "$tarball" SHA256SUMS
