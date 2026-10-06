@@ -128,10 +128,21 @@ gboolean monitor_cmdline(struct Page *page_data)
 	g_debug("! Launch monitor_cmdline() with page_data = %p", page_data);
 #endif
 #ifdef SAFEMODE
-	if ((page_data==NULL) || (page_data->lost_focus==NULL) || (page_data->keep_vte_size==NULL) ||
-	    (page_data->current_vte==NULL) || (page_data->window_title_tpgid==NULL)) return FALSE;
+	if (page_data==NULL) return FALSE;
+	if ((page_data->lost_focus==NULL) || (page_data->keep_vte_size==NULL) ||
+	    (page_data->current_vte==NULL) || (page_data->window_title_tpgid==NULL))
+	{
+		page_data->timeout_id = 0;
+		return FALSE;
+	}
 #endif
-	if (page_data->pid<1) return FALSE;
+	if (page_data->pid<1)
+	{
+		// Returning FALSE destroys this timeout source. Forget its ID, or
+		// close_page() will g_source_remove() a source that is long gone.
+		page_data->timeout_id = 0;
+		return FALSE;
+	}
 
 	gboolean lost_focus = *(page_data->lost_focus);
 

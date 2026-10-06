@@ -261,9 +261,16 @@ void set_hyperlink(struct Window *win_data, struct Page *page_data)
 #else
 			page_data->tag[i] = vte_terminal_match_add (VTE_TERMINAL(page_data->vte), match);
 #endif
+#if VTE_CHECK_VERSION(0,40,0)
+			// a CSS cursor name works for every GDK backend, GDK_HAND2 is a X11 cursor font glyph.
+			vte_terminal_match_set_cursor_name(VTE_TERMINAL(page_data->vte),
+							   page_data->tag[i],
+							   "pointer");
+#else
 			vte_terminal_match_set_cursor_type(VTE_TERMINAL(page_data->vte),
 							   page_data->tag[i],
 							   GDK_HAND2);
+#endif
 		}
 		page_data->match_regex_setted = TRUE;
 		// g_debug("clean_hyperlink(): set page_data->match_regex_setted = %d", page_data->match_regex_setted);

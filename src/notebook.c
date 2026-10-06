@@ -206,7 +206,7 @@ struct Page *add_page(struct Window *win_data,
 #else
 		if (environ_str->len)
 #endif
-			new_environs = split_string(environ_str->str, "\t", -1);
+			new_environs = sanitize_environs(split_string(environ_str->str, "\t", -1));
 	// print_array("! add_page() environ", new_environs);
 	g_string_free(environ_str, TRUE);
 
@@ -320,7 +320,9 @@ struct Page *add_page(struct Window *win_data,
 	//				     GCancellable *cancellable,
 	//				     GError **error);
 	gboolean fork_stats;
-	GSpawnFlags spawn_flags = G_SPAWN_SEARCH_PATH | G_SPAWN_CHILD_INHERITS_STDIN;
+	// G_SPAWN_CHILD_INHERITS_STDIN is refused by vte >= 0.62 ("forbidden spawn flags"),
+	// and it never had a meaning here: the child always gets the pty as its stdin.
+	GSpawnFlags spawn_flags = G_SPAWN_SEARCH_PATH;
 	GError *error = NULL;
 	gint final_argv_need_be_free = FALSE;
 
@@ -1539,7 +1541,13 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 			//	(win_data->always_show_tabs_bar==1)? 1 : 0;
 		}
 
+#if GTK_CHECK_VERSION(3,22,0)
+		// gtk_menu_popup() is deprecated since gtk+ 3.22. And only with the
+		// triggering event at hand can a Wayland compositor place the menu.
+		gtk_menu_popup_at_pointer(GTK_MENU(win_data->menu), (GdkEvent *)event);
+#else
 		gtk_menu_popup(GTK_MENU(win_data->menu), NULL, NULL, NULL, NULL, event->button, event->time);
+#endif
 		return TRUE;
 	}
 	else if (event->button == 1)
@@ -1713,7 +1721,7 @@ gboolean open_url_with_external_command (gchar *url, gint tag, struct Window *wi
 #else
 			if (environ_str->len)
 #endif
-				new_environs = split_string(environ_str->str, "\t", -1);
+				new_environs = sanitize_environs(split_string(environ_str->str, "\t", -1));
 
 			// gboolean g_spawn_async_with_pipes (const gchar *working_directory,
 			//				      gchar **argv,

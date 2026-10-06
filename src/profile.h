@@ -30,8 +30,6 @@
 #include <unistd.h>
 // for strcmp()
 #include <string.h>
-// for XParseGeometry()
-#include <X11/Xlib.h>
 
 #include "lilyterm.h"
 
@@ -65,16 +63,16 @@ typedef enum {
 	CHECK_MAX,
 } Check_Max;
 
-void init_command();
+void init_command(void);
 void init_user_command(struct Window *win_data);
 void init_window_parameters(struct Window *win_data);
 void init_user_keys(struct Window *win_data);
-void init_key_bindings_name_and_group();
-void init_key_bindings();
-void init_page_color_data();
-void init_page_color_data_comment();
-void init_mod_keys();
-void init_colors();
+void init_key_bindings_name_and_group(void);
+void init_key_bindings(void);
+void init_page_color_data(void);
+void init_page_color_data_comment(void);
+void init_mod_keys(void);
+void init_colors(void);
 gchar *load_profile_from_dir(const gchar *dir, const gchar* profile);
 #ifdef ENABLE_PROFILE
 gdouble check_double_value(GKeyFile *keyfile, const gchar *group_name, const gchar *key, const gdouble default_value,

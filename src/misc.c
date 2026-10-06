@@ -22,7 +22,7 @@ extern gboolean proc_exist;
 extern gchar *proc_file_system_path;
 
 #ifdef USE_GTK_ALT_DIALOG_BUTTON_ORDER
-gboolean gtk_alt_dialog_button_order()
+gboolean gtk_alt_dialog_button_order(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch gtk_alt_dialog_button_order()");
@@ -322,7 +322,7 @@ gchar *get_VTE_CJK_WIDTH_str(gint VTE_CJK_WIDTH)
 	return NULL;
 }
 
-gint get_default_VTE_CJK_WIDTH()
+gint get_default_VTE_CJK_WIDTH(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch get_default_VTE_CJK_WIDTH()");
@@ -344,7 +344,7 @@ gint get_default_VTE_CJK_WIDTH()
 	}
 }
 
-void restore_SYSTEM_VTE_CJK_WIDTH_STR()
+void restore_SYSTEM_VTE_CJK_WIDTH_STR(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch restore_SYSTEM_VTE_CJK_WIDTH_STR()");
@@ -421,7 +421,7 @@ gchar *get_encoding_from_locale(const gchar *locale)
 #endif
 	// locale==NULL: get the init encoding.
 
-	G_CONST_RETURN char *locale_encoding = NULL;
+	const char *locale_encoding = NULL;
 	if (setlocale(LC_CTYPE, locale)) g_get_charset(&locale_encoding);
 	return g_strdup(locale_encoding);
 
@@ -1003,3 +1003,129 @@ gchar** fake_g_strsplit(const gchar *string, const gchar *delimiter, gint max_to
 // A very dirty fix for unit test error.
 gchar **g_listenv (void) { return NULL; }
 #endif
+
+// A toolkit-independent replacement for XParseGeometry(), so that LilyTerm
+// needs no Xlib and behaves the same under X11 and Wayland.
+// It parses [=][<width>{xX}<height>][{+-}<xoffset>{+-}<yoffset>]
+// and returns a bitmask of GEOMETRY_HAS_* for the fields that were found.
+// Returns 0 (and touches nothing) if the string is not a valid geometry.
+gint parse_geometry_str(const gchar *geometry_str, gint *offset_x, gint *offset_y, guint *width, guint *height)
+{
+#ifdef DETAIL
+	g_debug("! Launch parse_geometry_str() with geometry_str = %s", geometry_str);
+#endif
+	if ((geometry_str==NULL) || (geometry_str[0]=='\0')) return 0;
+
+	const gchar *str = geometry_str;
+	gchar *end = NULL;
+	gint mask = 0;
+	guint64 new_width = 0, new_height = 0;
+	gint64 new_x = 0, new_y = 0;
+
+	if (*str == '=') str++;
+
+	if (g_ascii_isdigit(*str))
+	{
+		new_width = g_ascii_strtoull(str, &end, 10);
+		if ((end==str) || (new_width > G_MAXINT)) return 0;
+		mask |= GEOMETRY_HAS_WIDTH;
+		str = end;
+	}
+	if ((*str == 'x') || (*str == 'X'))
+	{
+		str++;
+		if (! g_ascii_isdigit(*str)) return 0;
+		new_height = g_ascii_strtoull(str, &end, 10);
+		if ((end==str) || (new_height > G_MAXINT)) return 0;
+		mask |= GEOMETRY_HAS_HEIGHT;
+		str = end;
+	}
+	if ((*str == '+') || (*str == '-'))
+	{
+		gboolean negative = (*str == '-');
+		str++;
+		if (! g_ascii_isdigit(*str)) return 0;
+		new_x = g_ascii_strtoull(str, &end, 10);
+		if ((end==str) || (new_x > G_MAXINT)) return 0;
+		if (negative) { new_x = -new_x; mask |= GEOMETRY_X_NEGATIVE; }
+		mask |= GEOMETRY_HAS_X;
+		str = end;
+
+		if ((*str == '+') || (*str == '-'))
+		{
+			negative = (*str == '-');
+			str++;
+			if (! g_ascii_isdigit(*str)) return 0;
+			new_y = g_ascii_strtoull(str, &end, 10);
+			if ((end==str) || (new_y > G_MAXINT)) return 0;
+			if (negative) { new_y = -new_y; mask |= GEOMETRY_Y_NEGATIVE; }
+			mask |= GEOMETRY_HAS_Y;
+			str = end;
+		}
+	}
+	// trailing garbage: not a geometry string
+	if (*str != '\0') return 0;
+
+	if ((mask & GEOMETRY_HAS_WIDTH) && width) *width = new_width;
+	if ((mask & GEOMETRY_HAS_HEIGHT) && height) *height = new_height;
+	if ((mask & GEOMETRY_HAS_X) && offset_x) *offset_x = new_x;
+	if ((mask & GEOMETRY_HAS_Y) && offset_y) *offset_y = new_y;
+	return mask;
+}
+
+// Make an environment array acceptable for vte_terminal_spawn_*():
+// newer libvte refuses to spawn anything (assertion `_vte_pty_check_envv') if
+// a single entry is not in the "NAME=value" form. Such entries show up here
+// because the environment travels as a tab separated string, so a value that
+// holds a tab itself, or an empty field, ends up as an entry of its own.
+// Also, a variable that is listed more than once keeps its *last* value, so
+// the LANG/TERM/... that LilyTerm appends really override the inherited ones.
+// It takes the ownership of environs. Free the returned array with g_strfreev().
+gchar **sanitize_environs(gchar **environs)
+{
+#ifdef DETAIL
+	g_debug("! Launch sanitize_environs() with environs = %p", environs);
+#endif
+	if (environs==NULL) return NULL;
+
+	GHashTable *seen = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+	GPtrArray *cleaned = g_ptr_array_new();
+	gint total = g_strv_length(environs), i;
+
+	// walk backwards: the first one we meet for a name is the last one set.
+	for (i=total-1; i>=0; i--)
+	{
+		const gchar *equal = strchr(environs[i], '=');
+		if ((equal==NULL) || (equal==environs[i]))
+		{
+#ifdef DEBUG
+			g_debug("sanitize_environs(): drop the invalid environment entry \"%s\"", environs[i]);
+#endif
+			g_free(environs[i]);
+			continue;
+		}
+		gchar *name = g_strndup(environs[i], equal - environs[i]);
+		if (g_hash_table_contains(seen, name))
+		{
+			g_free(name);
+			g_free(environs[i]);
+			continue;
+		}
+		g_hash_table_add(seen, name);
+		g_ptr_array_add(cleaned, environs[i]);
+	}
+	g_hash_table_destroy(seen);
+	// only the container: the strings are owned by cleaned or already freed.
+	g_free(environs);
+
+	// restore the original order
+	guint head = 0, tail = cleaned->len;
+	while (tail && (head < --tail))
+	{
+		gpointer swap = cleaned->pdata[head];
+		cleaned->pdata[head++] = cleaned->pdata[tail];
+		cleaned->pdata[tail] = swap;
+	}
+	g_ptr_array_add(cleaned, NULL);
+	return (gchar **) g_ptr_array_free(cleaned, FALSE);
+}

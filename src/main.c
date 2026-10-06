@@ -549,7 +549,7 @@ void main_quit(GtkWidget *widget, struct Window *win_data)
 	}
 }
 
-void quit_gtk()
+void quit_gtk(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch quit_gtk()");
@@ -557,7 +557,7 @@ void quit_gtk()
 	if (gtk_main_level()) gtk_main_quit();
 }
 
-gchar *get_locale_list()
+gchar *get_locale_list(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch get_locale_list()!");

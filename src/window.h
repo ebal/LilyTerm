@@ -43,10 +43,6 @@
 
 #include "lilyterm.h"
 
-#ifdef USE_XPARSEGEOMETRY
-	// for XParseGeometry()
-	#include <X11/Xlib.h>
-#endif
 
 gboolean window_option(struct Window *win_data, gchar *encoding, int argc, char *argv[]);
 char **set_process_data (pid_t entry_pid, gint *ppid, StrAddr **cmd);

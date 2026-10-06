@@ -129,7 +129,15 @@ GtkNotebook *new_window(int argc,
 	if ((wmclass_class[0]>='a') && (wmclass_class[0]<='z'))
 #endif
 		win_data->wmclass_class[0] += ('A' - 'a');
+	// Deprecated since gtk+ 3.22, but still the only way to honor --name/--class
+	// on X11. It does nothing on Wayland, where the app_id is the program name.
+#ifdef G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+	G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+#endif
 	gtk_window_set_wmclass(GTK_WINDOW(win_data->window), win_data->wmclass_name, win_data->wmclass_class);
+#ifdef G_GNUC_END_IGNORE_DEPRECATIONS
+	G_GNUC_END_IGNORE_DEPRECATIONS
+#endif
 
 	win_data->runtime_locale_list = g_strdup(locale_list);
 	win_data->runtime_encoding = g_strdup(encoding);
@@ -449,9 +457,12 @@ GtkNotebook *new_window(int argc,
 				win_data->window, win_data->geometry);
 #endif
 #ifdef USE_XPARSEGEOMETRY
+			// Wayland clients can not place their own toplevels: there
+			// gtk_window_move() is a no-op, and only the size is honored.
 			gint offset_x = 0, offset_y = 0;
-			guint column, row;
-			if (XParseGeometry (win_data->geometry, &offset_x, &offset_y, &column, &row))
+			gint mask = parse_geometry_str(win_data->geometry, &offset_x, &offset_y, NULL, NULL);
+			if ((mask & GEOMETRY_HAS_X) && (mask & GEOMETRY_HAS_Y) &&
+			    (! (mask & (GEOMETRY_X_NEGATIVE | GEOMETRY_Y_NEGATIVE))))
 				gtk_window_move (GTK_WINDOW(win_data->window), offset_x, offset_y);
 #else
 			gtk_window_parse_geometry(GTK_WINDOW(win_data->window), win_data->geometry);
@@ -652,7 +663,7 @@ GString *close_multi_tabs(struct Window *win_data, int window_no)
 	return NULL;
 }
 
-void clean_process_data()
+void clean_process_data(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch clean_process_data()");
@@ -1335,7 +1346,11 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 #endif
 			break;
 		case KEY_COPY_CLIPBOARD:
+#if VTE_CHECK_VERSION(0,50,0)
+			vte_terminal_copy_clipboard_format(VTE_TERMINAL(win_data->current_vte), VTE_FORMAT_TEXT);
+#else
 			vte_terminal_copy_clipboard(VTE_TERMINAL(win_data->current_vte));
+#endif
 			break;
 		case KEY_PASTE_CLIPBOARD:
 		{

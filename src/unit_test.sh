@@ -30,15 +30,15 @@ FUNCTION_FOUND=0
 
 GDB_ERROR=0
 
-ECHO=`whereis "echo" | tr -s ' ' '\n' | grep "bin/""echo""$" | head -n 1`
-PRINTF=`whereis "printf" | tr -s ' ' '\n' | grep "bin/""printf""$" | head -n 1`
-CAT=`whereis "cat" | tr -s ' ' '\n' | grep "bin/""cat""$" | head -n 1`
-GDB=`whereis "gdb" | tr -s ' ' '\n' | grep "bin/""gdb""$" | head -n 1`
-VALGRIND=`whereis "valgrind" | tr -s ' ' '\n' | grep "bin/""valgrind""$" | head -n 1`
+ECHO=`command -v echo`
+PRINTF=`command -v printf`
+CAT=`command -v cat`
+GDB=`command -v gdb`
+VALGRIND=`command -v valgrind`
 
-MAKE=`whereis "gmake" | tr -s ' ' '\n' | grep "bin/""gmake""$" | head -n 1`
+MAKE=`command -v gmake`
 if [ -z "$MAKE" ]; then
-	MAKE=`whereis "make" | tr -s ' ' '\n' | grep "bin/""make""$" | head -n 1`
+	MAKE=`command -v make`
 fi
 
 for opt do
@@ -88,7 +88,7 @@ if [ -z "$CHECK_INCLUDES" ]; then
 	INCLUDES="-DSAFEMODE -DDEBUG -DFATAL -DDEVELOP -DUNIT_TEST"
 fi
 
-PKGCONFIG=`whereis "pkg-config" | tr -s ' ' '\n' | grep "bin/""pkg-config""$" | head -n 1`
+PKGCONFIG=`command -v pkg-config`
 if [ -z "$PKGCONFIG" ]; then
 	$PRINTF "\033[1;31m** ERROR: Command pkg-config is not found!\033[0m\n"
 	exit 1
@@ -104,7 +104,6 @@ if [ "$VTE" = "vte" ]; then
 else
   VTE=`$PKGCONFIG --exists 'vte-2.91' && $ECHO 'vte-2.91'`
   if [ "$VTE" = "vte-2.91" ]; then
-    LDFLAGS='-lX11'
     GTK=`$PKGCONFIG --exists 'gtk+-3.0' && $ECHO 'gtk+-3.0'`
     if [ "$GTK" != "gtk+-3.0" ]; then
       $PRINTF "\033[1;31m** ERROR: You need to install GTK+3 develop package first to run this unit test program!\033[0m\n"
