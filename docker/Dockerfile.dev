@@ -1,0 +1,28 @@
+# Build + test image for LilyTerm (dynamic build against distro GTK3/VTE).
+#
+#   docker build -f docker/Dockerfile.dev -t lilyterm-dev .
+#   docker run --rm -v "$PWD":/src:ro lilyterm-dev            # build + run all tests
+#   docker run --rm -it -v "$PWD":/src:ro lilyterm-dev sh     # poke around
+ARG ALPINE_VERSION=3.24
+FROM alpine:${ALPINE_VERSION}
+
+RUN apk add --no-cache \
+	build-base pkgconf gettext gettext-dev \
+	gtk+3.0-dev vte3-dev \
+	bash coreutils util-linux-misc procps rsync file \
+	gdb valgrind \
+	xvfb xdotool xprop xwd imagemagick \
+	sway grim \
+	dbus font-dejavu adwaita-icon-theme
+
+# sway carries file capabilities, which an unprivileged container refuses to
+# exec ("Operation not permitted"). A plain copy has none.
+RUN install -m 755 /usr/bin/sway /usr/local/bin/sway-headless
+
+ENV LANG=C.UTF-8 \
+    NO_AT_BRIDGE=1 \
+    XDG_RUNTIME_DIR=/tmp/xdg-runtime
+
+COPY docker/run-tests.sh /usr/local/bin/run-tests
+WORKDIR /build
+CMD ["run-tests"]

@@ -15,3 +15,4 @@ src/vgcore.*
 po/*.mo
 po/*.swp
 data/lilyterm.1.gz
+dist/
