@@ -121,7 +121,12 @@ when run as root; `PREFIX=...` overrides it and `--uninstall` removes it again.
 
 The GitHub workflow in `.github/workflows/build.yml` runs both test suites on
 every push and pull request, and keeps the packaged files as a workflow
-artifact. Pushing a tag `vX.Y.Z` also publishes them as a GitHub release. The
+artifact. The compiled dependencies are kept as a build cache in the GitHub
+container registry (`ghcr.io/OWNER/lilyterm-buildcache`), shared by all
+branches and tags: a run takes a few minutes, and GLib, GTK+ and VTE are only
+compiled again (about half an hour) when `Dockerfile.static` changes.
+
+Pushing a tag `vX.Y.Z` also publishes them as a GitHub release. The
 tag has to match `VERSION` in `.default`, which is what `lilyterm -v` prints:
 
 ```sh

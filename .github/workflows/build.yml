@@ -5,6 +5,12 @@
 #   push of a tag vX.Y.Z:       the same, then a GitHub release with
 #                               lilyterm-x86_64, the tarball and SHA256SUMS
 #
+# The compiled dependencies (GLib, GTK+, VTE, ...) are kept as a build cache in
+# the GitHub container registry, ghcr.io/OWNER/lilyterm-buildcache. Unlike the
+# Actions cache it is shared by all branches and tags and never expires, so
+# they are only compiled again when docker/Dockerfile.static itself changes.
+# A normal run then takes a few minutes.
+#
 # To release: set VERSION in .default, commit, then
 #   git tag v$(sed -n 's/^VERSION = //p' .default) && git push origin --tags
 
@@ -29,9 +35,22 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4
+      - name: Build cache location
+        id: cache
+        run: echo "ref=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lilyterm-buildcache" >> "$GITHUB_OUTPUT"
+      # Pull requests from forks get a read-only token: they read the cache, if they can
+      - uses: docker/login-action@v4
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
       - name: Build the test image
         uses: docker/build-push-action@v7
         with:
@@ -39,8 +58,8 @@ jobs:
           file: docker/Dockerfile.dev
           tags: lilyterm-dev
           load: true
-          cache-from: type=gha,scope=dev
-          cache-to: type=gha,scope=dev,mode=max
+          cache-from: type=registry,ref=${{ steps.cache.outputs.ref }}:dev
+          cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:dev,mode=max', steps.cache.outputs.ref) || '' }}
       - name: Build LilyTerm and run the tests
         run: |
           mkdir -p test-output
@@ -57,6 +76,9 @@ jobs:
   static:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v7
 
@@ -73,9 +95,19 @@ jobs:
           fi
 
       - uses: docker/setup-buildx-action@v4
+      - name: Build cache location
+        id: cache
+        run: echo "ref=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lilyterm-buildcache" >> "$GITHUB_OUTPUT"
+      # Pull requests from forks get a read-only token: they read the cache, if they can
+      - uses: docker/login-action@v4
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
 
       # GLib, GTK+, VTE, ... only compile when docker/Dockerfile.static changes:
-      # their layers come back from the cache otherwise.
+      # their layers come back from the registry cache otherwise.
       - name: Build the static binary and its test image
         uses: docker/build-push-action@v7
         with:
@@ -84,8 +116,8 @@ jobs:
           target: test
           tags: lilyterm-static-test
           load: true
-          cache-from: type=gha,scope=static
-          cache-to: type=gha,scope=static,mode=max
+          cache-from: type=registry,ref=${{ steps.cache.outputs.ref }}:static
+          cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:static,mode=max', steps.cache.outputs.ref) || '' }}
 
       - name: Test the static binary on X11 and Wayland
         run: |
@@ -107,7 +139,7 @@ jobs:
           file: docker/Dockerfile.static
           target: export
           outputs: type=local,dest=dist
-          cache-from: type=gha,scope=static
+          cache-from: type=registry,ref=${{ steps.cache.outputs.ref }}:static
 
       - name: Package
         env:
