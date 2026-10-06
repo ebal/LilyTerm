@@ -1,0 +1,10 @@
+#!/bin/sh
+# fetch URL SHA256: download a source tarball, verify it, unpack it in /build/<name>
+set -eu
+url=$1 sha=$2
+file=/build/dl/$(echo "$url" | sed 's|.*/||')
+mkdir -p /build/dl
+curl -fsSL --retry 3 -o "$file" "$url"
+echo "$sha  $file" | sha256sum -c - >/dev/null
+tar xf "$file" -C /build
+rm -f "$file"

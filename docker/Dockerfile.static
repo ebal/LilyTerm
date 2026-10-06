@@ -1,0 +1,239 @@
+# syntax=docker/dockerfile:1
+#
+# A fully static (musl, static-pie) LilyTerm with GTK+ 3 and VTE linked in.
+# One binary for both X11 and Wayland, with no shared library dependency.
+#
+#   # build it, and drop the result in ./dist/lilyterm
+#   docker build -f docker/Dockerfile.static --target export --output dist .
+#
+#   # build it and run the test suite against the static binary
+#   docker build -f docker/Dockerfile.static --target test -t lilyterm-static-test .
+#   docker run --rm lilyterm-static-test
+#
+# Alpine provides static archives for the lower half of the stack (glib, cairo,
+# harfbuzz, fontconfig, X11, wayland, ...). What it does not ship as static is
+# built here from pinned and checksummed upstream releases.
+
+ARG ALPINE_VERSION=3.24
+
+# ------------------------------------------------------------------ base ----
+FROM alpine:${ALPINE_VERSION} AS base
+
+RUN apk add --no-cache \
+	build-base meson samurai pkgconf python3 perl bash curl tar xz file \
+	gettext gettext-dev gettext-static \
+	linux-headers \
+	glib-dev \
+	cairo-dev cairo-static pixman-dev pixman-static \
+	libpng-dev libpng-static libjpeg-turbo-dev libjpeg-turbo-static \
+	freetype-dev freetype-static fontconfig-dev gperf \
+	harfbuzz-dev harfbuzz-static graphite2-dev graphite2-static \
+	fribidi-dev fribidi-static pcre2-dev pcre2-static \
+	zlib-dev zlib-static bzip2-dev bzip2-static brotli-dev brotli-static \
+	expat-dev expat-static libffi-dev xz-dev xz-static zstd-dev zstd-static \
+	libx11-dev libx11-static libxcb-dev libxcb-static \
+	libxext-dev libxext-static libxi-dev libxi-static \
+	libxrender-dev libxfixes-dev libxcursor-dev libxdmcp-dev xorgproto xtrans util-macros \
+	wayland-dev wayland-static wayland-protocols \
+	libxkbcommon-dev libxkbcommon-static \
+	mesa-dev \
+	lz4-dev lz4-static icu-dev icu-static \
+	nettle-dev nettle-static gmp-dev gmp-static \
+	libunistring-dev libunistring-static
+
+COPY docker/static/fetch /usr/local/bin/fetch
+
+ENV CFLAGS="-O2 -ffunction-sections -fdata-sections" \
+    CXXFLAGS="-O2 -ffunction-sections -fdata-sections" \
+    PKG_CONFIG="pkg-config --static" \
+    MESON_COMMON="--prefix=/usr --libdir=lib --buildtype=release --default-library=static -Dprefer_static=true --wrap-mode=nodownload"
+WORKDIR /build
+
+# ------------------------------------------------------------------ deps ----
+FROM base AS deps
+
+# --- X11 extension libraries that Alpine has no static archive for
+RUN set -eu; X=https://www.x.org/releases/individual/lib; \
+    fetch $X/libXau-1.0.12.tar.xz        74d0e4dfa3d39ad8939e99bda37f5967aba528211076828464d2777d477fc0fb; \
+    fetch $X/libXrandr-1.5.5.tar.xz      72b922c2e765434e9e9f0960148070bd4504b288263e2868a4ccce1b7cf2767a; \
+    fetch $X/libXinerama-1.1.6.tar.xz    d00fc1599c303dc5cbc122b8068bdc7405d6fcb19060f4597fc51bd3a8be51d7; \
+    fetch $X/libXcomposite-0.4.7.tar.xz  8bdf310967f484503fa51714cf97bff0723d9b673e0eecbf92b3f97c060c8ccb; \
+    fetch $X/libXdamage-1.1.7.tar.xz     127067f521d3ee467b97bcb145aeba1078e2454d448e8748eb984d5b397bde24; \
+    for lib in libXau-1.0.12 libXrandr-1.5.5 libXinerama-1.1.6 libXcomposite-0.4.7 libXdamage-1.1.7; do \
+        ( cd /build/$lib && \
+          ./configure --prefix=/usr --enable-static --disable-shared >/dev/null && \
+          make -j"$(nproc)" >/dev/null && make install >/dev/null ) || exit 1; \
+        rm -rf /build/$lib; \
+    done
+
+# --- GLib. Alpine has glib-static, but its GIO drags in libmount -> libblkid ->
+#     libeconf, and there is no static libeconf. Nothing here needs libmount.
+#     GIO modules (gvfs, dconf, ...) are plugins: point the module directory to
+#     nowhere, instead of failing loudly on each one found on the host.
+RUN set -eu; \
+    fetch https://download.gnome.org/sources/glib/2.88/glib-2.88.3.tar.xz \
+          ab24d24e698dfa1e408b7bcdb508f4aafc906185a8b8ce72fdf79bbbdc9b383b; \
+    cd /build/glib-2.88.3; \
+    meson setup _b $MESON_COMMON -Dlibmount=disabled -Dselinux=disabled -Dsysprof=disabled \
+          -Dxattr=false -Dlibelf=disabled -Ddtrace=disabled -Dsystemtap=disabled \
+          -Dintrospection=disabled -Dman-pages=disabled -Ddocumentation=false \
+          -Dtests=false -Dinstalled_tests=false -Dnls=enabled -Dglib_debug=disabled \
+          -Dgio_module_dir=/nonexistent/gio-modules-need-dlopen; \
+    meson install -C _b; rm -rf /build/glib-2.88.3
+
+# --- fontconfig. The one in the binary reads the *host's* /etc/fonts, so it has
+#     to be at least as new as what distributions ship: an older parser does not
+#     know the newer configuration syntax, and complains on every start.
+RUN set -eu; \
+    fetch https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.18.3/fontconfig-2.18.3.tar.xz \
+          4f7b554a38cdf78c033f666c8871f3749e14a094f65a07f630c91ed0b43d35e3; \
+    cd /build/fontconfig-2.18.3; \
+    meson setup _b $MESON_COMMON --sysconfdir=/etc --localstatedir=/var \
+          -Ddoc=disabled -Dnls=disabled -Dtests=disabled -Dtools=disabled \
+          -Dcache-build=disabled -Dfontations=disabled; \
+    meson install -C _b; rm -rf /build/fontconfig-2.18.3
+
+# --- libepoxy: GDK needs it at link time; GL itself is only ever used by GtkGLArea
+RUN set -eu; \
+    fetch https://github.com/anholt/libepoxy/archive/refs/tags/1.5.10.tar.gz \
+          a7ced37f4102b745ac86d6a70a9da399cc139ff168ba6b8002b4d8d43c900c15; \
+    cd /build/libepoxy-1.5.10; \
+    meson setup _b $MESON_COMMON -Degl=yes -Dglx=yes -Dx11=true -Dtests=false -Ddocs=false; \
+    meson install -C _b; rm -rf /build/libepoxy-1.5.10; \
+    # epoxy.pc asks for libGL and libEGL (and through them libdrm, libXxf86vm,
+    # ...) in a static link. libepoxy never links to them: it looks them up at
+    # run time, and only once a GL context is created, which never happens here.
+    sed -i -e '/^Requires.private:/d' -e 's/^Requires: .*/Requires: x11/' /usr/lib/pkgconfig/epoxy.pc
+
+# --- ATK. Only libatk: the AT-SPI D-Bus bridge is left out (see the GTK patch below)
+RUN set -eu; \
+    fetch https://download.gnome.org/sources/at-spi2-core/2.62/at-spi2-core-2.62.0.tar.xz \
+          03a94f7bf35f300daf2843a37cdf36479a91bc53f59a8ea437c79e25d95d1de3; \
+    cd /build/at-spi2-core-2.62.0; \
+    meson setup _b $MESON_COMMON -Datk_only=true -Dx11=disabled -Dintrospection=disabled -Ddocs=false; \
+    meson install -C _b; rm -rf /build/at-spi2-core-2.62.0
+
+# --- Pango
+RUN set -eu; \
+    fetch https://download.gnome.org/sources/pango/1.58/pango-1.58.2.tar.xz \
+          342385b6ca3b7c73455d7c80a13b7dbe4489e00bc3bd4c5bd6ed4dce421e374a; \
+    cd /build/pango-1.58.2; \
+    meson setup _b $MESON_COMMON -Dintrospection=disabled -Dfontconfig=enabled -Dfreetype=enabled \
+          -Dcairo=enabled -Dxft=disabled -Dlibthai=disabled \
+          -Dbuild-testsuite=false -Dbuild-examples=false; \
+    meson install -C _b; rm -rf /build/pango-1.58.2
+
+# --- gdk-pixbuf, with the image loaders compiled in (a static binary can not dlopen them)
+RUN set -eu; \
+    fetch https://download.gnome.org/sources/gdk-pixbuf/2.44/gdk-pixbuf-2.44.8.tar.xz \
+          919f529512961a12e81cd4b4b466a48c3933469e7f9a310c6513cd4fb252ba3c; \
+    cd /build/gdk-pixbuf-2.44.8; \
+    meson setup _b $MESON_COMMON -Dpng=enabled -Djpeg=enabled -Dgif=enabled -Dtiff=disabled \
+          -Dglycin=disabled -Dothers=enabled -Dlegacy_xpm=enabled -Dbuiltin_loaders=all \
+          -Dintrospection=disabled -Dman=false -Dtests=false -Dinstalled_tests=false \
+          -Dgio_sniffing=false -Dthumbnailer=disabled; \
+    meson install -C _b; rm -rf /build/gdk-pixbuf-2.44.8
+
+# --- GnuTLS: VTE encrypts the scrollback it spills to disk with it
+RUN set -eu; \
+    fetch https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.13.tar.xz \
+          ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e; \
+    cd /build/gnutls-3.8.13; \
+    ./configure --prefix=/usr --enable-static --disable-shared \
+          --with-included-libtasn1 --without-p11-kit --without-idn --without-brotli \
+          --without-zstd --without-zlib --without-tpm --without-tpm2 \
+          --disable-doc --disable-tests --disable-tools --disable-cxx --disable-nls \
+          --disable-libdane --disable-guile >/dev/null; \
+    make -j"$(nproc)" >/dev/null; make install >/dev/null; rm -rf /build/gnutls-3.8.13
+
+# --- GTK+ 3, with both the X11 and the Wayland backend
+#  * every input method module is built in, and no print backend is built:
+#    both are dlopen()ed plugins otherwise, which a static binary can not load.
+#  * the AT-SPI bridge (atk-bridge-2.0) is dropped. It would pull libdbus and
+#    libatspi into the binary just to talk to screen readers.
+RUN set -eu; \
+    fetch https://download.gnome.org/sources/gtk/3.24/gtk-3.24.52.tar.xz \
+          80931fa472a77b9a164f6740e3c0b444fac6770054632d35a7ff9d679e5e7b9f; \
+    cd /build/gtk-3.24.52; \
+    sed -i "s/^if print_backends.contains(.*)$/if false/" modules/printbackends/meson.build; \
+    ! grep -q '^if print_backends.contains' modules/printbackends/meson.build; \
+    sed -i "s/^  atkbridge_dep  = dependency('atk-bridge-2.0'.*/  atkbridge_dep  = []/; \
+            s/^  atk_pkgs += \['atk-bridge-2.0'\]//" meson.build; \
+    sed -i 's/^#include <atk-bridge.h>//; s/^  atk_bridge_adaptor_init (NULL, NULL);//' gtk/a11y/gtkaccessibility.c; \
+    ! grep -q "atk-bridge-2.0'" meson.build; ! grep -q atk_bridge gtk/a11y/gtkaccessibility.c; \
+    # g_module_open(NULL) can not work in a static binary. GTK+ uses it to look
+    # up symbols in the program itself, and takes a NULL module for granted.
+    sed -i 's/^  if (g_module_symbol (module, "gtk_progress_get_type", &func))/  if (module \&\& g_module_symbol (module, "gtk_progress_get_type", \&func))/' gtk/gtkmodules.c; \
+    sed -i 's/^    g_module_close (module);/    if (module) g_module_close (module);/' gtk/gtkmodules.c; \
+    sed -i 's/^  if (g_module_symbol (module, symbol, (gpointer)&func))/  if (module \&\& g_module_symbol (module, symbol, (gpointer)\&func))/' gtk/gtkbuilder.c; \
+    sed -i 's/^  if (!g_module_symbol (module, symbol, (gpointer)&func))/  if (!module || !g_module_symbol (module, symbol, (gpointer)\&func))/' gtk/gtkbuilderparser.c; \
+    grep -q 'if (module && g_module_symbol (module, "gtk_progress_get_type"' gtk/gtkmodules.c; \
+    grep -q 'if (module) g_module_close (module);' gtk/gtkmodules.c; \
+    grep -q 'if (module && g_module_symbol (module, symbol' gtk/gtkbuilder.c; \
+    grep -q 'if (!module || !g_module_symbol (module, symbol' gtk/gtkbuilderparser.c; \
+    # Same story for $GTK_MODULES (e.g. canberra-gtk-module) and for the input
+    # method plugins listed in the host's immodules.cache (ibus, fcitx, ...):
+    # they can not be loaded, so do not try, and do not warn about it.
+    # g_module_supported() is no help: it is TRUE whenever libc has a dlopen()
+    # symbol. Opening the program itself is what fails in a static binary.
+    sed -i 's/^          g_message ("Failed to load module \\"%s\\"%s%s",/          if (g_module_open (NULL, 0)) g_message ("Failed to load module \\"%s\\"%s%s",/' gtk/gtkmodules.c; \
+    sed -i 's/^  file = g_fopen (filename, "r");/  file = g_module_open (NULL, 0) ? g_fopen (filename, "r") : NULL;/' gtk/gtkimmodule.c; \
+    grep -q 'if (g_module_open (NULL, 0)) g_message ("Failed to load module' gtk/gtkmodules.c; \
+    grep -q 'file = g_module_open (NULL, 0) ? g_fopen' gtk/gtkimmodule.c; \
+    meson setup _b $MESON_COMMON -Dx11_backend=true -Dwayland_backend=true -Dbroadway_backend=false \
+          -Dxinerama=yes -Dbuiltin_immodules=all -Dprint_backends=file -Dcolord=no \
+          -Dcloudproviders=false -Dtracker3=false -Dprofiler=false \
+          -Dintrospection=false -Ddemos=false -Dexamples=false -Dtests=false \
+          -Dinstalled_tests=false -Dgtk_doc=false -Dman=false; \
+    meson install -C _b; rm -rf /build/gtk-3.24.52
+
+# --- VTE. Upstream only knows how to build a shared library.
+RUN set -eu; \
+    fetch https://download.gnome.org/sources/vte/0.84/vte-0.84.1.tar.xz \
+          aca1caa8478aebcdbb1d67897fb3511eb7601debae6810e16a15b6fa25f31ac8; \
+    cd /build/vte-0.84.1; \
+    sed -i 's/^  libvte_gtk3 = shared_library(/  libvte_gtk3 = library(/' src/meson.build; \
+    grep -q 'libvte_gtk3 = library(' src/meson.build; \
+    # W_EXITCODE() is a glibc extension that musl does not have
+    sed -i '1i #ifndef W_EXITCODE\n#define W_EXITCODE(ret, sig) ((ret) << 8 | (sig))\n#endif' src/widget.cc; \
+    grep -q '^#define W_EXITCODE' src/widget.cc; \
+    meson setup _b $MESON_COMMON -Dgtk3=true -Dgtk4=false -Dgir=false -Dvapi=false -Ddocs=false \
+          -Dglade=false -D_systemd=false -Dgnutls=true -Dicu=true -Dfribidi=true -Da11y=true; \
+    meson install -C _b; rm -rf /build/vte-0.84.1
+
+# ----------------------------------------------------------------- build ----
+FROM deps AS build
+
+COPY . /build/lilyterm
+RUN set -eu; cd /build/lilyterm; \
+    make distclean >/dev/null 2>&1 || true; \
+    CFLAGS="$CFLAGS -Wall" ./configure --prefix=/usr --sysconfdir=/etc/xdg; \
+    make PKG_CONFIG_FLAGS=--static \
+         LDFLAGS="-static-pie -Wl,--gc-sections -Wl,--as-needed" \
+         LIBS="-lstdc++ -lm"; \
+    make install DESTDIR=/build/dist; \
+    strip /build/dist/usr/bin/lilyterm; \
+    file /build/dist/usr/bin/lilyterm; ls -l /build/dist/usr/bin/lilyterm; \
+    # a static-pie has neither an interpreter nor a single NEEDED entry
+    ! readelf -l /build/dist/usr/bin/lilyterm | grep -q 'Requesting program interpreter'; \
+    ! readelf -d /build/dist/usr/bin/lilyterm | grep -q NEEDED
+
+# ------------------------------------------------------------------ test ----
+# A pristine image without GTK, VTE or any -dev package: only display servers,
+# a font and the test script. If the binary runs here, it really is standalone.
+FROM alpine:${ALPINE_VERSION} AS test
+RUN apk add --no-cache bash coreutils procps file xvfb xdotool xprop xwd imagemagick \
+	sway grim font-dejavu xkeyboard-config && \
+    install -m 755 /usr/bin/sway /usr/local/bin/sway-headless
+ENV LANG=C.UTF-8 NO_AT_BRIDGE=1 XDG_RUNTIME_DIR=/tmp/xdg-runtime \
+    LILYTERM=/usr/bin/lilyterm BUILD=/tmp OUT=/tmp/test-output
+COPY --from=build /build/dist/ /
+COPY docker/run-tests.sh /usr/local/bin/run-tests
+CMD ["run-tests"]
+
+# ---------------------------------------------------------------- export ----
+# docker build --target export --output dist .   ->   dist/lilyterm (+ data files)
+FROM scratch AS export
+COPY --from=build /build/dist/usr/bin/lilyterm /lilyterm
+COPY --from=build /build/dist/usr/share /share
+COPY --from=build /build/dist/etc /etc
