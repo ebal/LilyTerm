@@ -30,8 +30,10 @@
 #include <string.h>
 // for aoti()
 #include <stdlib.h>
-// for GDK_WINDOW_XID
-#include <gdk/gdkx.h>
+// for GDK_WINDOW_XID. Only when GTK+ was built with the X11 backend.
+#ifdef GDK_WINDOWING_X11
+#  include <gdk/gdkx.h>
+#endif
 
 #include "lilyterm.h"
 

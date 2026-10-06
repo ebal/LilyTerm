@@ -14,8 +14,8 @@ IRC = \#hime@freenode.net
 LANG_LIST = de fr es it nl pl pt_BR ru sk tr uk zh_CN zh_TW
 
 YEAR = $(shell date +%Y)
-ECHO = $(shell whereis "echo" | tr -s ' ' '\n' | grep "bin/""echo""$$" | head -n 1)
-PRINTF = $(shell whereis "printf" | tr -s ' ' '\n' | grep "bin/""printf""$$" | head -n 1)
+ECHO = $(firstword $(wildcard /usr/bin/echo /bin/echo) echo)
+PRINTF = $(firstword $(wildcard /usr/bin/printf /bin/printf) printf)
 
 PREFIX = /usr/local
 ETCDIR = $(PREFIX)/etc/xdg

@@ -32,7 +32,7 @@ typedef gchar StrLists;
 //
 
 #ifdef USE_GTK_ALT_DIALOG_BUTTON_ORDER
-gboolean gtk_alt_dialog_button_order();
+gboolean gtk_alt_dialog_button_order(void);
 #endif
 gboolean check_if_default_proc_dir_exist(gchar *proc_dir);
 gchar *convert_array_to_string(gchar **array, gchar separator);
@@ -42,8 +42,17 @@ gchar *convert_escape_sequence_from_string(const gchar *string);
 gboolean compare_strings(const gchar *string_a, const gchar *string_b, gboolean case_sensitive);
 void set_VTE_CJK_WIDTH_environ(gint VTE_CJK_WIDTH);
 gchar *get_VTE_CJK_WIDTH_str(gint VTE_CJK_WIDTH);
-gint get_default_VTE_CJK_WIDTH();
-void restore_SYSTEM_VTE_CJK_WIDTH_STR();
+// The fields found by parse_geometry_str()
+#define GEOMETRY_HAS_X		0x01
+#define GEOMETRY_HAS_Y		0x02
+#define GEOMETRY_HAS_WIDTH	0x04
+#define GEOMETRY_HAS_HEIGHT	0x08
+#define GEOMETRY_X_NEGATIVE	0x10
+#define GEOMETRY_Y_NEGATIVE	0x20
+gchar **sanitize_environs(gchar **environs);
+gint parse_geometry_str(const gchar *geometry_str, gint *offset_x, gint *offset_y, guint *width, guint *height);
+gint get_default_VTE_CJK_WIDTH(void);
+void restore_SYSTEM_VTE_CJK_WIDTH_STR(void);
 void set_env(const gchar *variable, const gchar *value, gboolean overwrite);
 const gchar *get_default_lc_data(gint lc_type);
 gchar *get_encoding_from_locale(const gchar *locale);
@@ -82,7 +91,7 @@ gchar *fake_g_strdup_printf(const StrLists *format, ...);
 gchar *convert_socket_data_to_string(char *argv[]);
 gboolean convert_string_to_socket_data(gchar *socket_str);
 void main_quit(GtkWidget *widget, struct Window *win_data);
-void quit_gtk();
+void quit_gtk(void);
 
 //
 // **************************** console.c ****************************
@@ -119,7 +128,7 @@ void keep_gtk2_window_size (struct Window *win_data, GtkWidget *vte, Geometry_Re
 #endif
 #if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 void keep_gtk3_window_size(struct Window *win_data, gboolean idle);
-gboolean show_or_hide_tabs_bar_and_scroll_bar();
+gboolean show_or_hide_tabs_bar_and_scroll_bar(struct Window *win_data);
 gboolean idle_set_vte_font_to_selected(struct Window *win_data);
 #endif
 void dim_window(struct Window *win_data, gint dim_window);
@@ -129,7 +138,7 @@ gboolean window_quit(GtkWidget *window, GdkEvent *event, struct Window *win_data
 GString *close_multi_tabs(struct Window *win_data, int window_no);
 gboolean display_child_process_dialog (GString *child_process_list, struct Window *win_data, gsize style);
 GString *get_child_process_list(GtkWidget *window, gint window_no, gint page_no, GString *process_list, pid_t pid, struct Window *win_data, gboolean show_foreground);
-void clean_process_data();
+void clean_process_data(void);
 gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win_data);
 #ifdef DISABLE_PAGE_ADDED
 void notebook_page_added(GtkNotebook *notebook, GtkWidget *child, guint page_num, struct Window *win_data);
@@ -155,7 +164,7 @@ void print_color(gint no, gchar *name, GdkRGBA color);
 //
 // **************************** profile.c ****************************
 //
-void convert_system_color_to_rgba();
+void convert_system_color_to_rgba(void);
 void init_page_parameters(struct Window *win_data, struct Page *page_data);
 void init_user_color(struct Window *win_data, gchar *theme_name);
 void init_locale_restrict_data(gchar *lc_messages);
@@ -170,7 +179,7 @@ void check_profile_version (GKeyFile *keyfile, struct Window *win_data);
 #endif
 void profile_is_invalid_dialog(GError *error, struct Window *win_data);
 void convert_string_to_user_key(gint i, gchar *value, struct Window *win_data);
-gchar *get_profile();
+gchar *get_profile(void);
 #if defined(ENABLE_RGBA) || defined(UNIT_TEST)
 void init_rgba(struct Window *win_data);
 #endif
@@ -313,7 +322,7 @@ GtkWidget *add_radio_menuitem_to_sub_menu(GSList *encoding_group,
 					  GSourceFunc func,
 					  gpointer func_data);
 void refresh_profile_list (struct Window *win_data);
-long get_profile_dir_modtime();
+long get_profile_dir_modtime(void);
 gboolean check_if_win_data_is_still_alive(struct Window *win_data);
 void clean_scrollback_lines(GtkWidget *widget, struct Window *win_data);
 

@@ -1,3 +1,36 @@
+2026-10-06 (unreleased)
+  Bring LilyTerm up to date with GTK+ 3.24, VTE 0.84, GCC 15+ and Wayland.
+
+  New Feature:
+	* Runs natively on Wayland, with the same binary that runs on X11.
+	* GTK+ 3 with vte-2.91 is the default now. GTK+ 2 is still available
+	  with `./configure --with-gtk=2.0'.
+	* Container images for building and testing (docker/Dockerfile.dev),
+	  and for building a fully static binary (docker/Dockerfile.static).
+	  See docker/README.md.
+	* A test suite that runs LilyTerm under a headless X server and a
+	  headless Wayland compositor (docker/run-tests.sh).
+	* PKG_CONFIG, PKG_CONFIG_FLAGS and LIBS are honored when building.
+
+  FIX:
+	* No terminal could be spawned with vte >= 0.62: the environment array
+	  could hold entries that are not "NAME=value", and the spawn flags
+	  held G_SPAWN_CHILD_INHERITS_STDIN. vte refuses both.
+	* The variables LilyTerm sets for a new tab (LANG, LC_ALL, ...) did not
+	  override the inherited ones.
+	* Fix a "Source ID was not found" critical when closing a tab whose
+	  child had already exited.
+	* The socket file is created in $XDG_RUNTIME_DIR instead of /tmp, and
+	  requests from other users are refused (SO_PEERCRED).
+	* No direct use of Xlib any more: XParseGeometry() is replaced, and the
+	  X window ID is only asked for when really running on X11.
+	* Fix reading uninitialized values for a geometry without a size, like
+	  "+10+10".
+	* The context menu uses gtk_menu_popup_at_pointer() (gtk+ >= 3.22).
+	* Build with C23 compilers: no more empty `()' prototypes.
+	* Build with musl libc: realpath() instead of canonicalize_file_name().
+	* configure and the Makefiles do not need `whereis' any more.
+
 2013-02-28 Lu, Chao-Ming (Tetralet) <tetralet@gmail.com>
   Version 0.9.9.4, it is a hotfix version of 0.9.9.3.
 

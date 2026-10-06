@@ -582,7 +582,11 @@ void copy_clipboard(GtkWidget *widget, struct Window *win_data)
 #ifdef SAFEMODE
 	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
 #endif
+#if VTE_CHECK_VERSION(0,50,0)
+	vte_terminal_copy_clipboard_format(VTE_TERMINAL(win_data->current_vte), VTE_FORMAT_TEXT);
+#else
 	vte_terminal_copy_clipboard(VTE_TERMINAL(win_data->current_vte));
+#endif
 }
 
 void paste_clipboard(GtkWidget *widget, struct Window *win_data)
@@ -643,15 +647,31 @@ void view_current_page_info(GtkWidget *widget, struct Window *win_data)
 	if (page_data==NULL) return;
 #endif
 	gchar *old_temp_data = win_data->temp_data;
+	// A X11 window ID only exists when running on a X server.
+	// Under Wayland (or any other GDK backend) there is no such thing.
+	gulong window_id = 0;
+	const gchar *display_type = "unknown";
+	GdkWindow *gdk_window = gtk_widget_get_window (page_data->vte);
+#ifdef GDK_WINDOWING_X11
+	if (gdk_window && GDK_IS_X11_WINDOW (gdk_window))
+	{
+		window_id = GDK_WINDOW_XID (gdk_window);
+		display_type = "X11";
+	}
+#endif
+	if (gdk_window && (window_id==0))
+		display_type = G_OBJECT_TYPE_NAME (gdk_window_get_display (gdk_window));
 	win_data->temp_data = g_strdup_printf("%s%c%s%c"
 					      "Encoding=%s\n"
 					      "VTE_CJK_WIDTH=%s\n"
-					      "WINDOWID=%ld",
+					      "WINDOWID=%lu\n"
+					      "Display=%s",
 					      _("View current page information"), SEPARATE_CHAR,
 					      "View current page information", SEPARATE_CHAR,
 					      page_data->encoding_str,
 					      page_data->VTE_CJK_WIDTH_STR,
-					      (gtk_widget_get_window (page_data->vte))?GDK_WINDOW_XID (gtk_widget_get_window (page_data->vte)):0);
+					      window_id,
+					      display_type);
 	dialog(NULL, GENERAL_INFO);
 	g_free(win_data->temp_data);
 	win_data->temp_data=old_temp_data;
@@ -2833,7 +2853,7 @@ GtkWidget *add_separator_menu (GtkWidget *sub_menu)
 	return menu_item;
 }
 
-long get_profile_dir_modtime()
+long get_profile_dir_modtime(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch get_profile_dir_modtime()");

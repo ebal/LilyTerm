@@ -249,7 +249,7 @@ struct Cursor_Shape cursor_shape[CURSOR_SHAPE] =
 	 VTE_CURSOR_SHAPE_UNDERLINE}};
 #endif
 
-void convert_system_color_to_rgba()
+void convert_system_color_to_rgba(void)
 {
 #ifdef USE_GDK_RGBA
 	gint i, j;
@@ -263,7 +263,7 @@ void convert_system_color_to_rgba()
 #endif
 }
 
-void init_command()
+void init_command(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_command()!");
@@ -761,7 +761,7 @@ void init_user_keys(struct Window *win_data)
 #endif
 }
 
-void init_key_bindings_name_and_group()
+void init_key_bindings_name_and_group(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_key_bindings_name_and_group()!");
@@ -844,7 +844,7 @@ void init_key_bindings_name_and_group()
 #endif
 }
 
-void init_key_bindings()
+void init_key_bindings(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_key_bindings()!");
@@ -1006,7 +1006,7 @@ void init_key_bindings()
 #endif
 }
 
-void init_page_color_data()
+void init_page_color_data(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_page_color_data()!");
@@ -1025,7 +1025,7 @@ void init_page_color_data()
 	page_color[5].comment_eng = "Normal Text";
 }
 
-void init_page_color_data_comment()
+void init_page_color_data_comment(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_page_color_data_comment()!");
@@ -1064,7 +1064,7 @@ void init_locale_restrict_data(gchar *lc_messages)
 	}
 }
 
-void init_mod_keys()
+void init_mod_keys(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_mod_keys()!");
@@ -1107,7 +1107,7 @@ void init_mod_keys()
 	// modkeys[13].mod = GDK_META_MASK ;
 }
 
-void init_colors()
+void init_colors(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_colors()");
@@ -2978,7 +2978,8 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 	gchar resolved_patch[PATH_MAX+1];
 	gchar *real_file_name = g_strdup(realpath((const gchar *)profile, resolved_patch));
 #  else
-	gchar *real_file_name = canonicalize_file_name((const gchar *)profile);
+	// POSIX.1-2008 realpath(): the portable canonicalize_file_name(), which is glibc only.
+	gchar *real_file_name = realpath((const gchar *)profile, NULL);
 #  endif
 	if (real_file_name==NULL)
 	{
@@ -3061,7 +3062,7 @@ void create_save_failed_dialog(struct Window *win_data, gchar *message)
 }
 
 #ifdef ENABLE_PROFILE
-gchar *get_profile()
+gchar *get_profile(void)
 {
 #  ifdef DETAIL
 	g_debug("! Launch get_profile()");
@@ -3309,13 +3310,10 @@ void get_row_and_column_from_geometry_str(glong *column, glong *row, glong *defa
 #endif
 	if (geometry_str && (geometry_str[0]!='\0'))
 	{
-		gint offset_x = 0, offset_y = 0;
-		guint new_column, new_row;
-		if (XParseGeometry (geometry_str, &offset_x, &offset_y, &new_column, &new_row))
-		{
-			*column = new_column;
-			*row = new_row;
-		}
+		guint new_column = 0, new_row = 0;
+		gint mask = parse_geometry_str(geometry_str, NULL, NULL, &new_column, &new_row);
+		if (mask & GEOMETRY_HAS_WIDTH) *column = new_column;
+		if (mask & GEOMETRY_HAS_HEIGHT) *row = new_row;
 	}
 
 	if (*column < 1) *column = *default_column;
