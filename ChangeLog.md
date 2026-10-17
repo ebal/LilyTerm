@@ -2,6 +2,19 @@
 
 ## 2026-10-17
 
+Version 0.9.9.9.
+The first release with the fixes of 0.9.9.7 and 0.9.9.8: their tags never
+got a release, because the X11 and Wayland tests failed on the GitHub
+runner. These tests now only run locally.
+
+### FIX
+
+- The split pane tests check which pane has the focus before they close
+  one: a lost Ctrl+Shift+N press on Wayland made Ctrl+Shift+W close the
+  wrong pane. Keys without modifiers are sent correctly on Wayland too.
+
+## 2026-10-17
+
 Version 0.9.9.8.
 The first release with the fixes of 0.9.9.7: its tag never got a release,
 because the tests failed on the GitHub runner.
