@@ -234,7 +234,8 @@ run_gui_tests() {
 	fi
 	# --- 5. split panes: split right, split down, close panes again
 	run_pane_tests "$backend" "$work"
-	# --- 6. word_chars, the bell and cursor_shape (the mouse, WM_HINTS and xwd need X11)
+	# --- 6. the window title, word_chars, the bell and cursor_shape (X11: the
+	#        mouse, the window name, WM_HINTS and xwd)
 	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
 }
 
@@ -248,7 +249,7 @@ run_word_and_bell_tests() {
 	a=$(printf 'a%.0s' $(seq 20)); b=$(printf 'b%.0s' $(seq 30)); c=$(printf 'c%.0s' $(seq 20))
 	cat > "$wdir/shell" <<-EOF
 		#!/bin/sh
-		printf '\033[H\033[2J$a,$b!$c\n'
+		printf '\033]2;title-from-the-shell\007\033[H\033[2J$a,$b!$c\n'
 		IFS= read -r line && printf '%s\n' "\$line" > "$wdir/line.tmp" && mv "$wdir/line.tmp" "$wdir/line"
 		while [ ! -e "$wdir/ring" ]; do sleep 0.1; done
 		printf '\a'
@@ -261,6 +262,12 @@ run_word_and_bell_tests() {
 		ng "[x11] word_chars: no LilyTerm window"; kill "$pid" 2>/dev/null; return
 	fi
 	sleep 1
+	# a title set by the program in the terminal (OSC 2) becomes the window title
+	if wait_for 5 eval 'xdotool getwindowname "$id" 2>/dev/null | grep -q title-from-the-shell'; then
+		ok "[x11] the title set by the shell becomes the window title"
+	else
+		ng "[x11] window title: '$(xdotool getwindowname "$id" 2>/dev/null)', expected the title set by the shell"
+	fi
 	# set by xdotool getwindowgeometry --shell
 	# shellcheck disable=SC2034
 	local WIDTH HEIGHT X Y SCREEN WINDOW

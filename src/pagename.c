@@ -135,7 +135,11 @@ gboolean monitor_cmdline(struct Page *page_data)
 #endif
 #ifdef SAFEMODE
 	if (page_data==NULL) return FALSE;
-	if ((page_data->lost_focus==NULL) || (page_data->keep_vte_size==NULL) ||
+	// (keep_vte_size is only set for the GTK+2 geometry method)
+	if ((page_data->lost_focus==NULL) ||
+#  ifdef USE_GTK2_GEOMETRY_METHOD
+	    (page_data->keep_vte_size==NULL) ||
+#  endif
 	    (page_data->current_vte==NULL) || (page_data->window_title_tpgid==NULL))
 	{
 		page_data->timeout_id = 0;
@@ -176,8 +180,10 @@ gboolean monitor_cmdline(struct Page *page_data)
 		if (lost_focus && (*(page_data->current_vte) != (page_data->vte)))
 			fprintf(stderr, " lost_focus = %d, page_data->current_vte %s= page_data->vte.",
 				lost_focus, (*(page_data->current_vte) == page_data->vte) ? "" : "!");
+#  ifdef USE_GTK2_GEOMETRY_METHOD
 		if (*(page_data->keep_vte_size) & GEOMETRY_UPDATE_PAGE_NAME_MASK)
 			fprintf(stderr, " page_data->keep_vte_size = 0x%X.", *(page_data->keep_vte_size) & GEOMETRY_UPDATE_PAGE_NAME_MASK);
+#  endif
 		if (page_data->custom_page_name)
 			fprintf(stderr, " page_data->custom_page_name = \"%s\".", page_data->custom_page_name);
 		if (dialog_activated)
@@ -213,22 +219,19 @@ gboolean monitor_cmdline(struct Page *page_data)
 	if (check_window_title(page_data, lost_focus))
 		page_name_changed = TRUE;
 
-	gchar *old_pwd;
-	if (lost_focus)
-		old_pwd = page_data->window_title_pwd;
-	else
-		old_pwd = page_data->pwd;
-
+	// The directory shown in the tab (or in the window title, without the focus).
+	// When it changed, old_pwd keeps the one it replaced, to put it back if the
+	// page name cannot be updated; old_pwd and new_pwd are freed at the end.
+	gchar **pwd = lost_focus ? &(page_data->window_title_pwd) : &(page_data->pwd);
+	gchar *old_pwd = NULL;
 	gchar *new_pwd = get_tab_name_with_current_dir(page_data->current_tpgid);
 
-	if (check_pwd(page_data, old_pwd, new_pwd, page_update_method))
+	if (check_pwd(page_data, *pwd, new_pwd, page_update_method))
 	{
 		page_name_changed = TRUE;
-		if (lost_focus)
-			page_data->window_title_pwd = new_pwd;
-		else
-			page_data->pwd = new_pwd;
-		new_pwd = old_pwd;
+		old_pwd = *pwd;
+		*pwd = new_pwd;
+		new_pwd = NULL;
 	}
 
 	// g_debug("check_tpgid = %d, and current_tpgid = %d", *check_tpgid, page_data->current_tpgid);
@@ -242,13 +245,15 @@ gboolean monitor_cmdline(struct Page *page_data)
 		// g_debug("page_data->is_bold = %d for page_data %p", page_data->is_bold, page_data);
 
 		// g_debug("Launch get_and_update_page_name() in monitor_cmdline()");
-		if (( ! get_and_update_page_name(page_data, *(page_data->lost_focus))) && (! lost_focus))
+		if (( ! get_and_update_page_name(page_data, *(page_data->lost_focus))) && (! lost_focus) && old_pwd)
 		{
 			// if update "tab title" fault. upate window title will never fault.
 			// g_debug("!! Tab name is NOT changed to '%s'", page_data->pwd);
-			// exchange old_pwd and new_pwd again!
-			new_pwd = page_data->pwd;
+			// Put the old directory back. (get_and_update_page_name() may have
+			// replaced page_data->pwd: free whatever is there now.)
+			g_free(page_data->pwd);
 			page_data->pwd = old_pwd;
+			old_pwd = NULL;
 			// g_debug("Restore page_data->pwd to %s", page_data->pwd);
 		}
 	}
@@ -258,6 +263,7 @@ gboolean monitor_cmdline(struct Page *page_data)
 		// g_debug("Restore page_data->page_update_method to %d!!!", page_data->page_update_method);
 	}
 
+	g_free(old_pwd);
 	g_free(new_pwd);
 
 	return TRUE;

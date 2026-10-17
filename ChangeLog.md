@@ -10,6 +10,12 @@
   VTE renamed the "beep" signal to "bell", and since VTE 0.40 letters and
   digits are always part of a word: `word_chars` still takes ranges like
   `A-Z`, and LilyTerm passes VTE the other characters.
+- The tab name and the window title follow the terminal again: the title
+  a program sets, the running command and the current directory. With
+  GTK+ 3 they never changed after a tab was opened, because a check for a
+  GTK+ 2 only value stopped the update every time.
+- A crash when a split pane closed, with the tab names updated again: the
+  current directory of a page could be freed while it was still in use.
 
 ## 2026-10-17
 

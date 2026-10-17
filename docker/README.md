@@ -47,8 +47,10 @@ For each of them it checks that
   Ctrl+Shift+N moves the focus, Ctrl+Shift+W and a pane's shell exiting
   give the space back, and the last pane closing ends LilyTerm. Keys are
   sent with `xdotool` (X11) and `wtype` (Wayland); each pane reports its own `stty size`,
-* profile settings applied to VTE (X11 only: mouse clicks, `WM_HINTS` and
-  window screenshots): a double click selects a word by `word_chars`, a
+* the window title and profile settings applied to VTE (X11 only: mouse
+  clicks, the window name, `WM_HINTS` and window screenshots): a title set
+  by the program in the terminal becomes the window title, a double click
+  selects a word by `word_chars`, a
   bell in a window without the focus sets the urgency hint (`urgent_bell`),
   and `cursor_shape` changes how the cursor looks.
 
