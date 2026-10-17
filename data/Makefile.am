@@ -5,7 +5,7 @@ copyingdir = $(datadir)/doc/$(PACKAGE)
 copying_DATA = ../COPYING
 
 changlogdir = $(datadir)/doc/$(PACKAGE)
-changlog_DATA = ../ChangeLog
+changlog_DATA = ../ChangeLog.md
 
 man_MANS=$(PACKAGE).1
 
