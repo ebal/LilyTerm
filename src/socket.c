@@ -131,18 +131,8 @@ struct sockaddr_un address = {0};
 int address_len = -1;
 GIOChannel *main_channel = NULL;
 
-#if ! GLIB_CHECK_VERSION(2,5,0)
-	// SICNE glib-2.5.0/glib/gmessages.h:g_debug()
-	#define g_debug(...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
-#endif
-#if ! GTK_CHECK_VERSION(2,23,0)
-	// END: gtk+-2.23.0/gtk/gtkmain.h: gtk_quit_add() GTK_DISABLE_DEPRECATED
-	#define g_atexit(x) gtk_quit_add(0, (GtkFunction)x, NULL)
-#endif
-#if GLIB_CHECK_VERSION(2,31,2)
 	// END: glib-2.31.2/glib/gutils.h: g_atexit () GLIB_DEPRECATED
 	#define g_atexit atexit
-#endif
 
 // it will return UNIX_SOCKET_SERVER_INITED if succeed
 Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSourceFunc read_function)

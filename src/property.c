@@ -152,25 +152,14 @@ void init_new_page(struct Window *win_data,
 		vte_terminal_set_size(VTE_TERMINAL(page_data->vte), column, row);
 
 #ifdef GEOMETRY
-#  ifdef USE_GTK2_GEOMETRY_METHOD
-	g_debug("@ init_new_page(for %p, vte = %p): Set win_data->keep_vte_size to 0x%X, and column = %ld, row = %ld",
-		win_data->window, page_data->vte, win_data->keep_vte_size, column, row);
-#  else
 	g_debug("@ init_new_page(for %p, vte = %p): Set column = %ld, row = %ld",
 		win_data->window, page_data->vte, column, row);
-#  endif
 #endif
 
 	set_vte_color(page_data->vte, use_default_vte_theme(win_data), win_data->custom_cursor_color, win_data->cursor_color,
 		      win_data->color, FALSE, (win_data->color_theme_index==(THEME-1)));
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND)
-	// set transparent
-	set_background_saturation(NULL, 0, win_data->background_saturation, page_data->vte);
-#endif
 	// other settings
-#ifdef ENABLE_SET_WORD_CHARS
 	set_vte_word_chars(page_data->vte, win_data->word_chars);
-#endif
 	vte_terminal_set_scrollback_lines(VTE_TERMINAL(page_data->vte), win_data->scrollback_lines);
 
 	// some fixed parameter
@@ -179,9 +168,7 @@ void init_new_page(struct Window *win_data,
 	// vte_terminal_set_backspace_binding (VTE_TERMINAL(page_data->vte), VTE_ERASE_ASCII_DELETE);
 	// vte_terminal_set_delete_binding (VTE_TERMINAL(page_data->vte), VTE_ERASE_ASCII_DELETE);
 	// vte_terminal_set_emulation (VTE_TERMINAL(page_data->vte), "xterm");
-#ifdef ENABLE_FIND_STRING
 	vte_terminal_search_set_wrap_around (VTE_TERMINAL(page_data->vte), TRUE);
-#endif
 
 	set_hyperlink(win_data, page_data);
 	set_cursor_blink(win_data, page_data);
@@ -189,20 +176,10 @@ void init_new_page(struct Window *win_data,
 	lilyterm_vte_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
 
 	vte_terminal_set_audible_bell (VTE_TERMINAL(page_data->vte), win_data->audible_bell);
-#ifdef ENABLE_VISIBLE_BELL
-	vte_terminal_set_visible_bell (VTE_TERMINAL(page_data->vte), win_data->visible_bell);
-#endif
 	// g_debug("init_new_page(): call set_vte_urgent_bell()");
-#ifdef ENABLE_BEEP_SINGAL
 	set_vte_urgent_bell(win_data, page_data);
-#endif
 	vte_terminal_set_backspace_binding (VTE_TERMINAL(page_data->vte), win_data->erase_binding);
-#ifdef ENABLE_CURSOR_SHAPE
 	vte_terminal_set_cursor_shape(VTE_TERMINAL(page_data->vte), win_data->cursor_shape);
-#endif
-#ifdef ENABLE_SET_EMULATION
-	vte_terminal_set_emulation (VTE_TERMINAL(page_data->vte), win_data->emulate_term);
-#endif
 }
 
 
@@ -217,14 +194,9 @@ void set_cursor_blink(struct Window *win_data, struct Page *page_data)
 	// g_debug("set_cursor_blink(): win_data->cursor_blinks = %d", win_data->cursor_blinks);
 
 
-#ifdef USE_NEW_VTE_CURSOR_BLINKS_MODE
 	vte_terminal_set_cursor_blink_mode (VTE_TERMINAL(page_data->vte), win_data->cursor_blinks);
-#else
-	vte_terminal_set_cursor_blinks (VTE_TERMINAL(page_data->vte), win_data->cursor_blinks);
-#endif
 }
 
-#ifdef ENABLE_SET_WORD_CHARS
 // word_chars: the characters that a double click selects as a word, like
 // "-A-Za-z0-9_.+!@&=/~%", where A-Z is a range and a leading - is a hyphen.
 // VTE 0.40 always selects letters and digits, and only takes the other
@@ -238,9 +210,6 @@ void set_vte_word_chars(GtkWidget *vte, const gchar *word_chars)
 #ifdef SAFEMODE
 	if (vte==NULL) return;
 #endif
-#  ifdef USE_VTE_SET_WORD_CHARS
-	vte_terminal_set_word_chars(VTE_TERMINAL(vte), word_chars);
-#  else
 	GString *exceptions = g_string_new(NULL);
 	const gchar *str = word_chars;
 	if (str && (*str == '-'))
@@ -276,9 +245,7 @@ void set_vte_word_chars(GtkWidget *vte, const gchar *word_chars)
 	// g_debug("set_vte_word_chars(): word_chars = %s, exceptions = %s", word_chars, exceptions->str);
 	vte_terminal_set_word_char_exceptions(VTE_TERMINAL(vte), exceptions->str);
 	g_string_free(exceptions, TRUE);
-#  endif
 }
-#endif
 
 void set_hyperlink(struct Window *win_data, struct Page *page_data)
 {
@@ -303,30 +270,14 @@ void set_hyperlink(struct Window *win_data, struct Page *page_data)
 			// g_debug("set_hyperlink(): match = %s", regex_str);
 			// g_free(regex_str);
 
-#ifdef USE_NEW_VTE_MATCH_ADD_GREGEX
-#  ifdef HAVE_VTE_TERMINAL_SEARCH_SET_GREGEX
-			GRegex *regex = g_regex_new (match, G_REGEX_CASELESS | G_REGEX_OPTIMIZE, 0, NULL);
-			page_data->tag[i] = vte_terminal_match_add_gregex (VTE_TERMINAL(page_data->vte), regex, 0);
-			g_regex_unref (regex);
-#  else
 			VteRegex *regex = vte_regex_new_for_match (match, -1,
 								   PCRE2_UTF | PCRE2_NO_UTF_CHECK | PCRE2_MULTILINE | PCRE2_CASELESS, NULL);
 			page_data->tag[i] = vte_terminal_match_add_regex (VTE_TERMINAL(page_data->vte), regex, 0);
 			vte_regex_unref(regex);
-#  endif
-#else
-			page_data->tag[i] = vte_terminal_match_add (VTE_TERMINAL(page_data->vte), match);
-#endif
-#if VTE_CHECK_VERSION(0,40,0)
 			// a CSS cursor name works for every GDK backend, GDK_HAND2 is a X11 cursor font glyph.
 			vte_terminal_match_set_cursor_name(VTE_TERMINAL(page_data->vte),
 							   page_data->tag[i],
 							   "pointer");
-#else
-			vte_terminal_match_set_cursor_type(VTE_TERMINAL(page_data->vte),
-							   page_data->tag[i],
-							   GDK_HAND2);
-#endif
 		}
 		page_data->match_regex_setted = TRUE;
 		// g_debug("clean_hyperlink(): set page_data->match_regex_setted = %d", page_data->match_regex_setted);
@@ -395,9 +346,6 @@ void set_vte_color(GtkWidget *vte, gboolean default_vte_color, gboolean custom_c
 			vte_terminal_set_color_background_rgba(VTE_TERMINAL(vte), &(color[0]));
 		else
 			vte_terminal_set_colors_rgba(VTE_TERMINAL(vte), &(color[COLOR-1]), &(color[0]), color, 16);
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND)
-		dirty_vte_terminal_set_background_tint_color(VTE_TERMINAL(vte), color[0]);
-#endif
 	}
 
 	if (default_vte_color | update_fg_only)
@@ -428,9 +376,7 @@ void set_page_width(struct Window *win_data, struct Page *page_data)
 #ifdef SAFEMODE
 	if ((win_data==NULL) || (page_data==NULL) || (page_data->label_text==NULL)) return;
 #endif
-#ifdef HAVE_GTK_LABEL_SET_WIDTH_CHARS
 	gtk_label_set_width_chars(GTK_LABEL(page_data->label_text), win_data->page_width);
-#endif
 }
 
 void pack_vte_and_scroll_bar_to_hbox(struct Window *win_data, struct Page *page_data)
@@ -468,10 +414,6 @@ gboolean check_show_or_hide_scroll_bar(struct Window *win_data)
 	switch (win_data->show_scroll_bar)
 	{
 		case AUTOMATIC:
-#ifdef USE_GTK2_GEOMETRY_METHOD
-			show = ! win_data->true_fullscreen;
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 			switch (win_data->window_status)
 			{
 				case WINDOW_NORMAL:
@@ -483,7 +425,6 @@ gboolean check_show_or_hide_scroll_bar(struct Window *win_data)
 				default:
 					break;
 			}
-#endif
 			break;
 		case ON:
 		case FORCE_ON:
@@ -576,10 +517,6 @@ gboolean set_background_saturation(GtkRange *range, GtkScrollType scroll, gdoubl
 
 	value = CLAMP(value, 0, 1);
 
-#  ifdef ENABLE_RGBA
-#    ifdef FORCE_ENABLE_VTE_BACKGROUND
-	G_GNUC_BEGIN_IGNORE_DEPRECATIONS;
-#    endif
 	if (win_data->use_rgba == -1)
 	{
 		if (win_data->transparent_background)
@@ -588,7 +525,6 @@ gboolean set_background_saturation(GtkRange *range, GtkScrollType scroll, gdoubl
 			vte_terminal_set_opacity(VTE_TERMINAL(vte), 65535);
 	}
 	else
-#  endif
 		vte_terminal_set_background_transparent(VTE_TERMINAL(vte), win_data->transparent_background);
 
 	// g_debug("set_background_saturation(): win_data->transparent_background = %d, value = %1.3f",
@@ -610,16 +546,12 @@ gboolean set_background_saturation(GtkRange *range, GtkScrollType scroll, gdoubl
 		else
 			vte_terminal_set_background_saturation( VTE_TERMINAL(vte), 0);
 	}
-#    ifdef FORCE_ENABLE_VTE_BACKGROUND
-	G_GNUC_END_IGNORE_DEPRECATIONS;
-#    endif
 
 	dirty_vte_terminal_set_background_tint_color(VTE_TERMINAL(page_data->vte), win_data->color[0]);
 	return FALSE;
 }
 #endif
 
-#if defined(ENABLE_RGBA) || defined(UNIT_TEST)
 gboolean set_window_opacity(GtkRange *range, GtkScrollType scroll, gdouble value, struct Window *win_data)
 {
 #ifdef DETAIL
@@ -633,16 +565,13 @@ gboolean set_window_opacity(GtkRange *range, GtkScrollType scroll, gdouble value
 	value = CLAMP(value, 0, 1);
 	if (win_data->use_rgba == -1)
 	{
-#ifdef ENABLE_RGBA
 		if (win_data->transparent_window)
 			gtk_window_set_opacity (GTK_WINDOW(win_data->window), 1-value);
 		else
 			gtk_window_set_opacity (GTK_WINDOW(win_data->window), 1);
-#endif
 	}
 	return FALSE;
 }
-#endif
 
 // set the window hints information
 void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
@@ -684,10 +613,8 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
 			hints.width_inc = 1;
 			hints.height_inc = 1;
 			break;
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 		case HINTS_SKIP_ONCE:
 			return;
-#endif
 	}
 
 	// g_debug("hints.width_inc = %d, hints.height_inc = %d",
@@ -701,7 +628,6 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
 	// }
 	// else
 	// {
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 		gint min_width = 0, min_height = 0;
 		struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(window), "Win_Data");
 		struct Page *page_data = get_page_data_from_vte(vte, win_data, -1);
@@ -712,11 +638,6 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
 		fprintf(stderr, "\033[1;37m** window_resizable(win_data %p): window = %p, vte = %p, hints_type = %d\033[0m\n",
 			win_data, window, vte, hints_type);
 #  endif
-#endif
-#ifdef USE_GTK2_GEOMETRY_METHOD
-		hints.min_width = hints.base_width + hints.width_inc;
-		hints.min_height = hints.base_height + hints.height_inc;
-#endif
 	// }
 #ifdef GEOMETRY
 	g_debug("@ hint data: hints.width_inc = %d, hints.height_inc = %d, hints.base_width = %d, "
@@ -734,7 +655,6 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
 	//			vte_terminal_get_row_count(VTE_TERMINAL(vte)));
 }
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 void get_hint_min_size(GtkWidget *notebook, GtkWidget *scrollbar, gint *min_width, gint *min_height)
 {
 #ifdef DETAIL
@@ -743,13 +663,11 @@ void get_hint_min_size(GtkWidget *notebook, GtkWidget *scrollbar, gint *min_widt
 #ifdef SAFEMODE
 	if ((scrollbar==NULL) || (scrollbar==NULL) || (min_width==NULL) || (min_height==NULL)) return;
 #endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 	gtk_widget_get_preferred_width(GTK_WIDGET(notebook), min_width, NULL);
 	gtk_widget_get_preferred_height(GTK_WIDGET(notebook), min_height, NULL);
 #  ifdef GEOMETRY
 	g_debug("@ get_hint_min_size(): Get the preferred size of notebook = %d x %d", *min_width, *min_height);
 #  endif
-#endif
 	gint stepper_size, stepper_spacing, trough_border, min_slider_length;
 	gtk_widget_style_get(GTK_WIDGET(scrollbar), "stepper-size", &stepper_size, NULL);
 	gtk_widget_style_get(GTK_WIDGET(scrollbar), "stepper-spacing", &stepper_spacing, NULL);
@@ -763,7 +681,6 @@ void get_hint_min_size(GtkWidget *notebook, GtkWidget *scrollbar, gint *min_widt
 	g_debug("@ get_hint_min_size(): ** FINAL: min_width = %d, min_height = %d", *min_width, *min_height);
 #  endif
 }
-#endif
 
 #if defined(vte_terminal_get_padding) || defined(UNIT_TEST)
 // This function is for replce the removed vte_terminal_get_padding()
@@ -775,29 +692,8 @@ void fake_vte_terminal_get_padding(VteTerminal *vte, gint *width, gint *height)
 #ifdef SAFEMODE
 	if ((vte==NULL) || (width==NULL) || (height==NULL)) return;
 #endif
-#  ifdef VTE_HAS_INNER_BORDER
-	GtkBorder *inner_border = NULL;
-	gtk_widget_style_get(GTK_WIDGET(vte), "inner-border", &inner_border, NULL);
-#    ifdef SAFEMODE
-	if (inner_border)
-	{
-#    endif
-#  ifdef SAFEMODE
-		if (width)
-#  endif
-			*width = inner_border->left + inner_border->right;
-#  ifdef SAFEMODE
-		if (height)
-#  endif
-			*height = inner_border->top + inner_border->bottom;
-#    ifdef SAFEMODE
-	}
-#    endif
-	gtk_border_free (inner_border);
-#  else
 	*width = 0;
 	*height = 0;
-#  endif
 }
 #endif
 
@@ -814,9 +710,7 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 #endif
 	// if (win_data_orig->use_rgba != win_data->use_rgba)
 	//	init_rgba(win_data);
-#ifdef ENABLE_RGBA
 	set_window_opacity (NULL, 0, win_data->window_opacity, win_data);
-#endif
 
 	init_monitor_cmdline_datas(win_data, page_data);
 
@@ -938,10 +832,8 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 							win_data->font_anti_alias);
 
 // ---- other settings for init a vte ---- //
-#ifdef ENABLE_SET_WORD_CHARS
 	if (compare_strings(win_data_orig->word_chars, win_data->word_chars, TRUE))
 		set_vte_word_chars(page_data->vte, win_data->word_chars);
-#endif
 	if (win_data_orig->show_scroll_bar != win_data->show_scroll_bar)
 		// hide_scroll_bar(win_data, page_data);
 		show_and_hide_scroll_bar(page_data, check_show_or_hide_scroll_bar(win_data));
@@ -958,14 +850,6 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 		g_object_unref(page_data->vte);
 		g_object_unref(page_data->scroll_bar);
 	}
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND)
-	if (compare_color(&(win_data_orig->color[0]), &(win_data->color[0])) ||
-	    (win_data_orig->transparent_background != win_data->transparent_background) ||
-	    (win_data_orig->background_saturation != win_data->background_saturation) ||
-	    (win_data_orig->scroll_background != win_data->scroll_background) ||
-	    compare_strings (win_data_orig->background_image, win_data->background_image, TRUE))
-		set_background_saturation (NULL, 0, win_data->background_saturation, page_data->vte);
-#endif
 	if (win_data_orig->scrollback_lines != win_data->scrollback_lines)
 		vte_terminal_set_scrollback_lines (VTE_TERMINAL(page_data->vte), win_data->scrollback_lines);
 
@@ -977,24 +861,12 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 
 	if (win_data_orig->audible_bell != win_data->audible_bell)
 		vte_terminal_set_audible_bell (VTE_TERMINAL(page_data->vte), win_data->audible_bell);
-#ifdef ENABLE_VISIBLE_BELL
-	if (win_data_orig->visible_bell != win_data->visible_bell)
-		vte_terminal_set_visible_bell (VTE_TERMINAL(page_data->vte), win_data->visible_bell);
-#endif
-#ifdef ENABLE_BEEP_SINGAL
 	if (win_data_orig->urgent_bell != win_data->urgent_bell)
 		set_vte_urgent_bell(win_data, page_data);
-#endif
 	if (win_data_orig->erase_binding != win_data->erase_binding)
 		vte_terminal_set_backspace_binding (VTE_TERMINAL(page_data->vte), win_data->erase_binding);
-#ifdef ENABLE_CURSOR_SHAPE
 	if (win_data_orig->cursor_shape != win_data->cursor_shape)
 		vte_terminal_set_cursor_shape(VTE_TERMINAL(page_data->vte), win_data->cursor_shape);
-#endif
-#ifdef ENABLE_SET_EMULATION
-	if (compare_strings(win_data_orig->emulate_term, win_data->emulate_term, TRUE))
-		vte_terminal_set_emulation (VTE_TERMINAL(page_data->vte), win_data->emulate_term);
-#endif
 }
 
 // Will return TRUE if a and b are NOT the same.
@@ -1030,40 +902,16 @@ void set_widget_thickness(GtkWidget *widget, gint thickness)
 	if (widget==NULL) return;
 #endif
 
-#ifdef USING_OLD_GTK_RC_STYLE_NEW
-
-	GtkRcStyle *rc_style = gtk_rc_style_new();
-#  ifdef SAFEMODE
-	if (rc_style)
-	{
-#  endif
-		rc_style->xthickness = rc_style->ythickness = thickness;
-		gtk_widget_modify_style(widget, rc_style);
-#  ifdef SAFEMODE
-	}
-#  endif
-	g_object_unref(rc_style);
-#else
 	GtkCssProvider *css = gtk_css_provider_new();
 	GtkStyleContext *context = gtk_widget_get_style_context(widget);
-#  ifdef HAVE_CSS_FOCUS_LINE_WIDTH
-	gchar *modified_style = g_strdup_printf("* {\n"
-						"   -GtkWidget-focus-line-width: 0;\n"
-						"   -GtkWidget-focus-padding: 0;\n"
-						"   padding: %dpx;\n"
-						"}",
-						thickness);
-#  else
 	gchar *modified_style = g_strdup_printf("* {\n"
 						"   outline-width: %dpx;\n"
 						"   padding: %dpx;\n"
 						"}",
 						thickness, thickness);
-#  endif
 	if (gtk_css_provider_load_from_data (css, modified_style, -1, NULL))
 		gtk_style_context_add_provider (context, GTK_STYLE_PROVIDER (css),
 						GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 	g_object_unref (css);
 	g_free (modified_style);
-#endif
 }

@@ -32,12 +32,8 @@
 #include <dirent.h>
 // for getpwuid()
 #include <pwd.h>
-#ifdef HAVE_GSTDIO_H
 // for g_chdir()
 #  include <glib/gstdio.h>
-#else
-#  define g_chdir chdir
-#endif
 // for GDK_WINDOW_XID
 // #include <gdk/gdkx.h>
 
@@ -53,20 +49,16 @@ void window_style_set(GtkWidget *window, GtkStyle *previous_style, struct Window
 void window_size_request(GtkWidget *window, GtkRequisition *requisition, struct Window *win_data);
 gboolean window_state_event(GtkWidget *widget, GdkEventWindowState *event, struct Window *win_data);
 #endif
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 gboolean idle_show_or_hide_tabs_bar_and_scroll_bar(struct Window *win_data);
 gboolean idle_gtk_window_fullscreen(struct Window *win_data);
 void resize_to_exist_widget(struct Window *win_data);
 void save_vte_geometry(struct Window *win_data);
 gboolean idle_to_resize_window(struct Window *win_data);
 gboolean idle_hide_and_show_tabs_bar(struct Window *win_data);
-#endif
 void window_size_allocate(GtkWidget *window, GtkAllocation *allocation, struct Window *win_data);
 gboolean window_get_focus(GtkWidget *window, GdkEventFocus *event, struct Window *win_data);
 gboolean window_lost_focus(GtkWidget *window, GdkEventFocus *event, struct Window *win_data);
-#ifdef ENABLE_PAGE_ADDED
 void notebook_page_added(GtkNotebook *notebook, GtkWidget *child, guint page_num, struct Window *win_data);
-#endif
 // void notebook_page_removed (GtkNotebook *notebook, GtkWidget *child, guint page_num, struct Window *win_data);
 void reorder_page_after_added_removed_page(struct Window *win_data, guint page_num);
 void destroy_window(struct Window *win_data);

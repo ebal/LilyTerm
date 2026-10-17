@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### DROP
+
+- GTK+ 2 and old GTK+ 3, VTE and GLib releases: LilyTerm needs GTK+ 3.22,
+  VTE 0.50 (`vte-2.91`) and GLib 2.32 or later, and `./configure` checks
+  for them. `--with-gtk` and `--enable-background` are gone: the
+  background image and transparency of VTE were removed from VTE 0.38.
+
 ### FIX
 
 - `cursor_shape`, `urgent_bell` and `word_chars` work again. They were

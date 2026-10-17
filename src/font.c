@@ -335,14 +335,7 @@ void reset_vte_size(GtkWidget *vte, gchar *new_font_name, Font_Reset_Type type)
 			// increase/decrease window size & font size for every vte
 			// g_debug("Trying to apply font %s to every vte", current_font_name);
 			// struct Page *page_data = (struct Page *)g_object_get_data(G_OBJECT(current_vte), "Page_Data");
-#ifdef USE_GTK2_GEOMETRY_METHOD
-			apply_font_to_every_vte(page_data->window, new_font_name,
-						vte_terminal_get_column_count(VTE_TERMINAL(win_data->current_vte)),
-						vte_terminal_get_row_count(VTE_TERMINAL(win_data->current_vte)));
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 			apply_font_to_every_vte( page_data->window, new_font_name, win_data->geometry_width, win_data->geometry_height);
-#endif
 			break;
 		case RESET_ALL_TO_DEFAULT:
 			// reset window size & font size for every vte
@@ -414,16 +407,6 @@ void apply_font_to_every_vte(GtkWidget *window, gchar *new_font_name, glong colu
 	// Don't need to call keep_gtk2_window_size() when fullscreen
 	switch (win_data->window_status)
 	{
-#ifdef USE_GTK2_GEOMETRY_METHOD
-		case FULLSCREEN_NORMAL:
-		case FULLSCREEN_UNFS_OK:
-#  ifdef GEOMETRY
-			g_debug("@ apply_font_to_every_vte(): Call keep_gtk2_window_size() with keep_vte_size = 0x%X",
-				win_data->keep_vte_size);
-#  endif
-			keep_gtk2_window_size (win_data, page_data->vte, GEOMETRY_CHANGING_FONT);
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 		case WINDOW_NORMAL:
 		case WINDOW_APPLY_PROFILE_NORMAL:
 #  ifdef GEOMETRY
@@ -438,7 +421,6 @@ void apply_font_to_every_vte(GtkWidget *window, gchar *new_font_name, glong colu
 			win_data->geometry_width = column;
 			win_data->geometry_height = row;
 			keep_gtk3_window_size(win_data, TRUE);
-#endif
 			break;
 		default:
 			break;
@@ -486,10 +468,6 @@ void fake_vte_terminal_set_font_from_string(GtkWidget *vte, const char *font_nam
 	if ((vte==NULL) || (font_name==NULL)) return;
 #endif
 
-#ifdef USE_VTE_TERMINAL_SET_FONT
 	PangoFontDescription *font_desc = pango_font_description_from_string(font_name);
 	vte_terminal_set_font(VTE_TERMINAL(vte), font_desc);
-#else
-	vte_terminal_set_font_from_string_full( VTE_TERMINAL(vte), font_name, anti_alias);
-#endif
 }

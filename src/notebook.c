@@ -36,18 +36,12 @@ extern struct Process_Data *process_data;
 extern gboolean force_to_quit;
 extern gboolean using_kill;
 gboolean confirm_to_execute = TRUE;
-#ifdef USE_OLD_VTE_FORK_COMMAND
-gchar *login_shell_str[] = {"-", NULL};
-#else
 gchar *login_shell_str[] = {NULL, "-", NULL};
 gchar *full_argv[] = {"/bin/sh", "/bin/sh", NULL};
-#endif
 
 static void collect_pages(GtkWidget *widget, gpointer pages);
-#ifndef USE_OLD_VTE_FORK_COMMAND
 static gboolean spawn_in_vte(GtkWidget *vte, VtePtyFlags pty_flags, const gchar *working_directory,
 			     gchar **argv, gchar **envv, GSpawnFlags spawn_flags, GPid *child_pid, GError **error);
-#endif
 
 // Set by split_page() for the duration of one add_page() call: the new vte is
 // then a new pane next to split_from, in the same tab, instead of a new tab.
@@ -72,14 +66,7 @@ gboolean page_is_split(struct Page *page_data)
 
 static GtkWidget *new_paned(GtkOrientation orientation)
 {
-#if GTK_CHECK_VERSION(2,91,0)
 	return gtk_paned_new(orientation);
-#else
-	if (orientation == GTK_ORIENTATION_HORIZONTAL)
-		return gtk_hpaned_new();
-	else
-		return gtk_vpaned_new();
-#endif
 }
 
 // Put new_child where old_child is in parent: a GtkPaned, or the tab box.
@@ -123,10 +110,8 @@ static void insert_split_pane(struct Window *win_data, struct Page *from, struct
 	page_data->page_no = from->page_no;
 	page_data->window = win_data->window;
 	page_data->notebook = win_data->notebook;
-#ifdef ENABLE_TAB_REORDER
 	// Not supported yet: dragging a split tab to another window.
 	gtk_notebook_set_tab_detachable(GTK_NOTEBOOK(win_data->notebook), page_data->tab_box, FALSE);
-#endif
 	if (page_data->pid > 0) monitor_cmdline(page_data);
 	update_window_hint(win_data, page_data);
 }
@@ -163,10 +148,8 @@ static void remove_split_pane(struct Window *win_data, struct Page *page_data)
 		win_data->current_vte = NULL;
 		gtk_widget_grab_focus(next->vte);
 	}
-#ifdef ENABLE_TAB_REORDER
 	if (! page_is_split(next))
 		gtk_notebook_set_tab_detachable(GTK_NOTEBOOK(win_data->notebook), next->tab_box, TRUE);
-#endif
 	update_window_hint(win_data, next);
 }
 
@@ -379,14 +362,6 @@ struct Page *add_page(struct Window *win_data,
 #endif
 		environ_str = g_string_append(environ_str, "\t");
 
-#ifdef ENABLE_SET_EMULATION
-#  ifdef SAFEMODE
-	if (win_data->emulate_term == NULL)
-		g_string_append_printf (environ_str, "TERM=xterm");
-	else
-#  endif
-		g_string_append_printf (environ_str, "TERM=%s", win_data->emulate_term);
-#endif
 	// set colorterm
 	g_string_append_printf (environ_str, "\tCOLORTERM=lilyterm");
 
@@ -454,11 +429,7 @@ struct Page *add_page(struct Window *win_data,
 		lilyterm_vte_set_encoding(VTE_TERMINAL(page_data->vte), page_data->encoding_str);
 	//g_debug("The encoding of new vte is %s",
 	//	vte_terminal_get_encoding(VTE_TERMINAL(page_data->vte)));
-#ifdef USE_GTK_SCROLLABLE
 	page_data->adjustment = gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(page_data->vte));
-#else
-	page_data->adjustment = vte_terminal_get_adjustment(VTE_TERMINAL(page_data->vte));
-#endif
 // ---- Execute programs in the vte ---- //
 
 	//if (command_line==NULL)
@@ -504,34 +475,6 @@ struct Page *add_page(struct Window *win_data,
 	gboolean argv_need_be_free = FALSE;
 	gchar **argv = get_argv(win_data, &argv_need_be_free);
 	gchar **final_argv = argv;
-#ifdef USE_OLD_VTE_FORK_COMMAND
-	// pid_t vte_terminal_fork_command (VteTerminal *terminal,
-	//				    const char *command,
-	//				    char **argv,
-	//				    char **envv,
-	//				    const char *working_directory,
-	//				    gboolean lastlog,
-	//				    gboolean utmp,
-	//				    gboolean wtmp);
-	// if (win_data->command==NULL) win_data->command = win_data->shell;
-	// if (win_data->command==NULL) win_data->command = "/bin/sh";
-
-	if ((win_data->argv==NULL) && (win_data->login_shell)) final_argv = login_shell_str;
-
-	// g_debug("win_data->command = %s", win_data->command);
-	// print_array("argv = ", argv);
-	// print_array("new_environs = ", new_environs);
-	// g_debug("page_data->pwd = %s", page_data->pwd);
-
-	page_data->pid = vte_terminal_fork_command(VTE_TERMINAL(page_data->vte),
-						   win_data->command,
-						   final_argv,
-						   new_environs,
-						   page_data->pwd,
-						   win_data->utmp,
-						   win_data->utmp,
-						   win_data->utmp);
-#else
 	// gboolean vte_terminal_spawn_sync (VteTerminal *terminal,
 	//				     VtePtyFlags pty_flags,
 	//				     const char *working_directory,
@@ -607,7 +550,6 @@ struct Page *add_page(struct Window *win_data,
 				  &error);
 	if (final_argv_need_be_free) g_strfreev(final_argv);
 	login_shell_str[0] = NULL;
-#endif
 	if (argv_need_be_free) g_strfreev(argv);
 	// environ = old_environ;
 
@@ -655,14 +597,7 @@ struct Page *add_page(struct Window *win_data,
 	page_data->label_text = gtk_label_new(win_data->page_name);
 	gtk_box_pack_start(GTK_BOX(page_data->label), page_data->label_text, TRUE, TRUE, 0);
 	set_page_width(win_data, page_data);
-#ifdef HAVE_GTK_LABEL_SET_ELLIPSIZE
 	gtk_label_set_ellipsize(GTK_LABEL(page_data->label_text), PANGO_ELLIPSIZE_MIDDLE);
-#endif
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	// when dragging the tab on a vte, or dragging a vte to itself, may change the size of vte.
-	g_signal_connect(G_OBJECT(page_data->label_text), "size_request",
-				 G_CALLBACK(label_size_request), page_data);
-#endif
 	page_data->label_button = gtk_button_new();
 	set_widget_thickness(page_data->label_button, 0);
 	GtkWidget *image = gtk_image_new_from_stock(GTK_FAKE_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
@@ -733,11 +668,7 @@ struct Page *add_page(struct Window *win_data,
 	// run_once only = TRUE when initing LilyTerm in main().
 	init_new_page(win_data, page_data, column, row);
 
-#ifdef USE_GTK_SCROLLABLE
 	page_data->scroll_bar = gtk_vscrollbar_new(gtk_scrollable_get_vadjustment(GTK_SCROLLABLE(page_data->vte)));
-#else
-	page_data->scroll_bar = gtk_vscrollbar_new(vte_terminal_get_adjustment(VTE_TERMINAL(page_data->vte)));
-#endif
 	pack_vte_and_scroll_bar_to_hbox(win_data, page_data);
 	// g_debug("add_page(): check_show_or_hide_scroll_bar(win_data) = %d", check_show_or_hide_scroll_bar(win_data));
 	show_and_hide_scroll_bar(page_data, check_show_or_hide_scroll_bar(win_data));
@@ -817,9 +748,6 @@ struct Page *add_page(struct Window *win_data,
 						      page_data->tab_box, page_data->label);
 		// g_debug("Got page_data->page_no = %d", page_data->page_no);
 
-#ifdef DISABLE_PAGE_ADDED
-		notebook_page_added (GTK_NOTEBOOK(page_data->notebook), NULL, page_data->page_no, win_data);
-#endif
 		// g_debug("The new page no is %d", page_data->page_no);
 		// move the page to next to original page
 		if (page_data_prev && add_to_next)
@@ -866,29 +794,13 @@ PAGE_IN_PLACE:
 
 	// page_data->pid < 0: Error occurred when creating sub process.
 	// FIXME: how about "current_vte != page_data->vte"??
-#ifdef USE_OLD_VTE_FORK_COMMAND
-	if (page_data->pid < 0)
-#else
 	if (fork_stats==0)
-#endif
 	{
 		extern gchar *init_encoding;
 		gchar *arg_str = NULL;
 		if (win_data->argv) arg_str = convert_array_to_string(win_data->argv, ' ');
 
 		// g_debug("win_data->runtime_encoding = %s", win_data->runtime_encoding);
-#ifdef USE_OLD_VTE_FORK_COMMAND
-		// g_debug("Error occurred when creating sub process");
-		// g_debug("arg_str = %s", arg_str);
-		// g_debug("init_encoding = %s", init_encoding);
-		// g_debug("win_data->runtime_encoding = %s", win_data->runtime_encoding);
-		// g_debug("page_data->encoding_str = %s", page_data->encoding_str);
-		if ((compare_strings(init_encoding, runtime_locale_encoding, FALSE)) ||
-		    (compare_strings(init_encoding, "UTF-8", FALSE)))
-			create_utf8_child_process_failed_dialog (win_data, arg_str, runtime_locale_encoding);
-		else
-			create_child_process_failed_dialog(win_data, arg_str, win_data->runtime_encoding);
-#else
 		if ((compare_strings(init_encoding, runtime_locale_encoding, FALSE)) ||
 		    (compare_strings(init_encoding, "UTF-8", FALSE)))
 			create_utf8_child_process_failed_dialog (win_data, arg_str, runtime_locale_encoding);
@@ -904,7 +816,6 @@ PAGE_IN_PLACE:
 		if (error)
 #endif
 			g_clear_error(&error);
-#endif
 		g_free(arg_str);
 		clear_arg(win_data);
 		close_page (page_data->vte, CLOSE_TAB_NORMAL);
@@ -1063,17 +974,6 @@ void vte_size_allocate (GtkWidget *vte, GtkAllocation *allocation, struct Page *
 #  ifdef DETAIL
 	g_debug("! Launch vte_size_allocate() with vte = %p, page_data = %p", vte, page_data);
 #  endif
-#if defined (USE_GTK2_GEOMETRY_METHOD) && defined (GEOMETRY)
-	glong column = vte_terminal_get_column_count(VTE_TERMINAL(vte));
-	glong row = vte_terminal_get_row_count(VTE_TERMINAL(vte));
-	if ((column < 80) || (row < 24))
-	{
-		struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(page_data->window), "Win_Data");
-		fprintf(stderr, "\033[1;31m!! vte_size_allocate(window %p)(vte %p): the allocated size is %ld x %ld\033[0m\n",
-			win_data->window, vte, column, row);
-	}
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 	// fprintf(stderr, "\033[1;36m** vte_size_allocate(): the allocated size is %d x %d (%ldx%ld)\033[0m\n",
 	//	allocation->width, allocation->height,
 	//	vte_terminal_get_column_count(VTE_TERMINAL(vte)),
@@ -1101,7 +1001,6 @@ void vte_size_allocate (GtkWidget *vte, GtkAllocation *allocation, struct Page *
 			win_data, vte, allocation->width, allocation->height, column, row, win_data->geometry_width, win_data->geometry_height);
 	}
 	else
-#endif
 		widget_size_allocate (vte, allocation, "vte");
 }
 #endif
@@ -1247,11 +1146,9 @@ gboolean close_page(GtkWidget *vte, gint close_type)
 		win_data->current_vte = oldvte;
 	}
 
-#ifdef ENABLE_PROFILE
 	if (win_data->auto_save &&
 	    (gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook))==1))
 		save_user_settings(NULL, win_data);
-#endif
 
 	// remove timeout event for page_shows_current_cmdline
 	// if (page_data->page_shows_current_cmdline ||
@@ -1284,9 +1181,7 @@ gboolean close_page(GtkWidget *vte, gint close_type)
 	// One pane of a split tab: only that pane goes away, the tab stays.
 	if (page_is_split(page_data))
 	{
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 		gtk_border_free(page_data->border);
-#endif
 		remove_split_pane(win_data, page_data);
 		g_free(page_data->page_name);
 		g_free(page_data->pid_cmdline);
@@ -1313,9 +1208,7 @@ gboolean close_page(GtkWidget *vte, gint close_type)
 			gtk_notebook_set_current_page(GTK_NOTEBOOK(page_data->notebook), page_data->page_no+1);
 	}
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 	gtk_border_free(page_data->border);
-#endif
 	g_free(page_data->page_name);
 
 	// Note that due to historical reasons,
@@ -1661,10 +1554,8 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 			// query done
 			win_data->checking_menu_item = FALSE;
 		}
-#ifdef ENABLE_PROFILE
 		// Update the profile list
 		refresh_profile_list(win_data);
-#endif
 		win_data->checking_menu_item = TRUE;
 #ifdef SAFEMODE
 		if (win_data->current_menuitem_theme)
@@ -1674,28 +1565,23 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 		if (win_data->current_menuitem_erase_binding)
 #endif
 			gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->current_menuitem_erase_binding), TRUE);
-#ifdef ENABLE_CURSOR_SHAPE
 #  ifdef SAFEMODE
 		if (win_data->current_menuitem_cursor_shape)
 #  endif
 			gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->current_menuitem_cursor_shape), TRUE);
-#endif
 #ifdef SAFEMODE
 		if (win_data->menuitem_invert_color)
 #endif
 			gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_invert_color), win_data->invert_color);
 		// g_debug("vte_button_press(): set win_data->menuitem_invert_color(%p) to %d", win_data->menuitem_invert_color, win_data->invert_color);
-#ifdef ENABLE_PROFILE
 #  ifdef SAFEMODE
 		if (win_data->menuitem_auto_save)
 #  endif
 			gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_auto_save), win_data->auto_save);
-#endif
 		win_data->checking_menu_item = FALSE;
 
 		if (win_data->show_background_menu)
 		{
-#ifdef ENABLE_RGBA
 			if (win_data->use_rgba == -1)
 #  ifdef SAFEMODE
 				if (win_data->menuitem_trans_win)
@@ -1704,22 +1590,12 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 					//	win_data->transparent_window;
 					gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_trans_win),
 									win_data->transparent_window);
-#endif
 			// The following codes is only working with vte > 0.19
 			// gint transparent;
 			// g_object_get (vte,
 			//	      "background-transparent", &transparent,
 			//	      NULL);
 			// GTK_CHECK_MENU_ITEM(win_data->menuitem_trans_bg)->active = transparent;
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND)
-#  ifdef SAFEMODE
-			if (win_data->menuitem_trans_bg)
-#  endif
-				// GTK_CHECK_MENU_ITEM(win_data->menuitem_trans_bg)->active =
-				//	win_data->transparent_background;
-				gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_trans_bg),
-								win_data->transparent_background);
-#endif
 		}
 
 		if (win_data->show_copy_paste_menu)
@@ -1775,7 +1651,6 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 				// GTK_CHECK_MENU_ITEM(win_data->menuitem_dim_text)->active = win_data->dim_text;
 				gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_dim_text),
 								win_data->dim_text);
-#ifdef ENABLE_RGBA
 		if ((win_data->dim_window) && (win_data->use_rgba == -1))
 #  ifdef SAFEMODE
 			if (win_data->menuitem_dim_window)
@@ -1783,8 +1658,6 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 				// GTK_CHECK_MENU_ITEM(win_data->menuitem_dim_window)->active = win_data->dim_window;
 				gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_dim_window),
 								win_data->dim_window);
-#endif
-#ifdef USE_NEW_VTE_CURSOR_BLINKS_MODE
 		gboolean blinks, blinks_original = win_data->cursor_blinks;
 		if (win_data->cursor_blinks ==0)
 			g_object_get(gtk_widget_get_settings(vte), "gtk-cursor-blink", &blinks, NULL);
@@ -1793,11 +1666,6 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 		// GTK_CHECK_MENU_ITEM(win_data->menuitem_cursor_blinks)->active = blinks;
 		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_cursor_blinks), blinks);
 		win_data->cursor_blinks = blinks_original;
-#else
-		// GTK_CHECK_MENU_ITEM(win_data->menuitem_cursor_blinks)->active = win_data->cursor_blinks;
-		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_cursor_blinks),
-						win_data->cursor_blinks);
-#endif
 		// GTK_CHECK_MENU_ITEM(win_data->menuitem_allow_bold_text)->active = win_data->allow_bold_text;
 		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_allow_bold_text),
 						win_data->allow_bold_text);
@@ -1813,16 +1681,9 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 		// GTK_CHECK_MENU_ITEM(win_data->menuitem_audible_bell)->active = win_data->audible_bell;
 		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_audible_bell),
 						win_data->audible_bell);
-#ifdef ENABLE_VISIBLE_BELL
-		// GTK_CHECK_MENU_ITEM(win_data->menuitem_visible_bell)->active = win_data->visible_bell;
-		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_visible_bell),
-						win_data->visible_bell);
-#endif
-#ifdef ENABLE_BEEP_SINGAL
 		// GTK_CHECK_MENU_ITEM(win_data->menuitem_urgent_bell)->active = win_data->urgent_bell;
 		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_urgent_bell),
 						win_data->urgent_bell);
-#endif
 		if (gtk_notebook_get_show_tabs GTK_NOTEBOOK(win_data->notebook))
 		{
 			gtk_widget_hide (win_data->menuitem_show_tabs_bar);
@@ -1842,13 +1703,9 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 			//	(win_data->always_show_tabs_bar==1)? 1 : 0;
 		}
 
-#if GTK_CHECK_VERSION(3,22,0)
 		// gtk_menu_popup() is deprecated since gtk+ 3.22. And only with the
 		// triggering event at hand can a Wayland compositor place the menu.
 		gtk_menu_popup_at_pointer(GTK_MENU(win_data->menu), (GdkEvent *)event);
-#else
-		gtk_menu_popup(GTK_MENU(win_data->menu), NULL, NULL, NULL, NULL, event->button, event->time);
-#endif
 		return TRUE;
 	}
 	else if (event->button == 1)
@@ -2179,23 +2036,7 @@ gchar *get_url(GdkEventButton *event, struct Page *page_data, gint *tag)
 #ifdef SAFEMODE
 	if ((page_data==NULL) || (event==NULL)) return NULL;
 #endif
-#ifdef VTE_TERMINAL_MATCH_CHECK
-	gint pad_x=0, pad_y=0;
-	vte_terminal_get_padding(VTE_TERMINAL(page_data->vte), &pad_x, &pad_y);
-	pad_x /= 2;
-	pad_y /= 2;
-	// g_debug("pad_x = %d, pad_y = %d", pad_x, pad_y);
-	return vte_terminal_match_check(VTE_TERMINAL(page_data->vte),
-					(event->x - pad_x) /
-						vte_terminal_get_char_width(
-							VTE_TERMINAL(page_data->vte)),
-					(event->y - pad_y) /
-						vte_terminal_get_char_height(
-							VTE_TERMINAL(page_data->vte)),
-					tag);
-#else
 	return vte_terminal_match_check_event (VTE_TERMINAL(page_data->vte), (GdkEvent*)event, tag);
-#endif
 }
 
 void page_data_dup(struct Page *page_data_prev, struct Page *page_data)
@@ -2464,7 +2305,6 @@ gchar *get_lang_str_from_locale(const gchar *locale, const gchar *split)
 	return language;
 }
 
-#ifndef USE_OLD_VTE_FORK_COMMAND
 // The child: the pty is its controlling terminal, and it starts with the
 // default signal handling (GLib and GTK+ may block or ignore some).
 static void spawn_child_setup(gpointer pty)
@@ -2516,4 +2356,3 @@ static gboolean spawn_in_vte(GtkWidget *vte, VtePtyFlags pty_flags, const gchar 
 	g_object_unref(pty);
 	return spawned;
 }
-#endif

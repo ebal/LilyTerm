@@ -48,12 +48,10 @@ struct Dialog
 	GtkWidget *box;
 	GtkWidget *title_label;
 
-#ifdef ENABLE_RGBA
 	gboolean original_transparent_window;
 	gdouble original_window_opacity;
 	gdouble original_window_opacity_inactive;
 	gboolean original_dim_window;
-#endif
 	GtkWidget *custom_cursor_color_checkbox;
 	gboolean original_custom_cursor_color;
 	gboolean original_transparent_background;
@@ -134,9 +132,7 @@ gchar *deal_dialog_key_press_join_string(StrAddr **value, gchar *separator, gcha
 gboolean clean_model_foreach(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer userdata);
 void recover_page_colors(GtkWidget *dialog, GtkWidget *window, GtkWidget *notebook);
 gboolean set_ansi_color(GtkRange *range, GtkScrollType scroll, gdouble value, GtkWidget *vte);
-#if defined(USE_GTK_COLOR_CHOOSER) || defined(UNIT_TEST)
 void adjust_vte_color_sample(GtkColorButton* color_button, gint color_index);
-#endif
 void adjust_vte_color(GtkColorChooser *colorselection, GdkRGBA *color, GtkWidget *vte);
 void set_new_ansi_color(GtkWidget *vte, GdkRGBA color_orig[COLOR], GdkRGBA color[COLOR], gdouble color_brightness, gboolean invert_color,
 			gboolean default_vte_color, gboolean custom_cursor_color, GdkRGBA cursor_color, gboolean dim_fg_color);

@@ -74,8 +74,8 @@ The static binary cannot load plugins. Because of this:
 
 #### Requirements
 
-- GTK+ 3 (`gtk+-3.0`) and VTE for GTK+ 3 (`vte-2.91`), with their
-  development files
+- GTK+ 3.22 or later (`gtk+-3.0`), VTE 0.50 or later for GTK+ 3
+  (`vte-2.91`) and GLib 2.32 or later, with their development files
 - A C compiler, `make`, `pkg-config` and `gettext`
 
 On Arch Linux, install the `gtk3`, `vte3` and `gettext` packages. On

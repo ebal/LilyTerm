@@ -55,19 +55,6 @@ int main( int   argc,
 	  char *argv[])
 #endif
 {
-#if defined(USE_GTK2_GEOMETRY_METHOD) && defined (GEOMETRY)
-	g_debug("GEOMETRY_NONE  = 0x%X", GEOMETRY_NONE );
-	g_debug("GEOMETRY_UPDATE_PAGE_NAME = 0x%X", GEOMETRY_UPDATE_PAGE_NAME);
-	g_debug("GEOMETRY_UPDATE_PAGE_NAME_MASK = 0x%X", GEOMETRY_UPDATE_PAGE_NAME_MASK);
-	g_debug("GEOMETRY_CHANGING_THEME = 0x%X", GEOMETRY_CHANGING_THEME);
-	g_debug("GEOMETRY_SHOW_HIDE_SCROLL_BAR = 0x%X", GEOMETRY_SHOW_HIDE_SCROLL_BAR);
-	g_debug("GEOMETRY_SHOW_HIDE_TAB_BAR = 0x%X", GEOMETRY_SHOW_HIDE_TAB_BAR);
-	g_debug("GEOMETRY_CHANGING_FONT = 0x%X", GEOMETRY_CHANGING_FONT);
-
-	g_debug("GEOMETRY_NEEDS_RUN_SIZE_REQUEST_MASK = 0x%X", GEOMETRY_NEEDS_RUN_SIZE_REQUEST_MASK);
-	g_debug("GEOMETRY_NEEDS_RUN_SIZE_REQUEST_AGAIN_MASK = 0x%X", GEOMETRY_NEEDS_RUN_SIZE_REQUEST_AGAIN_MASK);
-	g_debug("GEOMETRY_HAD_BEEN_RESIZED_ONCE_MASK = 0x%X", GEOMETRY_HAD_BEEN_RESIZED_ONCE_MASK);
-#endif
 	// command_line_path = argv[0];
 
 	// g_debug ("argc = %d", argc);
@@ -85,10 +72,8 @@ int main( int   argc,
 #ifdef OUT_OF_MEMORY
 #  undef g_strdup_printf
 #endif
-#ifdef ENABLE_PROFILE
 	const gchar *user_config_dir = g_get_user_config_dir();
 	if (user_config_dir) profile_dir = g_strdup_printf("%s/%s", user_config_dir, BINARY);
-#endif
 #ifdef OUT_OF_MEMORY
 	#define g_strdup_printf(...) NULL
 #endif
@@ -219,9 +204,7 @@ int main( int   argc,
 		// The argv of "main" LilyTerm can't be free.
 		// Set it to NULL here to avoid double_free().
 		argv=NULL;
-#ifdef ENABLE_X_STARTUP_NOTIFICATION_ID
 		gdk_notify_startup_complete_with_id(PACKAGE);
-#endif
 		// g_debug("main(2): gtk_main_level = %d, g_list_length(window_list) = %d", gtk_main_level(), g_list_length(window_list));
 		if (! gtk_main_level())
 			gtk_main();

@@ -1,9 +1,9 @@
 #!/bin/sh
 
-GLIB_MIN_VERSION="2.4.7"
-GTK_MIN_VERSION="2.4.10"
-GTK_COMMEND_VERSION="2.11"
-VTE_MIN_VERSION="0.11.11"
+# The oldest versions that LilyTerm builds against
+GLIB_MIN_VERSION="2.32"
+GTK_MIN_VERSION="3.22"
+VTE_MIN_VERSION="0.50"
 
 PACKAGE=`grep "^PACKAGE = " .default | awk -F ' = ' '{print $2}'`
 PREFIX=`grep "^PREFIX = " .default | awk -F ' = ' '{print $2}'`
@@ -17,16 +17,15 @@ if [ "$UNAME" = "FreeBSD" -o "$UNAME" = "OpenBSD" -o "$UNAME" = "NetBSD" ]; then
 fi
 
 GTK=gtk+-3.0
+VTE=vte-2.91
 
 VERBOSITY=N
 DEBUG=N
 NLS=Y
 SAFEMODE=Y
-BACKGROUND=N
 STRIP=N
 GNOME_CONTROL_CENTER=Y
 
-GTK_SPC=1
 NLS_SPC=0
 GNOME_CONTROL_CENTER_SPC=0
 
@@ -124,15 +123,11 @@ if [ "$1" = "-h" -o "$1" = "--help" -o "$1" = "-help" ]; then
   $ECHO "  `INFO '--prefix=PREFIX'`     : install in PREFIX (e.g. /usr) `NORMAL '[default: /usr/local]'`"
   $ECHO "  `INFO '--sysconfdir=ETCDIR'` : system conf file install dir `NORMAL '[default: $PREFIX/etc/xdg]'`"
   $ECHO ""
-  $ECHO "Optional Packages:"
-  $ECHO "  `INFO '--with-gtk=2.0|3.0'`  : which gtk+ version to compile against `NORMAL '[default: 3.0]'`"
-  $ECHO ""
   $ECHO "Optional Features:"
   $ECHO "  `INFO '--enable-verbosity'`  : enable verbosity output `NORMAL '[default: disable]'`"
   $ECHO "  `INFO '--enable-debug'`      : enable debug mode `NORMAL '[default: disable]'`"
   $ECHO "  `INFO '--disable-nls'`       : disable Native Language Support `NORMAL '[default: enable]'`"
   $ECHO "  `INFO '--disable-safe-mode'` : disable run in safe mode `NORMAL '[default: enable]'`"
-  $ECHO "  `INFO '--enable-background'` : enable background for vte > 0.34.8 `NORMAL '[default: disable]'`"
   $ECHO ""
   $ECHO "run \``IMPORTANT 'make clean'`' to clean $PACKAGE builded files."
   $ECHO "run \``IMPORTANT 'make distclean'`' to clean $PACKAGE builded and configure files."
@@ -171,14 +166,6 @@ for opt do
     --sysconfdir=*)
       ETCDIR=`$ECHO $opt | cut -d '=' -f 2`
       ;;
-    --with-gtk=2.0)
-      GTK=gtk+-2.0
-      GTK_SPC=1
-      ;;
-    --with-gtk=3.0)
-      GTK=gtk+-3.0
-      GTK_SPC=1
-      ;;
     --enable-nls)
       NLS_SPC=1
       ;;
@@ -187,9 +174,6 @@ for opt do
       ;;
     --disable-safe-mode)
       SAFEMODE=N
-      ;;
-    --enable-background)
-      BACKGROUND=Y
       ;;
     --enable-strip)
       STRIP=Y
@@ -220,108 +204,25 @@ fi
 
 # ---- GTK ---- #
 
-if [ "$GTK" = "gtk+-2.0" ]; then
-  CHECK_MESSAGE 'GTK+2'
-else
-  CHECK_MESSAGE 'GTK+3'
-fi
-
-$PKGCONFIG --cflags $GTK > /dev/null 2>&1
+CHECK_MESSAGE "GTK+3 >= $GTK_MIN_VERSION"
+$PKGCONFIG --exists "$GTK >= $GTK_MIN_VERSION" > /dev/null 2>&1
 if [ $? != 0 ]; then
-  if [ "$GTK" = "gtk+-2.0" -a $GTK_SPC -eq 0 ]; then
-    $ECHO "[NO]. Trying GTK+3 ..."
-    GTK=gtk+-3.0
-    CHECK_MESSAGE 'GTK+3'
-    $PKGCONFIG --cflags $GTK > /dev/null 2>&1
-    if [ $? != 0 ]; then
-      ERR "[NG]"
-      PACKAGE_MESSAGE "libgtk2.0-dev/libgtk-3-dev"
-      exit 1
-    else
-      INFO "[OK]\n"
-    fi
-  else
-    if [ "$GTK" = "gtk+-2.0" ]; then
-      ERR "[NG]"
-      PACKAGE_MESSAGE "libgtk2.0-dev"
-    else
-      ERR "[NG]"
-      PACKAGE_MESSAGE "libgtk-3-dev"
-    fi
-    exit 1
-  fi
-else
-  if [ "$GTK" = gtk+-2.0 ]; then
-    $PKGCONFIG --exists "gtk+-2.0 >= $GTK_MIN_VERSION" > /dev/null 2>&1
-    if [ $? != 0 ]; then
-      ERR "[NG]"
-      VERSION_MESSAGE "\n\n" "Gtk+2" "$GTK_MIN_VERSION"
-      exit 1
-    fi
-
-    $PKGCONFIG --exists "gtk+-2.0 < $GTK_COMMEND_VERSION" > /dev/null 2>&1
-    if [ $? != 0 ]; then
-      INFO "[OK]\n"
-    else
-      WARN "[OK]. But using Gtk+2 > $GTK_COMMEND_VERSION is recommended to build $PACKAGE.\n"
-    fi
-  else
-    INFO "[OK].\n"
-  fi
+  ERR "[NG]"
+  PACKAGE_MESSAGE "libgtk-3-dev"
+  exit 1
 fi
-
+INFO "[OK]\n"
 
 # ---- VTE ---- #
 
-if [ "$GTK" = 'gtk+-2.0' ]; then
-  CHECK_MESSAGE 'VTE'
-  VTE=vte
-else
-  CHECK_MESSAGE 'VTE 0.38'
-  VTE=vte-2.91
-fi
-
-$PKGCONFIG --cflags $VTE > /dev/null 2>&1
+CHECK_MESSAGE "VTE >= $VTE_MIN_VERSION"
+$PKGCONFIG --exists "$VTE >= $VTE_MIN_VERSION" > /dev/null 2>&1
 if [ $? != 0 ]; then
-  if [ "$GTK" = 'gtk+-2.0' ]; then
-    ERR "[NG]"
-    PACKAGE_MESSAGE "libvte-dev"
-    exit 1
-  else
-    $ECHO "[NO]. Trying VTE 0.29 ..."
-    VTE=vte-2.90
-    CHECK_MESSAGE 'VTE 0.29'
-    $PKGCONFIG --cflags $VTE > /dev/null 2>&1
-    if [ $? != 0 ]; then
-      ERR "[NG]"
-      PACKAGE_MESSAGE "libvte-2.90-dev" "libvte-2.91-dev"
-      exit 1
-    else
-      INFO "[OK]\n"
-    fi
-  fi
-else
-  if [ "$VTE" = 'vte' ]; then
-    $PKGCONFIG --exists "vte >= $VTE_MIN_VERSION" > /dev/null 2>&1
-    if [ $? != 0 ]; then
-      ERR "[NG]"
-      VERSION_MESSAGE "\n\n" "VTE" "$VTE_MIN_VERSION"
-      exit 1
-    fi
-  fi
-
-  INFO "[OK]\n"
+  ERR "[NG]"
+  PACKAGE_MESSAGE "libvte-2.91-dev"
+  exit 1
 fi
-
-$PKGCONFIG --exists "$VTE < 0.34.8" > /dev/null 2>&1
-if [ $? = 0 ]; then
-  BACKGROUND=N
-fi
-
-$PKGCONFIG --exists "$VTE >= 0.38.0" > /dev/null 2>&1
-if [ $? = 0 ]; then
-  BACKGROUND=N
-fi
+INFO "[OK]\n"
 
 # ---- NLS ---- #
 
@@ -386,9 +287,6 @@ if [ "$SAFEMODE" = 'N' ]; then
 else
   $ECHO "  SAFEMODE   = $SAFEMODE"
 fi
-if [ "$BACKGROUND" = 'Y' ]; then
-  IMPORTANT "  BACKGROUND = $BACKGROUND\n"
-fi
 if [ "$STRIP" = 'Y' ]; then
   IMPORTANT "  STRIP      = $STRIP\n"
 fi
@@ -452,7 +350,6 @@ $ECHO "VERBOSITY = $VERBOSITY" >> .config
 $ECHO "DEBUG = $DEBUG" >> .config
 $ECHO "NLS = $NLS" >> .config
 $ECHO "SAFEMODE = $SAFEMODE" >> .config
-$ECHO "FORCE_ENABLE_VTE_BACKGROUND = $BACKGROUND" >> .config
 $ECHO "STRIP = $STRIP" >> .config
 $ECHO "CC = $CC" >> .config
 $ECHO "CPPFLAGS = $CPPFLAGS" >> .config

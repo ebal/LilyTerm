@@ -21,7 +21,6 @@
 extern gboolean proc_exist;
 extern gchar *proc_file_system_path;
 
-#ifdef USE_GTK_ALT_DIALOG_BUTTON_ORDER
 gboolean gtk_alt_dialog_button_order(void)
 {
 #ifdef DETAIL
@@ -31,7 +30,6 @@ gboolean gtk_alt_dialog_button_order(void)
 	g_object_get (gtk_settings_get_default(), "gtk-alternative-button-order", &result, NULL);
 	return result;
 }
-#endif
 
 gboolean check_if_proc_dir_exist(gchar *proc_dir)
 {
@@ -792,9 +790,6 @@ gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line)
 GdkRGBA convert_color_to_rgba(GdkColor color)
 {
 	GdkRGBA rgba;
-#ifndef USE_GDK_RGBA
-	rgba.pixel = 0;
-#endif
 	rgba.red = (gdouble)(color.red>>8)/0xFF;
 	rgba.green = (gdouble)(color.green>>8)/0xFF;
 	rgba.blue = (gdouble)(color.blue>>8)/0xFF;
@@ -817,20 +812,14 @@ GdkColor convert_rgba_to_color(GdkRGBA rgba)
 	return color;
 }
 
-#ifdef ENABLE_GDKCOLOR_TO_STRING
 // The returned string should be freed when no longer needed.
 gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba)
 {
 #ifdef SAFEMODE
 	if (rgba==NULL) return NULL;
 #endif
-#  ifdef USE_GDK_RGBA
 	return g_strdup_printf("#%04x%04x%04x", (unsigned int)(rgba->red*0xFFFF), (unsigned int)(rgba->green*0xFFFF), (unsigned int)(rgba->blue*0xFFFF));
-#  else
-	return gdk_color_to_string(rgba);
-#  endif
 }
-#endif
 
 #if defined(GEOMETRY) || defined(UNIT_TEST)
 void widget_size_allocate (GtkWidget *widget, GtkAllocation *allocation, gchar *name)
@@ -872,12 +861,8 @@ GtkWidget *dirty_gtk_vbox_new(gboolean homogeneous, gint spacing)
 #ifdef DETAIL
 	g_debug("! Launch dirty_gtk_vbox_new() with homogeneous = %d, spacing = %d", homogeneous, spacing);
 #endif
-#if GTK_CHECK_VERSION(2,90,0)
 	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, spacing);
 	gtk_box_set_homogeneous(GTK_BOX(box), homogeneous);
-#else
-	GtkWidget *box = gtk_vbox_new(homogeneous, spacing);
-#endif
 	return box;
 }
 
@@ -886,12 +871,8 @@ GtkWidget *dirty_gtk_hbox_new(gboolean homogeneous, gint spacing)
 #ifdef DETAIL
 	g_debug("! Launch dirty_gtk_hbox_new() with homogeneous = %d, spacing = %d", homogeneous, spacing);
 #endif
-#if GTK_CHECK_VERSION(2,90,0)
 	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, spacing);
 	gtk_box_set_homogeneous(GTK_BOX(box), homogeneous);
-#else
-	GtkWidget *box = gtk_hbox_new(homogeneous, spacing);
-#endif
 	return box;
 }
 
@@ -904,20 +885,10 @@ void dirty_vte_terminal_set_background_tint_color(VteTerminal *vte, const GdkRGB
 #  ifdef SAFEMODE
 	if (vte==NULL) return;
 #  endif
-#  ifdef FORCE_ENABLE_VTE_BACKGROUND
-	G_GNUC_BEGIN_IGNORE_DEPRECATIONS;
-#  endif
-#  ifdef USE_GDK_RGBA
 #    ifndef USE_FAKE_FUNCTIONS
 	GdkColor color = convert_rgba_to_color(rgba);
 #    endif
 	vte_terminal_set_background_tint_color(VTE_TERMINAL(vte), &(color));
-#  else
-	vte_terminal_set_background_tint_color(VTE_TERMINAL(vte), &(rgba));
-#  endif
-#  ifdef FORCE_ENABLE_VTE_BACKGROUND
-	G_GNUC_END_IGNORE_DEPRECATIONS;
-#  endif
 }
 #endif
 
@@ -1130,7 +1101,6 @@ gchar **sanitize_environs(gchar **environs)
 	return (gchar **) g_ptr_array_free(cleaned, FALSE);
 }
 
-#ifdef USE_LILYTERM_STOCK_ICONS
 // The icon names that GTK+ 3 itself uses for the stock ids LilyTerm uses.
 static const struct { const gchar *stock_id; const gchar *icon_name; } stock_icons[] = {
 	{ "gtk-about",			"help-about" },
@@ -1226,7 +1196,6 @@ GtkWidget *lilyterm_button_new_from_stock(const gchar *stock_id)
 	G_GNUC_END_IGNORE_DEPRECATIONS
 	return button;
 }
-#endif
 
 // VTE deprecated these without a replacement: other encodings than UTF-8
 // (vte 0.54) and allow_bold (vte 0.60). They still work, so LilyTerm keeps

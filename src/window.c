@@ -77,9 +77,6 @@ GtkNotebook *new_window(int argc,
 // ---- create main window ---- //
 
 	win_data->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-#ifdef NO_RESIZE_GRIP
-	gtk_window_set_has_resize_grip(GTK_WINDOW(win_data->window), FALSE);
-#endif
 	gtk_window_set_title(GTK_WINDOW(win_data->window), PACKAGE);
 	set_window_icon(win_data->window);
 
@@ -270,10 +267,8 @@ GtkNotebook *new_window(int argc,
 	else
 	{
 		win_data_dup(win_data_orig, win_data);
-#ifdef ENABLE_RGBA
 		// the init_rgba() must run before the window is mapped!
 		if (win_data->use_rgba == -1) init_rgba(win_data);
-#endif
 	}
 
 	if (VTE_CJK_WIDTH_STR && VTE_CJK_WIDTH_STR[0] != '\0')
@@ -302,17 +297,8 @@ GtkNotebook *new_window(int argc,
 	// if the theme/fonts changed
 	g_signal_connect_after(G_OBJECT(win_data->window), "style-set",
 			       G_CALLBACK(window_style_set), win_data);
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	g_signal_connect(G_OBJECT(win_data->window), "size_request",
-			 G_CALLBACK(window_size_request), win_data);
-#endif
 	g_signal_connect(G_OBJECT(win_data->window), "size-allocate",
 			 G_CALLBACK(window_size_allocate), win_data);
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	// fullscreen/unfullscreen
-	g_signal_connect(G_OBJECT(win_data->window), "window-state-event",
-			 G_CALLBACK(window_state_event), win_data);
-#endif
 
 // ---- create notebook ---- //
 
@@ -328,22 +314,14 @@ GtkNotebook *new_window(int argc,
 	// We used markup on tab names, so that we can't use popup on the notebook.
 	// gtk_notebook_popup_enable(win_data->notebook);
 	// Enable drag and drog
-#ifdef ENABLE_DRAG_AND_DROP
 	gtk_notebook_set_group_name (GTK_NOTEBOOK(win_data->notebook), PACKAGE);
-#endif
-#ifdef ENABLE_PAGE_ADDED
 	g_signal_connect(G_OBJECT(win_data->notebook), "page-added",
 			 G_CALLBACK(notebook_page_added), win_data);
-#endif
 	if (win_data->tabs_bar_position)
 		gtk_notebook_set_tab_pos(GTK_NOTEBOOK(win_data->notebook), GTK_POS_BOTTOM);
 	gtk_container_add(GTK_CONTAINER(win_data->window), win_data->notebook);
-#ifdef ENABLE_TAB_REORDER
 	g_signal_connect(G_OBJECT(win_data->notebook), "page-reordered", G_CALLBACK(reorder_page_number), win_data->window);
-#endif
-#ifdef ENABLE_DRAG_AND_DROP
 	g_signal_connect(G_OBJECT(win_data->notebook), "create-window", G_CALLBACK(create_window), win_data);
-#endif
 #ifdef GEOMETRY
 	g_signal_connect(G_OBJECT(win_data->notebook), "size-allocate", G_CALLBACK(widget_size_allocate), "notebook");
 #endif
@@ -406,27 +384,12 @@ GtkNotebook *new_window(int argc,
 		{
 #endif
 			win_data->current_vte = win_data_orig->current_vte;
-#ifdef USE_GTK2_GEOMETRY_METHOD
-			// DIRTY HACK: Specify a befit size to Notebook to keep from window using 200x200 as an init size.
-			GtkWidget *notebook_size_orig = (get_hide_or_show_tabs_bar(win_data, win_data->show_tabs_bar)) ? win_data_orig->notebook
-														       : page_data_orig->tab_box;
-			GtkRequisition notebook_requisition;
-			gtk_widget_get_child_requisition (notebook_size_orig, &notebook_requisition);
-			gtk_widget_set_size_request(win_data->notebook, notebook_requisition.width, notebook_requisition.height);
-#  ifdef GEOMETRY
-			fprintf(stderr, "@ [DIRTY HACK] new_window(\033[1;%dm%p\033[0m): Set the default size of new Notebook to %d x %d\n",
-					ANSI_COLOR_RED+(GPOINTER_TO_INT(win_data->window)%6), win_data->window,
-					notebook_requisition.width, notebook_requisition.height);
-#  endif
-#endif
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 			win_data->hints_type = HINTS_SKIP_ONCE;
 #  ifdef GEOMETRY
 			fprintf(stderr, "\033[1;%dm!! new_window(win_data %p): set win_data->hints_type = %d !!\033[0m\n",
 				ANSI_COLOR_BLUE, win_data, win_data->hints_type);
 #  endif
 			resize_to_exist_widget(win_data);
-#endif
 #ifdef SAFEMODE
 		}
 #endif
@@ -456,7 +419,6 @@ GtkNotebook *new_window(int argc,
 			g_debug("@ new_window(for %p): Trying to set the geometry to %s...",
 				win_data->window, win_data->geometry);
 #endif
-#ifdef USE_XPARSEGEOMETRY
 			// Wayland clients can not place their own toplevels: there
 			// gtk_window_move() is a no-op, and only the size is honored.
 			gint offset_x = 0, offset_y = 0;
@@ -464,9 +426,6 @@ GtkNotebook *new_window(int argc,
 			if ((mask & GEOMETRY_HAS_X) && (mask & GEOMETRY_HAS_Y) &&
 			    (! (mask & (GEOMETRY_X_NEGATIVE | GEOMETRY_Y_NEGATIVE))))
 				gtk_window_move (GTK_WINDOW(win_data->window), offset_x, offset_y);
-#else
-			gtk_window_parse_geometry(GTK_WINDOW(win_data->window), win_data->geometry);
-#endif
 		}
 	}
 
@@ -487,11 +446,7 @@ GtkNotebook *new_window(int argc,
 	//}
 
 	// fullscreen!
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	if (win_data->startup_fullscreen)
-#else
 	if (win_data->window_status==WINDOW_START_WITH_FULL_SCREEN)
-#endif
 	{
 #ifdef GEOMETRY
 		fprintf(stderr, "\033[1;%dm!! new_window(%p): calling deal_key_press(KEY_FULL_SCREEN)!!\033[0m\n",
@@ -949,7 +904,6 @@ gboolean window_option(struct Window *win_data, gchar *encoding, int argc, char 
 			{
 				// g_debug ("window_option(): call init_prime_user_datas() for win_data %p!", win_data);
 				init_prime_user_datas(win_data);
-#ifdef ENABLE_PROFILE
 				if (win_data->profile)
 				{
 					GKeyFile *keyfile = g_key_file_new();
@@ -965,7 +919,6 @@ gboolean window_option(struct Window *win_data, gchar *encoding, int argc, char 
 					//	win_data->execute_command_in_new_tab);
 					g_key_file_free(keyfile);
 				}
-#endif
 				win_data->executable_command_whitelists = split_string(win_data->executable_command_whitelist,
 							   "\t", -1);
 				gboolean execute_command = TRUE;
@@ -1113,9 +1066,6 @@ gboolean window_key_press(GtkWidget *window, GdkEventKey *event, struct Window *
 	// g_debug ("Get win_data = %p in key_press", win_data);
 	// g_debug ("win_data->keep_vte_size = %X, event->state = %X", win_data->keep_vte_size, event->state);
 
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	if (win_data->keep_vte_size) return FALSE;
-#endif
 	// don't check if only shift key pressed!
 	// FIXME: GDK_asciitilde = 0x7e, it is for some keys like <F3> only.
 	if ((event->state & SHIFT_ONLY_MASK) || (event->keyval > GDK_KEY_asciitilde))
@@ -1247,7 +1197,6 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			// edit page's label
 			dialog(NULL, EDIT_LABEL);
 			break;
-#ifdef ENABLE_FIND_STRING
 		case KEY_FIND:
 			dialog(NULL, FIND_STRING);
 			break;
@@ -1263,13 +1212,6 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			else
 				dialog(NULL, FIND_STRING);
 			break;
-#else
-		case KEY_FIND:
-		case KEY_FIND_PREV:
-		case KEY_FIND_NEXT:
-			upgrade_dialog(ENABLE_FIND_STRING_VER);
-			break;
-#endif
 		case KEY_PREV_TAB:
 #ifdef SAFEMODE
 			if (page_data==NULL) return FALSE;
@@ -1351,18 +1293,10 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			create_window(NULL, NULL, 0, 0, win_data);
 			break;
 		case KEY_SELECT_ALL:
-#ifdef ENABLE_VTE_SELECT_ALL
 			vte_terminal_select_all(VTE_TERMINAL(win_data->current_vte));
-#else
-			upgrade_dialog(ENABLE_VTE_SELECT_ALL_VER);
-#endif
 			break;
 		case KEY_COPY_CLIPBOARD:
-#if VTE_CHECK_VERSION(0,50,0)
 			vte_terminal_copy_clipboard_format(VTE_TERMINAL(win_data->current_vte), VTE_FORMAT_TEXT);
-#else
-			vte_terminal_copy_clipboard(VTE_TERMINAL(win_data->current_vte));
-#endif
 			break;
 		case KEY_PASTE_CLIPBOARD:
 		{
@@ -1393,14 +1327,6 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			break;
 		case KEY_MAX_WINDOW:
 		{
-#ifdef USE_GTK2_GEOMETRY_METHOD
-			if (win_data->fullscreen)
-				gtk_window_unfullscreen(GTK_WINDOW(win_data->window));
-			else
-				gtk_window_fullscreen(GTK_WINDOW(win_data->window));
-			break;
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 			// g_debug("deal_key_press (KEY_MAX_WINDOW): win_data->window_status = %d", win_data->window_status);
 			switch (win_data->window_status)
 			{
@@ -1426,39 +1352,10 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 					break;
 
 			}
-#endif
 			break;
 		}
 		case KEY_FULL_SCREEN:
 		{
-#ifdef USE_GTK2_GEOMETRY_METHOD
-			// g_debug("deal_key_press: win_data->fullscreen = %d", win_data->fullscreen);
-			if (win_data->fullscreen)
-			{
-				win_data->true_fullscreen = FALSE;
-				gtk_window_unfullscreen(GTK_WINDOW(win_data->window));
-
-				if (win_data->startup_fullscreen)
-					win_data->window_status = FULLSCREEN_UNFS_ING;
-				else
-					win_data->window_status = FULLSCREEN_UNFS_OK;
-				// g_debug("deal_key_press (unfullscreen): win_data->true_fullscreen = %d", win_data->true_fullscreen);
-				win_data->true_fullscreen = FALSE;
-			}
-			else
-			{
-				win_data->true_fullscreen = TRUE;
-
-				gboolean show_tabs_bar = hide_and_show_tabs_bar(win_data, win_data->show_tabs_bar);
-				gboolean show_scroll_bar = fullscreen_show_hide_scroll_bar(win_data);
-				if ((show_tabs_bar == FALSE) && (show_scroll_bar == FALSE))
-					gtk_window_fullscreen(GTK_WINDOW(win_data->window));
-
-				win_data->window_status = FULLSCREEN_FS_OK;
-				// g_debug("deal_key_press (fullscreen): win_data->true_fullscreen = %d", win_data->true_fullscreen);
-			}
-#endif
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 			// g_debug("deal_key_press: win_data->window_status = %d", win_data->window_status);
 			switch (win_data->window_status)
 			{
@@ -1498,10 +1395,8 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 				default:
 					break;
 			}
-#endif
 			break;
 		}
-#ifdef ENABLE_MOUSE_SCROLL
 #  ifndef SCROLL_LINE
 		case KEY_SCROLL_UP:
 #    ifdef SAFEMODE
@@ -1551,14 +1446,6 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			gtk_adjustment_set_value(page_data->adjustment, value);
 			break;
 		}
-#else
-		case KEY_SCROLL_UP:
-		case KEY_SCROLL_DOWN:
-		case KEY_SCROLL_UP_1_LINE:
-		case KEY_SCROLL_DOWN_1_LINE:
-			upgrade_dialog(ENABLE_MOUSE_SCROLL_VER);
-			break;
-#endif
 		case KEY_CLEAN_SCROLLBACK_LINES:
 			clean_scrollback_lines(NULL, win_data);
 			break;
@@ -1594,21 +1481,6 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 #endif
 	}
 
-#ifdef DISABLE_TAB_REORDER
-	switch (type)
-	{
-		case KEY_NEW_TAB:
-		case KEY_CLOSE_TAB:
-		case KEY_MOVE_TAB_FORWARD:
-		case KEY_MOVE_TAB_BACKWARD:
-		case KEY_MOVE_TAB_FIRST:
-		case KEY_MOVE_TAB_LAST:
-			reorder_page_number(GTK_NOTEBOOK(win_data->notebook), NULL, 0, win_data->window);
-			break;
-		default:
-			break;
-	}
-#endif
 	return TRUE;
 }
 
@@ -1673,13 +1545,9 @@ gboolean window_get_focus(GtkWidget *window, GdkEventFocus *event, struct Window
 	setlocale(LC_MESSAGES, win_data->runtime_LC_MESSAGES);
 	// g_debug("set last_active_window = %p", last_active_window);
 
-#ifdef ENABLE_RGBA
 	dim_window(win_data, 0);
-#endif
 	dim_vte_text(win_data, NULL, 0);
-#ifdef ENABLE_BEEP_SINGAL
 	set_urgent_bell(NULL, win_data);
-#endif
 	menu_activated = FALSE;
 	return FALSE;
 }
@@ -1718,15 +1586,11 @@ gboolean window_lost_focus(GtkWidget *window, GdkEventFocus *event, struct Windo
 	}
 	win_data->lost_focus = TRUE;
 
-#ifdef ENABLE_RGBA
 	dim_window(win_data, 1);
-#endif
 
 	dim_vte_text(win_data, NULL, 1);
-#ifdef ENABLE_BEEP_SINGAL
 	// g_debug("window_lost_focus(): call set_urgent_bell()!!");
 	set_urgent_bell(NULL, win_data);
-#endif
 	active_window = NULL;
 	return FALSE;
 }
@@ -1743,14 +1607,6 @@ void window_style_set(GtkWidget *window, GtkStyle *previous_style, struct Window
 	// g_debug("window_resizable in window_style_set! keep_vte_size = %d", keep_vte_size);
 	// window_resizable(window, win_data->current_vte, 2, 1);
 	// g_debug("window_style_set(): launch keep_window_size()!");
-#ifdef USE_GTK2_GEOMETRY_METHOD
-#  ifdef GEOMETRY
-	g_debug("@ window_style_set(%p): Call keep_gtk2_window_size() with keep_vte_size = 0x%X",
-		window, win_data->keep_vte_size);
-#  endif
-	keep_gtk2_window_size (win_data, win_data->current_vte, GEOMETRY_CHANGING_THEME);
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 	if (win_data->hints_type != HINTS_SKIP_ONCE)
 	{
 #  ifdef GEOMETRY
@@ -1767,7 +1623,6 @@ void window_style_set(GtkWidget *window, GtkStyle *previous_style, struct Window
 			ANSI_COLOR_RED, win_data, win_data->hints_type);
 #  endif
 	}
-#endif
 }
 
 #if defined(USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
@@ -1860,117 +1715,7 @@ void window_size_request (GtkWidget *window, GtkRequisition *requisition, struct
 }
 #endif
 
-#ifdef USE_GTK2_GEOMETRY_METHOD
-void window_size_allocate(GtkWidget *window, GtkAllocation *allocation, struct Window *win_data)
-{
-#  ifdef DETAIL
-	if (win_data)
-	g_debug("! Launch window_size_allocate() with window =%p, win_data = %p, keep_vte_size = 0x%X",
-		window, win_data, win_data->keep_vte_size);
-	else
-		g_debug("! Launch window_size_allocate() with window =%p, win_data = %p",
-			 window, win_data);
-#  endif
-#  ifdef SAFEMODE
-	if (win_data==NULL) return;
-#  endif
-	// g_debug("window_size-allocate!, and win_data->keep_vte_size = %d", win_data->keep_vte_size);
-#  ifdef GEOMETRY
-	fprintf(stderr, "@ window_size_allocate(\033[1;%dm%p\033[0m): Got keep_vte_size (\033[1;%dmFINISH\033[0m) = 0x%X\n",
-			ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window, ANSI_COLOR_YELLOW, win_data->keep_vte_size);
-#  endif
-	// check y
-	if (win_data->keep_vte_size && ((win_data->keep_vte_size & GEOMETRY_NEEDS_RUN_SIZE_REQUEST_AGAIN_MASK) == 0))
-	{
-		win_data->keep_vte_size = 0;
-		// g_debug("window_size_allocate(): call window_resizable() with run_once = %d", win_data->hints_type);
-		// g_debug("window_size_allocate(): (1) launch window_resizable() with window = %p!", window);
 
-		if (! win_data->window_status)
-		{
-#  ifdef GEOMETRY
-			fprintf(stderr, "@ \033[1;%dmwindow_size_allocate\033[0m(\033[1;%dm%p\033[0m): "
-					"Call \033[1;%dmwindow_resizable\033[0m(\033[1;%dm%d\033[0m)!\n",
-					ANSI_COLOR_YELLOW, ANSI_COLOR_RED+(GPOINTER_TO_INT(win_data->window)%6),
-					win_data->window, ANSI_COLOR_MAGENTA, ANSI_COLOR_CYAN, win_data->hints_type);
-#  endif
-			window_resizable(window, win_data->current_vte, win_data->hints_type);
-		}
-	}
-#  ifdef GEOMETRY
-	fprintf(stderr, "@ window_size_allocate(\033[1;%dm%p\033[0m): Got keep_vte_size (\033[1;%dmFINAL\033[0m) = 0x%X\n",
-			ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window, ANSI_COLOR_YELLOW, win_data->keep_vte_size);
-#  endif
-
-	if ((win_data->keep_vte_size==0) && (win_data->window_status>FULLSCREEN_NORMAL))
-	{
-		// g_debug("Trying keep the size of window when unfullscreen, win_data->window_status = %d", win_data->window_status);
-		win_data->window_status--;
-
-		if (win_data->window_status == FULLSCREEN_NORMAL)
-		{
-			// g_debug("window_size_allocate(): (2) launch window_resizable()! with window = %p!",
-			//	window);
-#  ifdef GEOMETRY
-			fprintf(stderr, "@ \033[1;%dmwindow_size_allocate\033[0m(\033[1;%dm%p\033[0m): "
-					"Call \033[1;%dmwindow_resizable\033[0m([1]\033[1;%dmHINTS_NONE\033[0m)!\n",
-					ANSI_COLOR_YELLOW, ANSI_COLOR_RED+(GPOINTER_TO_INT(win_data->window)%6),
-					win_data->window, ANSI_COLOR_MAGENTA, ANSI_COLOR_CYAN);
-#  endif
-			window_resizable(window, win_data->current_vte, HINTS_NONE);
-			// g_debug("window_size_allocate(): win_data->show_tabs_bar = %d",
-			//	win_data->show_tabs_bar);
-
-			hide_and_show_tabs_bar(win_data , win_data->show_tabs_bar);
-
-			fullscreen_show_hide_scroll_bar (win_data);
-
-			// keep_gtk2_window_size (win_data, win_data->current_vte, 128);
-		}
-	}
-
-	// g_debug("win_data->keep_vte_size = %d, win_data->window_status = %d",
-	//	win_data->keep_vte_size, win_data->window_status);
-	if ((win_data->keep_vte_size==0) && (win_data->window_status<FULLSCREEN_NORMAL))
-	{
-		// g_debug("Trying keep the size of window when fullscreen, win_data->window_status = %d", win_data->window_status);
-		win_data->window_status++;
-
-		if (win_data->window_status)
-		{
-#  ifdef GEOMETRY
-			fprintf(stderr, "@ \033[1;%dmwindow_size_allocate\033[0m(\033[1;%dm%p\033[0m): "
-					"Call \033[1;%dmwindow_resizable\033[0m([2]\033[1;%dmHINTS_NONE\033[0m)!\n",
-					ANSI_COLOR_YELLOW, ANSI_COLOR_RED+(GPOINTER_TO_INT(win_data->window)%6),
-					win_data->window, ANSI_COLOR_MAGENTA, ANSI_COLOR_CYAN);
-#  endif
-			window_resizable(window, win_data->current_vte, HINTS_NONE);
-		}
-		else
-			gtk_window_fullscreen(GTK_WINDOW(win_data->window));
-	}
-
-#  ifdef GEOMETRY
-	GtkRequisition window_requisition;
-#  ifdef SAFEMODE
-	if (window)
-#  endif
-	gtk_window_get_size(GTK_WINDOW(window), &window_requisition.width, &window_requisition.height);
-
-	if ((window_requisition.width <= 200) || (window_requisition.height <= 200))
-		fprintf(stderr, "\033[1;31m!! The final window size (\033[1;%dm%p\033[0m) is %d x %d (keep_vte_size = 0x%X)\033[0m\n",
-				ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window,
-				window_requisition.width, window_requisition.height, win_data->keep_vte_size);
-	else
-		fprintf(stderr, "! The final window size (\033[1;%dm%p\033[0m) is %d x %d (keep_vte_size = 0x%X)\n",
-				ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window,
-				window_requisition.width, window_requisition.height, win_data->keep_vte_size);
-	widget_size_allocate (window, allocation, "window");
-#  endif
-}
-#endif
-
-#ifdef USE_GTK3_GEOMETRY_METHOD
 void window_size_allocate(GtkWidget *window, GtkAllocation *allocation, struct Window *win_data)
 {
 #  ifdef DETAIL
@@ -1989,9 +1734,7 @@ void window_size_allocate(GtkWidget *window, GtkAllocation *allocation, struct W
 	widget_size_allocate (window, allocation, "window");
 #  endif
 }
-#endif
 
-#if defined(ENABLE_RGBA) || defined(UNIT_TEST)
 // dim_window = 0: dim the window
 // dim_window = 1: light up the window
 // dim_window = 2: auto detect
@@ -2037,16 +1780,13 @@ void dim_window(struct Window *win_data, gint dim_window)
 	// for performance, if the window was dimmed already, don't dim it again.
 	if (win_data->window_is_inactivated != dim)
 	{
-#ifdef ENABLE_RGBA
 		if (dim)
 			set_window_opacity( NULL, 0, win_data->window_opacity_inactive, win_data);
 		else
 			set_window_opacity( NULL, 0, win_data->window_opacity, win_data);
-#endif
 		win_data->window_is_inactivated = dim;
 	}
 }
-#endif
 
 void clear_window(struct Window *win_data)
 {
@@ -2078,10 +1818,8 @@ void destroy_window(struct Window *win_data)
 #endif
 	clear_window(win_data);
 
-#ifdef ENABLE_BEEP_SINGAL
 	if (win_data->urgent_bell_focus_in_event_id)
 		stop_urgency_hint(NULL, NULL, win_data);
-#endif
 	if (win_data->window)
 		gtk_widget_destroy(win_data->window);
 
@@ -2107,9 +1845,6 @@ void clear_win_data(struct Window *win_data)
 	g_free(win_data->runtime_locale_list);
 	g_free(win_data->locales_list);
 	g_free(win_data->default_shell);
-#ifdef ENABLE_SET_EMULATION
-	g_free(win_data->emulate_term);
-#endif
 	g_free(win_data->VTE_CJK_WIDTH_STR);
 	g_free(win_data->wmclass_name);
 	g_free(win_data->wmclass_class);
@@ -2144,12 +1879,7 @@ void clear_win_data(struct Window *win_data)
 	g_strfreev(win_data->splited_page_names);
 	g_free(win_data->default_font_name);
 	g_free(win_data->restore_font_name);
-#ifdef ENABLE_SET_WORD_CHARS
 	g_free(win_data->word_chars);
-#endif
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND)
-	g_free(win_data->background_image);
-#endif
 	g_free(win_data->executable_command_whitelist);
 	// g_debug("win_data->executable_command_whitelist for win_data (%p) freed!", win_data);
 	g_strfreev(win_data->executable_command_whitelists);
@@ -2258,10 +1988,8 @@ void notebook_page_added(GtkNotebook *notebook, GtkWidget *child, guint page_num
 		page_data->window = win_data->window;
 		page_data->notebook = win_data->notebook;
 
-#ifdef ENABLE_TAB_REORDER
 		gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(notebook), page_data->tab_box, TRUE);
 		gtk_notebook_set_tab_detachable(GTK_NOTEBOOK(notebook), page_data->tab_box, TRUE);
-#endif
 		set_fill_tabs_bar(GTK_NOTEBOOK(notebook), win_data->fill_tabs_bar, page_data);
 
 		// page_data->pid = 0 -> it is launched by add_page()
@@ -2307,10 +2035,8 @@ void notebook_page_added(GtkNotebook *notebook, GtkWidget *child, guint page_num
 #  endif
 		update_window_hint(win_data, page_data);
 	}
-#  ifdef USE_GTK3_GEOMETRY_METHOD
 	else
 		update_window_hint(win_data, page_data);
-#  endif
 }
 
 
@@ -2340,10 +2066,6 @@ void set_fill_tabs_bar(GtkNotebook *notebook, gboolean fill_tabs_bar, struct Pag
 #ifdef SAFEMODE
 	if ((notebook==NULL) || (page_data==NULL) || (page_data->tab_box==NULL)) return;
 #endif
-#ifdef USE_OLD_GTK_LABEL_PACKING
-	gtk_notebook_set_tab_label_packing(GTK_NOTEBOOK(notebook), page_data->tab_box,
-					   fill_tabs_bar, fill_tabs_bar, GTK_PACK_START);
-#else
 	GValue value = { 0, };
 	g_value_init (&value, G_TYPE_BOOLEAN);
 	g_value_set_boolean (&value, fill_tabs_bar);
@@ -2352,7 +2074,6 @@ void set_fill_tabs_bar(GtkNotebook *notebook, gboolean fill_tabs_bar, struct Pag
 	gtk_container_child_set_property (GTK_CONTAINER(notebook), page_data->tab_box,
 					  (gchar*) "tab-fill", &value);
 	g_value_unset (&value);
-#endif
 }
 
 void reorder_page_after_added_removed_page(struct Window *win_data, guint page_num)
@@ -2426,12 +2147,7 @@ void remove_notebook_page(GtkNotebook *notebook, GtkWidget *child, guint page_nu
 			// gtk_notebook_set_show_border(GTK_NOTEBOOK(notebook), FALSE);
 
 			// window_resizable(page_data->window, page_data->vte, 2, -1);
-#ifdef USE_GTK2_GEOMETRY_METHOD
-			hide_and_show_tabs_bar(win_data , win_data->show_tabs_bar);
-#endif
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 			g_idle_add((GSourceFunc)idle_hide_and_show_tabs_bar, win_data);
-#endif
 			// g_debug("remove_notebook_page(): page_data->font_name = %s, win_data->restore_font_name = %s",
 			//	page_data->font_name, win_data->restore_font_name);
 			if (! compare_strings(page_data->font_name, win_data->restore_font_name, TRUE))
@@ -2589,7 +2305,6 @@ void keep_gtk2_window_size (struct Window *win_data, GtkWidget *vte, Geometry_Re
 }
 #endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 void keep_gtk3_window_size(struct Window *win_data, gboolean idle)
 {
 #  ifdef DETAIL
@@ -2677,9 +2392,7 @@ void keep_gtk3_window_size(struct Window *win_data, gboolean idle)
 			win_data->hints_type, win_data->geometry_width, win_data->geometry_height);
 #  endif
 }
-#endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 void resize_to_exist_widget(struct Window *win_data)
 {
 #  ifdef DETAIL
@@ -2712,9 +2425,7 @@ void resize_to_exist_widget(struct Window *win_data)
 		ANSI_COLOR_YELLOW, win_data, show_tabs_bar, allocation.width, allocation.height);
 #  endif
 }
-#endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 void save_vte_geometry(struct Window *win_data)
 {
 #  ifdef DETAIL
@@ -2741,25 +2452,19 @@ void save_vte_geometry(struct Window *win_data)
 		win_data->geometry_width, win_data->geometry_height);
 #  endif
 }
-#endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 gboolean idle_show_or_hide_tabs_bar_and_scroll_bar(struct Window *win_data)
 {
 	if (check_if_win_data_is_still_alive(win_data)) show_or_hide_tabs_bar_and_scroll_bar(win_data);
 	return FALSE;
 }
-#endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 gboolean idle_gtk_window_fullscreen(struct Window *win_data)
 {
 	if (check_if_win_data_is_still_alive(win_data)) gtk_window_fullscreen(GTK_WINDOW(win_data->window));
 	return FALSE;
 }
-#endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 gboolean show_or_hide_tabs_bar_and_scroll_bar(struct Window *win_data)
 {
 #  ifdef DETAIL
@@ -2796,41 +2501,31 @@ gboolean show_or_hide_tabs_bar_and_scroll_bar(struct Window *win_data)
 	}
 	return FALSE;
 }
-#endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 gboolean idle_to_resize_window(struct Window *win_data)
 {
 #  ifdef DETAIL
 	g_debug("! Launch idle_to_resize_window() with win_data = %p", win_data);
 #  endif
 	if (check_if_win_data_is_still_alive(win_data))
-#  ifdef HAVE_GTK_WINDOW_RESIZE_TO_GEOMETRY
-		gtk_window_resize_to_geometry(GTK_WINDOW(win_data->window), win_data->geometry_width, win_data->geometry_height);
-#  else
 		// FIXME: the GTK3_GEOMETRY_METHOD need rewrite!!
 		// g_debug("! Launch idle_to_resize_window() with win_data->geometry_width = %ld, win_data->geometry_height = %ld",
 		//	win_data->geometry_width, win_data->geometry_height);
 		// gtk_window_resize(GTK_WINDOW(win_data->window), win_data->geometry_width, win_data->geometry_height);
 		return FALSE;
-#  endif
 #  ifdef GEOMETRY
 	fprintf(stderr, "\033[1;%dm** idle_to_resize_window(): resize with hints_type = %d, column = %ld, row = %ld !!\033[0m\n",
 		ANSI_COLOR_MAGENTA, win_data->hints_type, win_data->geometry_width, win_data->geometry_height);
 #  endif
 	return FALSE;
 }
-#endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 gboolean idle_set_vte_font_to_selected(struct Window *win_data)
 {
 	if (check_if_win_data_is_still_alive(win_data)) set_vte_font(NULL, FONT_SET_TO_SELECTED);
 	return FALSE;
 }
-#endif
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 gboolean idle_hide_and_show_tabs_bar(struct Window *win_data)
 {
 #ifdef DETAIL
@@ -2839,7 +2534,6 @@ gboolean idle_hide_and_show_tabs_bar(struct Window *win_data)
 	if (check_if_win_data_is_still_alive(win_data)) hide_and_show_tabs_bar(win_data, win_data->show_tabs_bar);
 	return FALSE;
 }
-#endif
 
 #ifdef FATAL
 void dump_data (struct Window *win_data, struct Page *page_data)
@@ -2861,9 +2555,6 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->runtime_locale_list = %s", win_data->runtime_locale_list);
 	g_debug("- win_data->locales_list = %s", win_data->locales_list);
 	g_debug("- win_data->default_shell = %s", win_data->default_shell);
-#ifdef ENABLE_SET_EMULATION
-	g_debug("- win_data->emulate_term = %s", win_data->emulate_term);
-#endif
 	g_debug("- win_data->VTE_CJK_WIDTH = %d", win_data->VTE_CJK_WIDTH);
 	g_debug("- win_data->VTE_CJK_WIDTH_STR = %s", win_data->VTE_CJK_WIDTH_STR);
 	g_debug("- win_data->wmclass_name = %s", win_data->wmclass_name);
@@ -2889,11 +2580,6 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->profile_dir_modtime = %ld", win_data->profile_dir_modtime);
 	g_debug("- win_data->menuitem_auto_save = %p", win_data->menuitem_auto_save);
 	g_debug("- win_data->auto_save = %d", win_data->auto_save);
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	g_debug("- win_data->fullscreen = %d", win_data->fullscreen);
-	g_debug("- win_data->true_fullscreen = %d", win_data->true_fullscreen);
-	g_debug("- win_data->startup_fullscreen = %d", win_data->startup_fullscreen);
-#endif
 	g_debug("- win_data->show_tabs_bar = %d", win_data->show_tabs_bar);
 	// g_debug("- win_data->fullscreen_show_scroll_bar = %d", win_data->fullscreen_show_scroll_bar);
 	g_debug("- win_data->window_status = %d", win_data->window_status);
@@ -2912,7 +2598,6 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->window_title_tpgid = %d", win_data->window_title_tpgid);
 	g_debug("- win_data->use_rgba = %d", win_data->use_rgba);
 	g_debug("- win_data->use_rgba_orig = %d", win_data->use_rgba_orig);
-#ifdef ENABLE_RGBA
 	g_debug("- win_data->transparent_window = %d", win_data->transparent_window);
 	g_debug("- win_data->window_opacity = %1.3f", win_data->window_opacity);
 	g_debug("- win_data->dim_window = %d", win_data->dim_window);
@@ -2921,7 +2606,6 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->window_is_inactivated = %d", win_data->window_is_inactivated);
 	g_debug("- win_data->dim_window_expect = %d", win_data->dim_window_expect);
 	g_debug("- win_data->menuitem_dim_window = %p", win_data->menuitem_dim_window);
-#endif
 	g_debug("- win_data->enable_key_binding = %d", win_data->enable_key_binding);
 	for (i=0; i<KEYS; i++)
 	{
@@ -2930,15 +2614,10 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 		g_debug("- win_data->user_keys[%d].mods = 0x%x", i, win_data->user_keys[i].mods);
 	}
 	g_debug("- win_data->hints_type = %d", win_data->hints_type);
-#ifdef USE_GTK3_GEOMETRY_METHOD
 	g_debug("- win_data->resize_type = %d", win_data->resize_type);
 	g_debug("- win_data->geometry_width = %ld", win_data->geometry_width);
 	g_debug("- win_data->geometry_height = %ld", win_data->geometry_height);
-#endif
 	g_debug("- win_data->lost_focus = %d", win_data->lost_focus);
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	g_debug("- win_data->keep_vte_size = 0x%X", win_data->keep_vte_size);
-#endif
 	g_debug("- win_data->menu = %p", win_data->menu);
 	g_debug("- win_data->menu_activated = %d", win_data->menu_activated);
 	g_debug("- win_data->encoding_sub_menu = %p", win_data->encoding_sub_menu);
@@ -2946,9 +2625,7 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->default_menuitem_encoding = %p", win_data->default_menuitem_encoding);
 	if (win_data->default_menuitem_encoding)
 		g_debug("- win_data->default_encoding_str = %s", gtk_widget_get_name (win_data->default_menuitem_encoding));
-#ifdef ENABLE_RGBA
 	g_debug("- win_data->menuitem_trans_win = %p", win_data->menuitem_trans_win);
-#endif
 	g_debug("- win_data->menuitem_trans_bg = %p", win_data->menuitem_trans_bg);
 //	g_debug("- win_data->menuitem_scrollback_lines = %p", win_data->menuitem_scrollback_lines);
 	g_debug("- win_data->show_color_selection_menu = %d", win_data->show_color_selection_menu);
@@ -2956,9 +2633,6 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->font_resize_ratio = %1.3f", win_data->font_resize_ratio);
 	g_debug("- win_data->window_resize_ratio = %1.3f", win_data->window_resize_ratio);
 	g_debug("- win_data->show_background_menu = %d", win_data->show_background_menu);
-#ifdef ENABLE_IM_APPEND_MENUITEMS
-	g_debug("- win_data->show_input_method_menu = %d", win_data->show_input_method_menu);
-#endif
 	g_debug("- win_data->show_exit_menu = %d", win_data->show_exit_menu);
 	g_debug("- win_data->show_change_page_name_menu = %d", win_data->show_change_page_name_menu);
 	g_debug("- win_data->enable_hyperlink = %d", win_data->enable_hyperlink);
@@ -2989,12 +2663,7 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->menuitem_open_url_with_ctrl_pressed = %p", win_data->menuitem_open_url_with_ctrl_pressed);
 	g_debug("- win_data->menuitem_disable_url_when_ctrl_pressed = %p", win_data->menuitem_disable_url_when_ctrl_pressed);
 	g_debug("- win_data->menuitem_audible_bell = %p", win_data->menuitem_audible_bell);
-#ifdef ENABLE_VISIBLE_BELL
-	g_debug("- win_data->menuitem_visible_bell = %p", win_data->menuitem_visible_bell);
-#endif
-#ifdef ENABLE_BEEP_SINGAL
 	g_debug("- win_data->menuitem_urgent_bell = %p", win_data->menuitem_urgent_bell);
-#endif
 	g_debug("- win_data->menuitem_show_tabs_bar = %p", win_data->menuitem_show_tabs_bar);
 	g_debug("- win_data->menuitem_hide_tabs_bar = %p", win_data->menuitem_hide_tabs_bar);
 	g_debug("- win_data->menuitem_hide_scroll_bar = %p", win_data->menuitem_hide_scroll_bar);
@@ -3035,11 +2704,9 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	for (i=0; i<ERASE_BINDING; i++)
 		g_debug("- win_data->menuitem_erase_binding[%d] = %p", i, win_data->menuitem_erase_binding[i]);
 	g_debug("- win_data->current_menuitem_erase_binding = %p", win_data->current_menuitem_erase_binding);
-#ifdef ENABLE_CURSOR_SHAPE
 	for (i=0; i<CURSOR_SHAPE; i++)
 		g_debug("- win_data->menuitem_cursor_shape[%d] = %p", i, win_data->menuitem_cursor_shape[i]);
 	g_debug("- win_data->current_menuitem_cursor_shape = %p", win_data->current_menuitem_cursor_shape);
-#endif
 	g_debug("- win_data->color_brightness = %1.3f", win_data->color_brightness);
 	g_debug("- win_data->color_brightness_inactive = %1.3f", win_data->color_brightness_inactive);
 	g_debug("- win_data->page_width = %d", win_data->page_width);
@@ -3067,17 +2734,9 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->restore_font_name = %s", win_data->restore_font_name);
 	g_debug("- win_data->default_column = %ld", win_data->default_column);
 	g_debug("- win_data->default_row = %ld", win_data->default_row);
-#ifdef ENABLE_SET_WORD_CHARS
 	g_debug("- win_data->word_chars = %s", win_data->word_chars);
-#endif
 	g_debug("- win_data->show_scroll_bar = %d", win_data->show_scroll_bar);
 	g_debug("- win_data->scroll_bar_position = %d", win_data->scroll_bar_position);
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND)
-	g_debug("- win_data->transparent_background = %d", win_data->transparent_background);
-	g_debug("- win_data->background_saturation = %1.3f", win_data->background_saturation);
-	g_debug("- win_data->scroll_background = %d", win_data->scroll_background);
-	g_debug("- win_data->background_image = %s", win_data->background_image);
-#endif
 //	g_debug("- win_data->use_scrollback_lines = %d", win_data->use_scrollback_lines);
 	g_debug("- win_data->scrollback_lines = %d", win_data->scrollback_lines);
 	g_debug("- win_data->dim_text = %d", win_data->dim_text);
@@ -3086,18 +2745,11 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->open_url_with_ctrl_pressed = %d", win_data->open_url_with_ctrl_pressed);
 	g_debug("- win_data->disable_url_when_ctrl_pressed = %d", win_data->disable_url_when_ctrl_pressed);
 	g_debug("- win_data->audible_bell = %d", win_data->audible_bell);
-#ifdef ENABLE_VISIBLE_BELL
-	g_debug("- win_data->visible_bell = %d", win_data->visible_bell);
-#endif
-#ifdef ENABLE_BEEP_SINGAL
 	g_debug("- win_data->urgent_bell = %d", win_data->urgent_bell);
 	g_debug("- win_data->urgent_bell_status = %d", win_data->urgent_bell_status);
 	g_debug("- win_data->urgent_bell_focus_in_event_id = %ld", win_data->urgent_bell_focus_in_event_id);
-#endif
 	g_debug("- win_data->erase_binding = %d", win_data->erase_binding);
-#ifdef ENABLE_CURSOR_SHAPE
 	g_debug("- win_data->cursor_shape = %d", win_data->cursor_shape);
-#endif
 	g_debug("- win_data->prime_user_datas_inited = %d", win_data->prime_user_datas_inited);
 	g_debug("- win_data->prime_user_settings_inited = %d", win_data->prime_user_settings_inited);
 	g_debug("- win_data->confirm_to_close_multi_tabs = %d", win_data->confirm_to_close_multi_tabs);
@@ -3188,12 +2840,6 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	if (page_data->lost_focus)
 #endif
 		g_debug("- page_data->*lost_focus = %d", *(page_data->lost_focus));
-#ifdef USE_GTK2_GEOMETRY_METHOD
-#  ifdef SAFEMODE
-	if (page_data->keep_vte_size)
-#  endif
-		g_debug("- page_data->*keep_vte_size = 0x%X", *(page_data->keep_vte_size));
-#endif
 #ifdef SAFEMODE
 	if (page_data->current_vte)
 #endif
@@ -3224,7 +2870,6 @@ void print_array(gchar *name, gchar **data)
 
 void print_color(gint no, gchar *name, GdkRGBA color)
 {
-#  ifdef USE_GDK_RGBA
 	if (no<0)
 		g_debug("- %s = %0.4f, %0.4f, %0.4f, %0.4f",
 			name,
@@ -3240,23 +2885,6 @@ void print_color(gint no, gchar *name, GdkRGBA color)
 			color.red,
 			color.green,
 			color.blue);
-#  else
-	if (no<0)
-		g_debug("- %s = %04X, %04X, %04X, %04X",
-			name,
-			color.pixel,
-			color.red,
-			color.green,
-			color.blue);
-	else
-		g_debug("- %s (%2d) = %04X, %04X, %04X, %04X",
-			name,
-			no,
-			color.pixel,
-			color.red,
-			color.green,
-			color.blue);
-#  endif
 }
 #endif
 
@@ -3356,9 +2984,6 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 	win_data->locale_sub_menu = NULL;
 
 	win_data->default_shell = g_strdup(win_data_orig->default_shell);
-#ifdef ENABLE_SET_EMULATION
-	win_data->emulate_term = g_strdup(win_data_orig->emulate_term);
-#endif
 	// win_data->VTE_CJK_WIDTH;
 	win_data->VTE_CJK_WIDTH_STR = g_strdup(win_data_orig->VTE_CJK_WIDTH_STR);
 	// g_debug("win_data->shell = %s, win_data_orig->shell = %s", win_data->shell, win_data_orig->shell);
@@ -3411,10 +3036,8 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 	win_data->window_title_tpgid=0;
 	if (win_data_orig->use_rgba == -1) win_data->use_rgba = 1;
 	// win_data->use_rgba_orig;
-#ifdef ENABLE_RGBA
 	// win_data->transparent_window;
 	// win_data->window_opacity;
-#endif
 	// win_data->enable_key_binding;
 	for (i=0; i<KEYS; i++)
 		win_data->user_keys[i].value = g_strdup(win_data_orig->user_keys[i].value);
@@ -3434,18 +3057,13 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 
 	win_data->menu = NULL;
 	// win_data->menu_activated;
-#ifdef ENABLE_RGBA
 	win_data->menuitem_trans_win = NULL;
-#endif
 	win_data->menuitem_trans_bg = NULL;
 	// win_data->show_color_selection_menu;
 	// win_data->show_resize_menu;
 	// win_data->font_resize_ratio;
 	// win_data->window_resize_ratio;
 	// win_data->show_background_menu;
-#ifdef ENABLE_IM_APPEND_MENUITEMS
-	// win_data->show_input_method_menu;
-#endif
 	// win_data->show_change_page_name_menu;
 	// win_data->show_exit_menu;
 	// win_data->enable_hyperlink;
@@ -3462,20 +3080,13 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 	}
 	win_data->menuitem_copy_url = NULL;
 	win_data->menuitem_dim_text = NULL;
-#ifdef ENABLE_RGBA
 	win_data->menuitem_dim_window = NULL;
-#endif
 	win_data->menuitem_cursor_blinks = NULL;
 	win_data->menuitem_allow_bold_text = NULL;
 	win_data->menuitem_open_url_with_ctrl_pressed = NULL;
 	win_data->menuitem_disable_url_when_ctrl_pressed = NULL;
 	win_data->menuitem_audible_bell = NULL;
-#ifdef ENABLE_VISIBLE_BELL
-	win_data->menuitem_visible_bell = NULL;
-#endif
-#ifdef ENABLE_BEEP_SINGAL
 	win_data->menuitem_urgent_bell = NULL;
-#endif
 	win_data->menuitem_show_tabs_bar = NULL;
 	win_data->menuitem_hide_tabs_bar = NULL;
 	win_data->menuitem_hide_scroll_bar = NULL;
@@ -3549,17 +3160,9 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 
 	// win_data->default_column;
 	// win_data->default_row;
-#ifdef ENABLE_SET_WORD_CHARS
 	win_data->word_chars = g_strdup(win_data_orig->word_chars);
-#endif
 	// win_data->show_scroll_bar;
 	// win_data->scroll_bar_position;
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND)
-	// win_data->transparent_background;
-	// win_data->background_saturation;
-	// win_data->scroll_background;
-	win_data->background_image = g_strdup(win_data_orig->background_image);
-#endif
 	// win_data->scrollback_lines;
 	// win_data->dim_text;
 	// win_data->dim_window;
@@ -3568,24 +3171,17 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 	// win_data->open_url_with_ctrl_pressed;
 	// win_data->disable_url_when_ctrl_pressed;
 	// win_data->audible_bell;
-#ifdef ENABLE_VISIBLE_BELL
-	// win_data->visible_bell;
-#endif
 	// win_data->urgent_bell;
 	// win_data->urgent_bell_status;
-#ifdef ENABLE_BEEP_SINGAL
 	win_data->urgent_bell_focus_in_event_id = 0;
-#endif
 	// win_data->erase_binding;
 	for (i=0; i<ERASE_BINDING; i++)
 		win_data->menuitem_erase_binding[i] = NULL;
 	win_data->current_menuitem_erase_binding = NULL;
-#ifdef ENABLE_CURSOR_SHAPE
 	// win_data->cursor_shape;
 	for (i=0; i<CURSOR_SHAPE; i++)
 		win_data->menuitem_cursor_shape[i] = NULL;
 	win_data->current_menuitem_cursor_shape = NULL;
-#endif
 // ---- other ---- //
 
 	// win_data->confirm_to_close_multi_tabs;
@@ -3632,11 +3228,7 @@ void update_window_hint(struct Window *win_data,
 	    page_data->font_size == 0)
 		win_data->hints_type = HINTS_FONT_BASE;
 	else if ((check_if_every_vte_is_using_restore_font_name(win_data)) ||
-#ifdef USE_GTK2_GEOMETRY_METHOD
-		  win_data->fullscreen)
-#else
 		  win_data->window_status)
-#endif
 		win_data->hints_type = HINTS_FONT_BASE;
 	else
 		win_data->hints_type = HINTS_NONE;
@@ -3670,21 +3262,8 @@ gboolean hide_and_show_tabs_bar(struct Window *win_data , Switch_Type show_tabs_
 
 	// win_data->keep_vte_size |= 6;
 	// window_resizable(win_data->window, win_data->current_vte, 2, 1);
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	if (! (win_data->fullscreen || win_data->window_status))
-#else
 	if (win_data->window_status == WINDOW_NORMAL)
-#endif
 	{
-#ifdef USE_GTK2_GEOMETRY_METHOD
-#  ifdef GEOMETRY
-		g_debug("@ hide_and_show_tabs_bar(%p): Call keep_gtk2_window_size() with keep_vte_size = 0x%X",
-			win_data->window, win_data->keep_vte_size);
-#  endif
-		// g_debug("hide_and_show_tabs_bar(): launch keep_gtk2_window_size()!");
-		keep_gtk2_window_size (win_data, win_data->current_vte, GEOMETRY_SHOW_HIDE_TAB_BAR);
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 #  ifdef GEOMETRY
 		fprintf(stderr, "\033[1;%dm!! hide_and_show_tabs_bar(win_data %p)(GEOMETRY_AUTOMATIC): "
 				"Calling keep_gtk3_window_size() with hints_type = %d\n",
@@ -3692,9 +3271,7 @@ gboolean hide_and_show_tabs_bar(struct Window *win_data , Switch_Type show_tabs_
 #  endif
 		win_data->resize_type = GEOMETRY_AUTOMATIC;
 		keep_gtk3_window_size(win_data, FALSE);
-#endif
 	}
-#ifdef USE_GTK3_GEOMETRY_METHOD
 	if (win_data->window_status == WINDOW_RESIZING_TO_NORMAL)
 	{
 #  ifdef GEOMETRY
@@ -3705,7 +3282,6 @@ gboolean hide_and_show_tabs_bar(struct Window *win_data , Switch_Type show_tabs_
 		win_data->resize_type = GEOMETRY_CUSTOM;
 		keep_gtk3_window_size(win_data, FALSE);
 	}
-#endif
 
 	gtk_notebook_set_show_tabs(GTK_NOTEBOOK(win_data->notebook), show);
 	if (show)
@@ -3740,14 +3316,10 @@ gboolean get_hide_or_show_tabs_bar(struct Window *win_data, Switch_Type show_tab
 	{
 		case AUTOMATIC:
 			if ((gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)) > 1) &&
-#ifdef USE_GTK2_GEOMETRY_METHOD
-			     (win_data->true_fullscreen==FALSE))
-#else
 			     ((win_data->window_status==WINDOW_NORMAL) ||
 			      (win_data->window_status==WINDOW_RESIZING_TO_NORMAL) ||
 			      (win_data->window_status==WINDOW_APPLY_PROFILE_NORMAL) ||
 			      (win_data->window_status==WINDOW_MAX_WINDOW)))
-#endif
 				show = TRUE;
 			else
 				show = FALSE;
@@ -3802,12 +3374,6 @@ gboolean hide_scrollback_lines(GtkWidget *menu_item, struct Window *win_data)
 		show = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_hide_scroll_bar));
 
 	win_data->show_scroll_bar = AUTOMATIC;
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	if (show && win_data->true_fullscreen)
-		win_data->show_scroll_bar = FORCE_ON;
-	else if ((show == FALSE) && (win_data->true_fullscreen == FALSE))
-		win_data->show_scroll_bar = FORCE_OFF;
-#else
 	switch (win_data->window_status)
 	{
 		case WINDOW_NORMAL:
@@ -3829,7 +3395,6 @@ gboolean hide_scrollback_lines(GtkWidget *menu_item, struct Window *win_data)
 			break;
 
 	}
-#endif
 	// g_debug("hide_scrollback_lines(): show = %d, win_data->show_scroll_bar = %d",
 	//	show, win_data->show_scroll_bar);
 
@@ -3848,18 +3413,6 @@ gboolean hide_scrollback_lines(GtkWidget *menu_item, struct Window *win_data)
 	g_ptr_array_unref(all_pages);
 
 	// Trying to keep vte size
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	if (! (win_data->fullscreen || win_data->window_status))
-	{
-#  ifdef GEOMETRY
-		g_debug("@ hide_scrollback_lines(for %p): Call keep_gtk2_window_size() with keep_vte_size = 0x%X",
-			win_data->window, win_data->keep_vte_size);
-#  endif
-		// g_debug("hide_scrollback_lines(): launch keep_gtk2_window_size()!");
-		keep_gtk2_window_size (win_data, win_data->current_vte, GEOMETRY_SHOW_HIDE_SCROLL_BAR);
-	}
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 	if (win_data->window_status == WINDOW_NORMAL)
 	{
 #  ifdef GEOMETRY
@@ -3870,8 +3423,6 @@ gboolean hide_scrollback_lines(GtkWidget *menu_item, struct Window *win_data)
 		win_data->resize_type = GEOMETRY_AUTOMATIC;
 		keep_gtk3_window_size(win_data, FALSE);
 	}
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 	if (win_data->window_status == WINDOW_RESIZING_TO_NORMAL)
 	{
 #  ifdef GEOMETRY
@@ -3882,7 +3433,6 @@ gboolean hide_scrollback_lines(GtkWidget *menu_item, struct Window *win_data)
 		win_data->resize_type = GEOMETRY_CUSTOM;
 		keep_gtk3_window_size(win_data, FALSE);
 	}
-#endif
 	return TRUE;
 }
 

@@ -31,9 +31,7 @@ typedef gchar StrLists;
 // **************************** misc.c ****************************
 //
 
-#ifdef USE_GTK_ALT_DIALOG_BUTTON_ORDER
 gboolean gtk_alt_dialog_button_order(void);
-#endif
 gboolean check_if_default_proc_dir_exist(gchar *proc_dir);
 gchar *convert_array_to_string(gchar **array, gchar separator);
 gchar *convert_str_to_utf8(gchar *string, gchar *encoding_str);
@@ -50,10 +48,8 @@ gchar *get_VTE_CJK_WIDTH_str(gint VTE_CJK_WIDTH);
 #define GEOMETRY_X_NEGATIVE	0x10
 #define GEOMETRY_Y_NEGATIVE	0x20
 gchar **sanitize_environs(gchar **environs);
-#ifdef USE_LILYTERM_STOCK_ICONS
 GtkWidget *lilyterm_image_new_from_stock(const gchar *stock_id, GtkIconSize size);
 GtkWidget *lilyterm_button_new_from_stock(const gchar *stock_id);
-#endif
 gint parse_geometry_str(const gchar *geometry_str, gint *offset_x, gint *offset_y, guint *width, guint *height);
 gint get_default_VTE_CJK_WIDTH(void);
 void restore_SYSTEM_VTE_CJK_WIDTH_STR(void);
@@ -71,12 +67,10 @@ gchar **get_pid_stat(pid_t pid, gint max_tokens);
 gchar *convert_text_to_html(StrAddr **text, gboolean free_text, gchar *color, StrLists *tag, ...);
 gchar *join_strings_to_string(const gchar separator, const gint total, const StrLists *string, ...);
 gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line);
-#ifdef ENABLE_RGBA
 GdkRGBA convert_color_to_rgba(GdkColor color);
 GdkColor convert_rgba_to_color(GdkRGBA rgba);
 gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba);
 gboolean dirty_gdk_color_parse(const gchar *spec, GdkRGBA *color);
-#endif
 GtkWidget *dirty_gtk_vbox_new(gboolean homogeneous, gint spacing);
 GtkWidget *dirty_gtk_hbox_new(gboolean homogeneous, gint spacing);
 #if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
@@ -133,11 +127,9 @@ gchar *get_init_dir(pid_t pid, gchar *pwd, gchar *home);
 #if defined(USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
 void keep_gtk2_window_size (struct Window *win_data, GtkWidget *vte, Geometry_Resize_Type keep_vte_size);
 #endif
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 void keep_gtk3_window_size(struct Window *win_data, gboolean idle);
 gboolean show_or_hide_tabs_bar_and_scroll_bar(struct Window *win_data);
 gboolean idle_set_vte_font_to_selected(struct Window *win_data);
-#endif
 void dim_window(struct Window *win_data, gint dim_window);
 void clear_window(struct Window *win_data);
 void set_window_icon(GtkWidget *window);
@@ -147,9 +139,6 @@ gboolean display_child_process_dialog (GString *child_process_list, struct Windo
 GString *get_child_process_list(GtkWidget *window, gint window_no, gint page_no, GString *process_list, pid_t pid, struct Window *win_data, gboolean show_foreground);
 void clean_process_data(void);
 gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win_data);
-#ifdef DISABLE_PAGE_ADDED
-void notebook_page_added(GtkNotebook *notebook, GtkWidget *child, guint page_num, struct Window *win_data);
-#endif
 void show_close_button_on_tab(struct Window *win_data, struct Page *page_data);
 void set_fill_tabs_bar(GtkNotebook *notebook, gboolean fill_tabs_bar, struct Page *page_data);
 void remove_notebook_page (GtkNotebook *notebook, GtkWidget *child, guint page_num, struct Window *win_data, gboolean run_quit_gtk);
@@ -179,17 +168,13 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data);
 gchar *get_user_profile_path(struct Window *win_data, int argc, char *argv[]);
 void get_user_settings(struct Window *win_data, const gchar *encoding);
 void init_prime_user_datas(struct Window *win_data);
-#ifdef ENABLE_PROFILE
 void get_prime_user_settings(GKeyFile *keyfile, struct Window *win_data, gchar *encoding);
 gboolean check_boolean_value(GKeyFile *keyfile, const gchar *group_name, const gchar *key, const gboolean default_value);
 void check_profile_version (GKeyFile *keyfile, struct Window *win_data);
-#endif
 void profile_is_invalid_dialog(GError *error, struct Window *win_data);
 void convert_string_to_user_key(gint i, gchar *value, struct Window *win_data);
 gchar *get_profile(void);
-#if defined(ENABLE_RGBA) || defined(UNIT_TEST)
 void init_rgba(struct Window *win_data);
-#endif
 void get_row_and_column_from_geometry_str(glong *column, glong *row, glong *default_column, glong *default_row, gchar *geometry_str);
 
 //
@@ -203,9 +188,7 @@ void generate_all_color_datas(struct Window *win_data);
 GdkRGBA *get_current_color_theme(struct Window *win_data);
 void init_new_page(struct Window *win_data, struct Page *page_data, glong column, glong row);
 void set_cursor_blink(struct Window *win_data, struct Page *page_data);
-#ifdef ENABLE_SET_WORD_CHARS
 void set_vte_word_chars(GtkWidget *vte, const gchar *word_chars);
-#endif
 void set_hyperlink(struct Window *win_data, struct Page *page_data);
 void clean_hyperlink(struct Window *win_data, struct Page *page_data);
 void enable_custom_cursor_color(GtkWidget *vte, gboolean custom_cursor_color, GdkRGBA *cursor_color);

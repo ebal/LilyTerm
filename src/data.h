@@ -137,229 +137,28 @@
 	#define SOCKET_FILE PACKAGE
 #endif
 
-#if GTK_CHECK_VERSION(2,5,1)
-	// SINCE: gtk+-2.05.01/gtk/gtklabel.h:void gtk_label_set_ellipsize()
-	#define HAVE_GTK_LABEL_SET_ELLIPSIZE
-#endif
-#if GTK_CHECK_VERSION(2,5,3)
-	// SINCE gtk+-2.5.3/gtk/gtkrange.c: * GtkRange::change-value
-	#define HAVE_GTKRANGE_CHANGE_VALUE
-#endif
-#if GTK_CHECK_VERSION(2,5,4)
-	// SINCE: gtk+-2.5.4/gtk/gtkdialog.h:gboolean gtk_alternative_dialog_button_order()
-	#define HAVE_GTK_ALTERNATIVE_DIALOG_BUTTON_ORDER
-	// SINCE: gtk+-2.5.4/gtk/gtklabel.h:void gtk_label_set_width_chars()
-	#define HAVE_GTK_LABEL_SET_WIDTH_CHARS
-#endif
-#if GTK_CHECK_VERSION(2,5,6)
-	// SINCE: gtk+-2.5.6/gtk/gtkbutton.h:void gtk_button_set_image()
-	#define HAVE_GTK_BUTTON_SET_IMAGE
-#endif
-#if GTK_CHECK_VERSION(2,6,0)
-	// SINCE: gtk+-2.6.0/gtk/gtklabel.h:gint gtk_label_get_max_width_chars()
-	#define HAVE_GTK_LABEL_GET_MAX_WIDTH_CHARS
-#endif
-#if GTK_CHECK_VERSION(2,7,3)
-	// SINCE: gtk+-2.7.3/gtk/gtkfilechooser.h:void gtk_file_chooser_set_do_overwrite_confirmation()
-	#define HAVE_GTK_FILE_CHOOSER_SET_DO_OVERWRITE_CONFIRMATION
-#endif
-#if GTK_CHECK_VERSION(2,9,0)
-	// SINCE: gtk+-2.9.0/gtk/gtknotebook.h: gtk_notebook_set_tab_reorderable()
-	#define ENABLE_TAB_REORDER
-	#define ENABLE_PAGE_ADDED
-	// SINCE: gtk+-2.9.0/gtk/gtknotebook.h: gtk_notebook_set_group_id()
-	// END:   gtk+-2.24.5/gtk/gtknotebook.h: gtk_notebook_set_group_id()
-	#define ENABLE_DRAG_AND_DROP
-#else
-	#define DISABLE_TAB_REORDER
-	#define DISABLE_PAGE_ADDED
-  #ifndef GDK_SUPER_MASK
-	// SINCE: gtk+-2.9.0/gdk/gdktypes.h: GDK_SUPER_MASK = 1 << 26
-	#define GDK_SUPER_MASK 1<<26
-  #endif
-#endif
-#if GTK_CHECK_VERSION(2,11,0)
-	// SINCE: gtk+-2.11.0/gtk/gtkwindow.h: gtk_window_set_opacity()
-	#define ENABLE_RGBA
-	// SINCE: gtk+-2.11.0/gdk/gdkcolor.h: gdk_color_to_string()
-	#define ENABLE_GDKCOLOR_TO_STRING
-	// SINCE: gtk+-2.11.0/gdk/gdk.h: gdk_notify_startup_complete_with_id()
-	#define ENABLE_X_STARTUP_NOTIFICATION_ID
-#endif
-#if GTK_CHECK_VERSION(2,11,3)
-	// SINCE: gtk+-2.11.3/gtk/gtkwidget.h: gtk_widget_set_tooltip_text()
-	#define ENABLE_SET_TOOLTIP_TEXT
-#endif
-#if GTK_CHECK_VERSION(2,13,0)
-	// SINCE: gtk+-2.13.0/gtk/gtktestutils.h: gtk_test_widget_click()
-	#define ENABLE_MOUSE_SCROLL
-#else
-	// SINCE: gtk+-2.13.0/gtk/gtkstock.h: #define GTK_STOCK_PAGE_SETUP "gtk-page-setup"
-	#define GTK_FAKE_STOCK_PAGE_SETUP GTK_STOCK_INDEX
-#endif
-#if GTK_CHECK_VERSION(2,13,4)
-	// SINCE: gtk+-2.13.4/gtk/gtkwidget.h: gtk_widget_get_allocation()
-	#define USE_GTK_ALLOCATION
-#else
-	// SINCE: gtk+-2.13.4/gtk/gtkdialog.h: gtk_dialog_get_content_area()
-	#define gtk_dialog_get_content_area(x) x->vbox
-	// SINCE: gtk+-2.13.4/gtk/gtkdialog.h: gtk_dialog_get_action_area()
-	#define gtk_dialog_get_action_area(x) x->action_area
-	// SINCE: gtk+-2.13.4/gtk/gtkwidget.h: gtk_widget_get_window
-	#define gtk_widget_get_window(x) x->window
-#endif
-#if ! GTK_CHECK_VERSION(2,15,0)
-	// SINCE: gtk+-2.15.0/gtk/gtkmenuitem.h: gtk_menu_item_set_label()
-	#define gtk_menu_item_set_label(x,y) gtk_label_set_text(GTK_LABEL(gtk_bin_get_child(GTK_BIN(x))), y)
-#endif
-#if ! GTK_CHECK_VERSION(2,17,5)
-	// SINCE: gtk+-2.17.5/gtk/gtkwidget.h: gtk_widget_set_can_focus()
-	#define gtk_widget_set_can_focus(x,FALSE) GTK_WIDGET_UNSET_FLAGS(x,GTK_CAN_FOCUS)
-#  ifdef UNIT_TEST
-	#define gtk_widget_get_visible gtk_widget_is_focus
-	#define gtk_widget_get_allocation(x,y) gtk_widget_is_focus(x)
-#  endif
-#endif
-#if ! GTK_CHECK_VERSION(2,19,5)
-	// SINCE: gtk+-2.19.5/gtk/gtkwidget.h: gtk_widget_get_mapped()
-	#define gtk_widget_get_mapped(x) GTK_WIDGET_MAPPED(x)
-#endif
-#if ! GTK_CHECK_VERSION(2,22,0)
-	// SINCE: gtk+-2.22.0/gdk/gdkkeysyms.h: #define GDK_KEY_VoidSymbol 0xffffff
-	#define GDK_KEY_VoidSymbol	GDK_VoidSymbol
-	#define GDK_KEY_asciitilde	GDK_asciitilde
-	#define GDK_KEY_Shift_L		GDK_Shift_L
-	#define GDK_KEY_Hyper_R		GDK_Hyper_R
-	#define GDK_KEY_F1		GDK_F1
-	#define GDK_KEY_F12		GDK_F12
-	#define GDK_KEY_Menu		GDK_Menu
-	#define GDK_KEY_Super_R		GDK_Super_R
-	#define GDK_KEY_Super_L		GDK_Super_L
-	#define GDK_KEY_a		GDK_a
-	#define GDK_KEY_z		GDK_z
-	#define GDK_KEY_A		GDK_A
-	#define GDK_KEY_Z		GDK_Z
-#endif
-#if ! GTK_CHECK_VERSION(2,23,0)
-	// END: gtk+-2.23.0/gtk/gtkmain.h: gtk_quit_add() GTK_DISABLE_DEPRECATED
-	#define g_atexit(x) gtk_quit_add(0, (GtkFunction)x, NULL)
-#endif
-#if ! GTK_CHECK_VERSION(2,90,4)
-	// END: gtk+-2.90.3/gtk/gtknotebook.h: gtk_notebook_set_tab_label_packing()
-	#define USE_OLD_GTK_LABEL_PACKING
-#endif
-#if GTK_CHECK_VERSION(2,91,0)
-	// SINCE: gtk+-2.91.0/gtk/gtkwidget.h GtkAlign gtk_widget_set_halign()
-	#define USE_GTK_WIDGET_SET_HALIGN
-#endif
-#if ! GTK_CHECK_VERSION(2,90,6)
-	// END: gtk+-2.90.6/gtk/gtkdialog.h: GTK_DIALOG_NO_SEPARATOR = 1 << 2
-	#define EXIST_GTK_DIALOG_NO_SEPARATOR
-#endif
-#if GTK_CHECK_VERSION(2,90,7)
-	// SINCE: gtk+-2.7.0/gdk/gdkscreen.h: gdk_screen_get_rgba_colormap()
-	// END:   gtk+-2.90.7/gdk/gdkscreen.h: gdk_screen_get_rgba_colormap()
-	// SINCE: gtk+-2.7.0/gdk/gdkscreen.h: gdk_screen_get_rgba_visual()
-	#define USE_GDK_SCREEN_GET_RGBA_VISUAL
-#else
-	// SINCE: gtk+-2.9.0/gtk/gtknotebook.h: gtk_notebook_set_group()
-	// END:   gtk+-2.90.7/gtk/gtknotebook.h: gtk_notebook_set_group()
-	// SINCE: gtk+-2.23.0/gtk/gtknotebook.h: gtk_notebook_set_group_name()
-	#define gtk_notebook_set_group_name(x,y) gtk_notebook_set_group(x,GINT_TO_POINTER (NOTEBOOK_GROUP))
-#endif
-#if GTK_CHECK_VERSION(2,91,0)
 	// SINCE: gtk+-2.91.0/gtk/gtkwidget.h: gtk_widget_get_preferred_size()
 	#define gtk_widget_get_child_requisition(x,y) gtk_widget_get_preferred_size(x,y,NULL)
-#endif
-#if GTK_CHECK_VERSION(2,91,1)
-	// SINCE: gtk+-2.91.1/gtk/gtkwindow.h: gtk_window_set_has_resize_grip()
-	// END: gtk+-3.13.4/gtk/gtkwindow.h: GDK_DEPRECATED_IN_3_14 void gtk_window_set_has_resize_grip()
-#  if ! GTK_CHECK_VERSION(3,13,4)
-		#define NO_RESIZE_GRIP
-#  endif
-	// gtk_window_parse_geometry() ended at gtk+ 3.19.8
-	#define USE_XPARSEGEOMETRY
 	// END: gtk+-2.91.1/gtk/gtkwidget.h: gtk_widget_hide_all()
 	#define gtk_widget_hide_all(x) gtk_widget_hide(x)
-#endif
-#if GTK_CHECK_VERSION(2,91,5)
 	#define USE_GTK3_GEOMETRY_METHOD
-#else
-	#define USE_GTK2_GEOMETRY_METHOD
-#  ifdef UNIT_TEST
-	#define gtk_window_resize_to_geometry gtk_window_move
-#  endif
-#endif
-#if GTK_CHECK_VERSION(2,3,2) && ( ! GTK_CHECK_VERSION(2,91,6))
-	// SINCE: gtk+-2.3.2/gdk/gdkspawn.h: gdk_spawn_on_screen_with_pipes()
-	// END:   gtk+-2.91.6/gdk/gdkspawn.h: gdk_spawn_on_screen_with_pipes()
-	#define g_spawn_async_with_pipes(a,b,c,d,e,f,g,h,i,j,k) gdk_spawn_on_screen_with_pipes(gdk_screen_get_default(),a,b,c,d,e,f,g,h,i,j,k)
-#endif
-#if GTK_CHECK_VERSION(2,91,7)
-	#define GTK3_LAME_GDK_SCREEN_IS_COMPOSITED
-	#define GTK3_LAME_GDK_SCREEN_GET_RGBA_VISUAL
-	// SINCE: gtk+-2.91.7/gdk/gdkmain.h: void gdk_disable_multidevice ()
-	// Need gdk_disable_multidevice() be called to get gtk_test_widget_click() working.
 	#define SCROLL_LINE 5
-#endif
-#if GTK_CHECK_VERSION(3,1,12)
-	// SINCE: gtk+-3.1.12/gtk/gtkfontchooser.h: gtk_font_chooser_set_filter_func()
-	// DISABLE: it filtered too many Chinese fonts.
-	// #define EXIST_GTK_FONT_CHOOSER_SET_FILTER_FUNC
-#endif
-#if GTK_CHECK_VERSION(3,3,4)
-	// END: gtk+-3.3.4/gtk/deprecated/gtktable.h: gtk_table_attach_defaults()
-	#define USE_GTK_GRID
 	// END: gtk+-3.3.4/gtk/deprecated/gtkvscrollbar.h: gtk_vscrollbar_new()
 	#define gtk_vscrollbar_new(x) gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL,x)
 	// END: gtk+-3.3.4/gtk/deprecated/gtkhscale.h: gtk_hscale_new_with_range()
 	#define gtk_hscale_new_with_range(x,y,z) gtk_scale_new_with_range (GTK_ORIENTATION_HORIZONTAL,x,y,z)
-#else
-	// END: gtk+-3.3.4/gtk/deprecated/gtkstyle.h: gtk_widget_modify_style()
-	#define USING_OLD_GTK_RC_STYLE_NEW
-	// END: gtk+-3.3.4/gtk/deprecated/gtkfontsel.h: gtk_font_selection_dialog_new()
-	#define GTK_FONT_CHOOSER GTK_FONT_SELECTION_DIALOG
-	#define gtk_font_chooser_dialog_new(x,y) gtk_font_selection_dialog_new(x)
-	#define gtk_font_chooser_get_font gtk_font_selection_dialog_get_font_name
-	#define gtk_font_chooser_set_font gtk_font_selection_dialog_set_font_name
-#  ifdef UNIT_TEST
-	#define gtk_font_chooser_set_filter_func(a,b,c,d) NULL
-#  endif
-#endif
-// FIXME: The replacement of GtkColorSelection in GTK3, GtkColorChooser, is a lame... orz
-#if GTK_CHECK_VERSION(3,3,18)
-	// SINCE: gtk+-3.3.18/gtk/gtkcolorchooserwidget.h: gtk_color_chooser_widget_new()
-	#define USE_GTK_COLOR_CHOOSER
-#else
-	// END: gtk+-3.3.18/gtk/deprecated/gtkcolorsel.h: gtk_color_selection_new()
-	#define USE_OLD_GTK_COLOR_SELECTION
-	#define GTK_COLOR_CHOOSER GTK_COLOR_SELECTION
-	#define GtkColorChooser GtkColorSelection
-	#define gtk_color_chooser_get_rgba gtk_color_selection_get_current_color
-	#define adjust_vte_color(x,y,z) adjust_vte_color(x,z)
-#endif
-#if GTK_CHECK_VERSION(3,8,0)
 	// END: gtk+-3.8.0/gtk/gtkwindow.h: GDK_DEPRECATED_IN_3_8_FOR(gtk_widget_set_opacity)
 	#define gtk_window_set_opacity(x,y) gtk_widget_set_opacity(GTK_WIDGET(x),y)
-#endif
-#if GTK_CHECK_VERSION(3,9,0)
-	// END: gtk+-3.9.0/gdk/gdkmain.h: GDK_DEPRECATED_IN_3_8_FOR(gdk_display_get_name(gdk_display_get_default())) gdk_get_display()
-	#define gdk_get_display() g_strdup(gdk_display_get_name(gdk_display_get_default()))
-#endif
-#if GTK_CHECK_VERSION(3,9,8)
 	// END: gtk+-3.9.8/gtk/gtkbutton.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_button_new_with_label) gtk_button_new_from_stock()
 	// END: gtk+-3.9.8/gtk/gtkimage.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_image_new_from_icon_name) gtk_image_new_from_stock()
 	// A stock id ("gtk-close") is not an icon name, and icon themes do not
 	// carry gtk-* aliases any more: map stock ids to real icon names.
 	#define gtk_button_new_from_stock(x) lilyterm_button_new_from_stock(x)
 	#define gtk_image_new_from_stock lilyterm_image_new_from_stock
-	#define USE_LILYTERM_STOCK_ICONS
 	// END: gtk+-3.9.8/gtk/gtkimagemenuitem.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_menu_item_new_with_label) gtk_image_menu_item_new_with_label()
 	#define gtk_image_menu_item_new_with_label gtk_menu_item_new_with_label
 	// END: gtk+-3.9.8/gtk/gtkimagemenuitem.h: GDK_DEPRECATED_IN_3_10 gtk_image_menu_item_set_image()
 	#define gtk_image_menu_item_set_image(a,b) NULL
-#endif
-#if GTK_CHECK_VERSION(3,9,10)
 	#define	 GTK_FAKE_STOCK_ABOUT			"gtk-about"
 	#define	 GTK_FAKE_STOCK_ADD			"gtk-add"
 	#define	 GTK_FAKE_STOCK_APPLY			"gtk-apply"
@@ -385,7 +184,6 @@
 	#define	 GTK_FAKE_STOCK_GO_DOWN			"gtk-go-down"
 	#define	 GTK_FAKE_STOCK_GO_UP			"gtk-go-up"
 	#define	 GTK_FAKE_STOCK_HELP			"gtk-help"
-	#define	 GTK_FAKE_STOCK_INDEX			"gtk-index"
 	#define	 GTK_FAKE_STOCK_NEW			"gtk-new"
 	#define	 GTK_FAKE_STOCK_OK			"gtk-ok"
 	#define	 GTK_FAKE_STOCK_OPEN			"gtk-open"
@@ -403,186 +201,21 @@
 	#define	 GTK_FAKE_STOCK_ZOOM_100		"gtk-zoom-100"
 	#define	 GTK_FAKE_STOCK_ZOOM_IN			"gtk-zoom-in"
 	#define	 GTK_FAKE_STOCK_ZOOM_OUT		"gtk-zoom-out"
-#else
-#  if ! GTK_CHECK_VERSION(2,5,0)
-	// SINCE: gtk+-2.05.00/gtk/gtkstock.h:#define GTK_STOCK_ABOUT	    "gtk-about"
-	#define	GTK_STOCK_ABOUT				"gtk-about"
-	#define	GTK_STOCK_EDIT				"gtk-edit"
-	#define GTK_STOCK_FILE				"gtk-file"
-#  endif
-	#define GTK_FAKE_STOCK_ABOUT			GTK_STOCK_ABOUT
-	#define GTK_FAKE_STOCK_ADD			GTK_STOCK_ADD
-	#define GTK_FAKE_STOCK_APPLY			GTK_STOCK_APPLY
-	#define GTK_FAKE_STOCK_CANCEL			GTK_STOCK_CANCEL
-	#define GTK_FAKE_STOCK_CLEAR			GTK_STOCK_CLEAR
-	#define GTK_FAKE_STOCK_CLOSE			GTK_STOCK_CLOSE
-	#define GTK_FAKE_STOCK_CONVERT			GTK_STOCK_CONVERT
-	#define GTK_FAKE_STOCK_COPY			GTK_STOCK_COPY
-	#define GTK_FAKE_STOCK_DIALOG_AUTHENTICATION	GTK_STOCK_DIALOG_AUTHENTICATION
-	#define GTK_FAKE_STOCK_DIALOG_ERROR		GTK_STOCK_DIALOG_ERROR
-	#define GTK_FAKE_STOCK_DIALOG_INFO		GTK_STOCK_DIALOG_INFO
-	#define GTK_FAKE_STOCK_DIALOG_QUESTION		GTK_STOCK_DIALOG_QUESTION
-	#define GTK_FAKE_STOCK_DIALOG_WARNING		GTK_STOCK_DIALOG_WARNING
-	#define GTK_FAKE_STOCK_DND			GTK_STOCK_DND
-	#define GTK_FAKE_STOCK_DND_MULTIPLE		GTK_STOCK_DND_MULTIPLE
-	#define GTK_FAKE_STOCK_EDIT			GTK_STOCK_EDIT
-	#define GTK_FAKE_STOCK_EXECUTE			GTK_STOCK_EXECUTE
-	#define GTK_FAKE_STOCK_FILE			GTK_STOCK_FILE
-	#define GTK_FAKE_STOCK_FIND			GTK_STOCK_FIND
-	#define GTK_FAKE_STOCK_GO_BACK			GTK_STOCK_GO_BACK
-	#define GTK_FAKE_STOCK_GO_DOWN			GTK_STOCK_GO_DOWN
-	#define GTK_FAKE_STOCK_GOTO_BOTTOM		GTK_STOCK_GOTO_BOTTOM
-	#define GTK_FAKE_STOCK_GOTO_TOP			GTK_STOCK_GOTO_TOP
-	#define GTK_FAKE_STOCK_GO_UP			GTK_STOCK_GO_UP
-	#define GTK_FAKE_STOCK_HELP			GTK_STOCK_HELP
-	#define GTK_FAKE_STOCK_INDEX			GTK_STOCK_INDEX
-	#define GTK_FAKE_STOCK_NEW			GTK_STOCK_NEW
-	#define GTK_FAKE_STOCK_OK			GTK_STOCK_OK
-	#define GTK_FAKE_STOCK_OPEN			GTK_STOCK_OPEN
-#ifndef GTK_FAKE_STOCK_PAGE_SETUP
-	#define GTK_FAKE_STOCK_PAGE_SETUP		GTK_STOCK_PAGE_SETUP
-#endif
-	#define GTK_FAKE_STOCK_PASTE			GTK_STOCK_PASTE
-	#define GTK_FAKE_STOCK_PREFERENCES		GTK_STOCK_PREFERENCES
-	#define GTK_FAKE_STOCK_PROPERTIES		GTK_STOCK_PROPERTIES
-	#define GTK_FAKE_STOCK_QUIT			GTK_STOCK_QUIT
-	#define GTK_FAKE_STOCK_REFRESH			GTK_STOCK_REFRESH
-	#define GTK_FAKE_STOCK_REVERT_TO_SAVED		GTK_STOCK_REVERT_TO_SAVED
-	#define GTK_FAKE_STOCK_SAVE			GTK_STOCK_SAVE
-	#define GTK_FAKE_STOCK_SAVE_AS			GTK_STOCK_SAVE_AS
-	#define GTK_FAKE_STOCK_SELECT_COLOR		GTK_STOCK_SELECT_COLOR
-	#define GTK_FAKE_STOCK_SELECT_FONT		GTK_STOCK_SELECT_FONT
-	#define GTK_FAKE_STOCK_ZOOM_100			GTK_STOCK_ZOOM_100
-	#define GTK_FAKE_STOCK_ZOOM_IN			GTK_STOCK_ZOOM_IN
-	#define GTK_FAKE_STOCK_ZOOM_OUT			GTK_STOCK_ZOOM_OUT
-#endif
-#if ! GTK_CHECK_VERSION(3,10,6)
-	// END: gtk+-3.10.6/gtk/deprecated/gtkstyle.h: GDK_DEPRECATED_IN_3_0_FOR(gtk_widget_override_background_color)
-	#define HAVE_GTK_WIDGET_OVERRIDE_BACKGROUND_COLOR
-#endif
-#if GTK_CHECK_VERSION(3,11,5)
-	// END: gtk+-3.11.5/gtk/gtkdialog.h: GDK_DEPRECATED_IN_3_10 gtk_alternative_dialog_button_order()
-	#define USE_GTK_ALT_DIALOG_BUTTON_ORDER
 	#define gtk_alternative_dialog_button_order(x) gtk_alt_dialog_button_order()
-#else
-	// END: gtk+-3.11.5/gtk/gtkdialog.h: GDK_DEPRECATED_IN_3_10 gtk_dialog_get_action_area()
-	#define HAVE_GTK_DIALOG_GET_ACTION_AREA
-#endif
-#if ! GTK_CHECK_VERSION(3,13,1)
-	// END: gtk+-3.13.1/gtk/gtkwidget.c: gtk_widget_class_install_style_property (G_PARAM_DEPRECATED)
-	#define HAVE_CSS_FOCUS_LINE_WIDTH
-#endif
-#if ! GTK_CHECK_VERSION(3,18,9)
-	// END: gtk+-3.18.9/gtk/gtkstylecontext.h: GDK_DEPRECATED_IN_3_16_FOR(gtk_render_background) void gtk_style_context_get_background_color()
-	#define HAVE_GTK_STYLE_CONTEXT_GET_BACKGROUND_COLOR
-#endif
-#if GTK_CHECK_VERSION(3,19,2)
 	// END: gtk+-3.19.2/gtk/gtkbutton.h: GDK_DEPRECATED_IN_3_20 void gtk_button_set_focus_on_click()
 	#define gtk_button_set_focus_on_click(x,y) gtk_widget_set_focus_on_click(GTK_WIDGET(x),y)
-#endif
-#if ! GTK_CHECK_VERSION(3,19,4)
-	// END: gtk+-3.19.4/gtk/gtkwindow.h-GDK_DEPRECATED_IN_3_20 void gtk_window_resize_to_geometry()
-	#define HAVE_GTK_WINDOW_RESIZE_TO_GEOMETRY
-#endif
-#if ! GTK_CHECK_VERSION(3,19,8)
-	// END: gtk+-3.19.8/gtk/gtkwindow.h: GDK_DEPRECATED_IN_3_20 gboolean gtk_window_parse_geometry()
-	#define HAVE_GTK_WINDOW_PARSE_GEOMETRY
-#endif
 
-#if ! GLIB_CHECK_VERSION(2,5,0)
-	// SICNE glib-2.5.0/glib/gmessages.h:g_debug()
-	#define g_debug(...) g_log (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, __VA_ARGS__)
-#endif
-#if GLIB_CHECK_VERSION(2,5,4)
-	// SINCE: glib-2.5.4/glib/gkeyfile.h:typedef struct _GKeyFile GKeyFile;
-	#define ENABLE_PROFILE
-	// SINCE: glib-2.5.4/glib/gstdio.h
-	#define HAVE_GSTDIO_H
-#endif
-#if ! GLIB_CHECK_VERSION(2,13,0)
-	// SINCE: glib-2.13.0/glib/gmain.h: g_timeout_add_seconds()
-	#define g_timeout_add_seconds(x,y,z) g_timeout_add(x*1000,y,z);
-#endif
-#if GLIB_CHECK_VERSION(2,31,2)
 	// END: glib-2.31.2/glib/gutils.h: g_atexit () GLIB_DEPRECATED
 	#define g_atexit atexit
-#endif
-#if ! GLIB_CHECK_VERSION(2,31,18)
-	// SINCE: glib-2.31.18/glib/gmacros.h
-	#define G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-	#define G_GNUC_END_IGNORE_DEPRECATIONS
-#endif
 
-#ifndef VTE_CHECK_VERSION
-#define VTE_CHECK_VERSION(major,minor,micro) \
-  (0 > (major) || (0 == (major) && 0 > (minor)) || (0 == (major) && 0 == (minor) && 0 >= (micro)))
-#endif
-#if VTE_CHECK_VERSION(0,15,3)
-	// SINCE: vte-0.15.3/src/vte.h: vte_terminal_select_all()
-	#define ENABLE_VTE_SELECT_ALL
-#endif
-#if VTE_CHECK_VERSION(0,17,1)
-	// SINCE: vte-0.17.1/src/vte.h: vte_terminal_set_cursor_blink_mode()
-	#define USE_NEW_VTE_CURSOR_BLINKS_MODE
-	// SINCE: vte-0.17.1/src/vte.h: vte_terminal_match_add_gregex()
-	#define USE_NEW_VTE_MATCH_ADD_GREGEX
-#endif
-#if VTE_CHECK_VERSION(0,19,1)
-	// SINCE: vte-0.19.1/src/vte.h: vte_terminal_set_cursor_shape()
-	#define ENABLE_CURSOR_SHAPE
-	// SINCE: vte-0.19.1/src/vteseq.c: g_signal_emit_by_name(terminal, "beep");
-	#define ENABLE_BEEP_SINGAL
-#endif
-#if VTE_CHECK_VERSION(0,37,90)
 	// SINCE: vte-0.37.90/src/vteseq.c: the "beep" signal is called "bell"
 	#define VTE_BELL_SIGNAL "bell"
-#else
-	#define VTE_BELL_SIGNAL "beep"
-#endif
-#if VTE_CHECK_VERSION(0,20,4)
-	// SINCE: vte-0.20.4/src/vte.h: VTE_ERASE_TTY
-	#define ENABLE_VTE_ERASE_TTY
-#endif
-#if VTE_CHECK_VERSION(0,22,3)
 	#define SCROLL_HISTORY -1
-#else
-	#define SCROLL_HISTORY 1024
-#endif
-#if VTE_CHECK_VERSION(0,24,0)
 	// END: vte-0.24.0/src/vte.h: vte_terminal_get_padding() G_GNUC_DEPRECATED
 	#define vte_terminal_get_padding fake_vte_terminal_get_padding
-#endif
-#if VTE_CHECK_VERSION(0,25,1)
-	// SINCE: vte-0.25.1/src/vte.h: vte_terminal_search_set_gregex()
-	#define ENABLE_FIND_STRING
 	// END: vte-0.25.1/src/vtedeprecated.h: void vte_terminal_set_font_from_string_full()
 	#define vte_terminal_set_font_from_string_full(x,y,z) vte_terminal_set_font_from_string(x,y)
-#else
-	// END: vte-0.25.1/src/vtedeprecated.h: vte_terminal_fork_command()
-	#define USE_OLD_VTE_FORK_COMMAND
-#endif
-#if VTE_CHECK_VERSION(0,27,90) && GTK_CHECK_VERSION(2,91,2)
-	// SINCE: vte-0.27.90/src/vte.h: void vte_terminal_set_colors_rgba()
-	// SINCE: gtk+-2.91.2/gdk/gdktypes.h: typedef struct _GdkRGBA GdkRGBA;
-	#define USE_GDK_RGBA
 	#define MAX_COLOR 1
-#else
-	#define GdkRGBA GdkColor
-	#define gdk_rgba_parse(x,y) gdk_color_parse(y,x)
-	#define gtk_color_selection_set_previous_rgba gtk_color_selection_set_previous_color
-	#define gtk_color_selection_set_current_rgba gtk_color_selection_set_current_color
-	#define vte_terminal_set_colors_rgba vte_terminal_set_colors
-	#define vte_terminal_set_color_foreground_rgba vte_terminal_set_color_foreground
-	#define vte_terminal_set_color_background_rgba vte_terminal_set_color_background
-	#define vte_terminal_set_color_bold_rgba vte_terminal_set_color_bold
-	#define vte_terminal_set_color_cursor_rgba vte_terminal_set_color_cursor
-	#define MAX_COLOR 0xFFFF
-#endif
-#if ! VTE_CHECK_VERSION(0,34,6)
-	// END: vte-0.34.6/src/vtedeprecated.h: void vte_terminal_im_append_menuitems()
-	#define ENABLE_IM_APPEND_MENUITEMS
-#endif
-#if VTE_CHECK_VERSION(0,34,8)
 #  ifdef UNIT_TEST
 	#define USE_FAKE_FUNCTIONS
 	#define vte_terminal_set_opacity(x,y) NULL
@@ -592,83 +225,24 @@
 	#define vte_terminal_set_scroll_background(x,y) vte_terminal_set_size(x,1,1)
 	#define vte_terminal_set_background_tint_color(x,y) vte_terminal_set_size(x,1,1)
 #  endif
-#else
-	// END: vte-0.34.8/src/vtedeprecated.h: void vte_terminal_set_opacity(VteTerminal *terminal, guint16 opacity) G_GNUC_DEPRECATED;
-	// END: vte-0.34.8/src/vtedeprecated.h:	void vte_terminal_set_background_tint_color(VteTerminal *terminal,
-	// END: vte-0.34.8/src/vtedeprecated.h: void vte_terminal_set_scroll_background(VteTerminal *terminal, gboolean scroll) G_GNUC_DEPRECATED;
-	// END: vte-0.34.8/src/vtedeprecated.h: void vte_terminal_set_background_image(VteTerminal *terminal, GdkPixbuf *image) G_GNUC_DEPRECATED;
-	// END: vte-0.34.8/src/vtedeprecated.h: void vte_terminal_set_background_image_file(VteTerminal *terminal, const char *path) G_GNUC_DEPRECATED;
-	// END: vte-0.34.8/src/vtedeprecated.h: void vte_terminal_set_background_tint_color(VteTerminal *terminal, const GdkColor *color) G_GNUC_DEPRECATED;
-	// END: vte-0.34.8/src/vtedeprecated.h: void vte_terminal_set_background_saturation(VteTerminal *terminal, double saturation) G_GNUC_DEPRECATED;
-	// END: vte-0.34.8/src/vtedeprecated.h: void vte_terminal_set_background_transparent(VteTerminal *terminal, gboolean transparent) G_GNUC_DEPRECATED;
-	// END: vte-0.34.8/src/vtedeprecated.h: void vte_terminal_set_opacity(VteTerminal *terminal, guint16 opacity) G_GNUC_DEPRECATED;
-	#define ENABLE_VTE_BACKGROUND
-#endif
-#if VTE_CHECK_VERSION(0,34,8)
-	// END: vte-0.34.8/src/vtedeprecated.h: GtkAdjustment *vte_terminal_get_adjustment(VteTerminal *terminal) G_GNUC_DEPRECATED;
-	#define USE_GTK_SCROLLABLE
-#endif
-#if VTE_CHECK_VERSION(0,37,0)
-	// SINCE: ./vte-0.37.0/src/vteterminal.h: void vte_terminal_search_set_gregex (VteTerminal *terminal, GRegex *regex, GRegexMatchFlags flags);
-	#define vte_terminal_search_set_gregex(a,b) vte_terminal_search_set_gregex(a,b,0)
 	// END: ./vte-0.36.3/src/vte.h: void vte_terminal_set_color_foreground_rgba()
 	#define vte_terminal_set_colors_rgba vte_terminal_set_colors
 	#define vte_terminal_set_color_foreground_rgba vte_terminal_set_color_foreground
 	#define vte_terminal_set_color_background_rgba vte_terminal_set_color_background
 	#define vte_terminal_set_color_bold_rgba vte_terminal_set_color_bold
 	#define vte_terminal_set_color_cursor_rgba vte_terminal_set_color_cursor
-	// SINCE: ./vte-0.37.0/src/vteterminal.h void vte_terminal_set_font()
-	#define USE_VTE_TERMINAL_SET_FONT
-	// END: vte-0.36.3/src/vtedeprecated.h void vte_terminal_set_opacity() G_GNUC_DEPRECATED;
-	#undef FORCE_ENABLE_VTE_BACKGROUND
-#else
-	// SINCE: vte-0.37.0/src/vteterminal.h: gboolean vte_terminal_spawn_sync()
-	#define vte_terminal_spawn_sync(a,b,c,d,e,f,g,h,i,j,k) vte_terminal_fork_command_full(a,b,c,d,e,f,g,h,i,k)
-	// END: vte-0.36.3/src/vte.h: void vte_terminal_set_word_chars()
-	#define ENABLE_SET_WORD_CHARS
-	#define USE_VTE_SET_WORD_CHARS
-	// END: vte-0.37.0/src/vteterminal.h: void vte_terminal_set_emulation()
-	#define ENABLE_SET_EMULATION
-	// END: vte-0.36.3/src/vte.h void vte_terminal_match_clear_all()
-	#define vte_terminal_match_remove_all vte_terminal_match_clear_all
-	// END: vte-0.36.3/src/vte-private.h: GtkBorder inner_border;
-	#define VTE_HAS_INNER_BORDER
-#endif
 #if VTE_CHECK_VERSION(0,78,0) && ! defined(OUT_OF_MEMORY)
 	// END: vte-0.78.0/src/vte/vteterminal.h: vte_terminal_get_window_title() VTE_DEPRECATED_IN_0_78_FOR(termprops)
 	#define vte_terminal_get_window_title(x) vte_terminal_get_termprop_string(x, VTE_TERMPROP_XTERM_TITLE, NULL)
 #endif
-#if VTE_CHECK_VERSION(0,40,0)
-	// SINCE: vte-0.40.0/src/vte/vteterminal.h: void vte_terminal_set_word_char_exceptions()
-	#define ENABLE_SET_WORD_CHARS
-#endif
-#if VTE_CHECK_VERSION(0,37,90)
 	// SINCE: ./vte-0.37.90/src/vteterminal.h: gboolean vte_terminal_set_encoding(VteTerminal *terminal, const char *codeset, GError **error)
 	#define vte_terminal_set_encoding(a,b) vte_terminal_set_encoding(a,b,NULL)
-#endif
-#if ! VTE_CHECK_VERSION(0,38,0)
-	// END: ./vte-0.37.90/src/vteterminal.h: void vte_terminal_set_visible_bell()
-	#define ENABLE_VISIBLE_BELL
-#else
 #  ifdef UNIT_TEST
 	#define vte_terminal_set_visible_bell(x,y) vte_terminal_set_size(x,1,1)
 #  endif
-#endif
-#if ! VTE_CHECK_VERSION(0,43,0)
-	// END: vte-0.43.0/src/vte/vtedeprecated.h: VTE_DEPRECATED void vte_terminal_search_set_gregex()
-	#define HAVE_VTE_TERMINAL_SEARCH_SET_GREGEX
-	#define VTE_TERMINAL_MATCH_CHECK
-#else
 	#define PCRE2_CODE_UNIT_WIDTH 0
 	#include <pcre2.h>
-#endif
 
-#define ENABLE_RGBA_VER "GTK 2.11"
-#define ENABLE_GDKCOLOR_TO_STRING_VER "GTK 2.11"
-#define ENABLE_MOUSE_SCROLL_VER "GTK 2.13"
-#define ENABLE_VTE_SELECT_ALL_VER "VTE 0.15.3"
-#define ENABLE_FIND_STRING_VER "VTE 0.25.1"
-#define ENABLE_PROFILE_VER "GLIB 2.5.4"
 
 #define ALL_ACCELS_MASK (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK | GDK_SUPER_MASK)
 #define SHIFT_ONLY_MASK (GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK | GDK_SUPER_MASK)
@@ -899,12 +473,9 @@ typedef enum {
 typedef enum {
 	HINTS_FONT_BASE,
 	HINTS_NONE,
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 	HINTS_SKIP_ONCE,
-#endif
 } Hints_Type;
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 typedef enum {
 	WINDOW_NORMAL,				// 0
 	WINDOW_RESIZING_TO_NORMAL,		// 1
@@ -920,7 +491,6 @@ typedef enum {
 	GEOMETRY_AUTOMATIC,
 	GEOMETRY_CUSTOM,
 } Geometry_Resize_Type;
-#endif
 
 #if defined(GEOMETRY) || defined(UNIT_TEST) || defined(DEBUG) || defined(PAGENAME)
 typedef enum {
@@ -1014,22 +584,14 @@ struct GdkColor_Theme
 	GdkColor color[COLOR];
 };
 
-#ifdef USE_GDK_RGBA
 struct GdkRGBA_Theme
 {
 	gint index;
 	gchar *name;
 	GdkRGBA color[COLOR];
 };
-#else
-#  define GdkRGBA_Theme GdkColor_Theme
-#endif
 
-#ifdef ENABLE_VTE_ERASE_TTY
 	#define ERASE_BINDING 5
-#else
-	#define ERASE_BINDING 4
-#endif
 #define DEFAULT_ERASE_BINDING 2
 
 struct Erase_Binding
@@ -1038,7 +600,6 @@ struct Erase_Binding
 	gint value;
 };
 
-#if defined(ENABLE_CURSOR_SHAPE) || defined(UNIT_TEST)
 	#define CURSOR_SHAPE 3
 	#define DEFAULT_CURSOR_SHAPE 0
 
@@ -1047,7 +608,6 @@ struct Cursor_Shape
 	gchar *name;
 	gint value;
 };
-#endif
 
 // 1: WinTitle
 // 2: CmdLine
@@ -1187,12 +747,7 @@ struct Window
 	// >0: unfullscreening
 	// <0: fullscreening
 #endif
-#ifdef USE_GTK2_GEOMETRY_METHOD
-	FullScreen_Type window_status;
-#endif
-#ifdef USE_GTK3_GEOMETRY_METHOD
 	Window_Status window_status;
-#endif
 	Switch_Type show_tabs_bar;
 	gboolean new_tab_next_to_current;
 	// the component of a single window
@@ -1226,7 +781,6 @@ struct Window
 	//  2: decide by gdk_screen_is_composited()
 	gint use_rgba;
 	gint use_rgba_orig;
-#if defined(ENABLE_RGBA) || defined(UNIT_TEST)
 	gint transparent_window;
 	gdouble window_opacity;
 
@@ -1236,7 +790,6 @@ struct Window
 	gboolean window_is_inactivated;
 	gboolean dim_window_expect;
 	GtkWidget *menuitem_dim_window;
-#endif
 
 	gboolean enable_key_binding;
 	struct User_KeyValue user_keys[KEYS];
@@ -1245,7 +798,6 @@ struct Window
 	// 1: Update the hints with base size = font char size
 	Hints_Type hints_type;
 
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 	// Geometry_Resize_Type = GEOMETRY_AUTOMATIC, resize form current_vte
 	// Geometry_Resize_Type = GEOMETRY_CUSTOM, resize from geometry_width and geometry_height
 	Geometry_Resize_Type resize_type;
@@ -1253,7 +805,6 @@ struct Window
 	// geometry_width, geometry_height = width * height (in pixel) when hints_type=HINTS_FONT_BASE
 	glong geometry_width;
 	glong geometry_height;
-#endif
 
 	gboolean lost_focus;
 
@@ -1294,9 +845,7 @@ struct Window
 	GtkWidget *menu;
 	gboolean menu_activated;
 
-#if defined(ENABLE_RGBA) || defined(UNIT_TEST)
 	GtkWidget *menuitem_trans_win;
-#endif
 	GtkWidget *menuitem_trans_bg;
 //	GtkWidget *menuitem_scrollback_lines;
 
@@ -1307,9 +856,6 @@ struct Window
 	gdouble window_resize_ratio;
 
 	gboolean show_background_menu;
-#ifdef ENABLE_IM_APPEND_MENUITEMS
-	gboolean show_input_method_menu;
-#endif
 	gboolean show_change_page_name_menu;
 	gboolean show_exit_menu;
 
@@ -1330,9 +876,7 @@ struct Window
 #if defined(ENABLE_VISIBLE_BELL) || defined(UNIT_TEST)
 	GtkWidget *menuitem_visible_bell;
 #endif
-#if defined(ENABLE_BEEP_SINGAL) || defined(UNIT_TEST)
 	GtkWidget *menuitem_urgent_bell;
-#endif
 	GtkWidget *menuitem_show_tabs_bar;
 	GtkWidget *menuitem_hide_tabs_bar;
 	GtkWidget *menuitem_always_show_tabs_bar;
@@ -1421,9 +965,7 @@ struct Window
 
 	glong default_column;
 	glong default_row;
-#ifdef ENABLE_SET_WORD_CHARS
 	gchar *word_chars;				/* Should be take care when drag to another window */
-#endif
 	Switch_Type show_scroll_bar;			/* Should be take care when drag to another window */
 	// 0: left
 	// 1: right
@@ -1437,11 +979,7 @@ struct Window
 //	gboolean use_scrollback_lines;
 	gint scrollback_lines;
 	gboolean dim_text;
-#ifdef USE_NEW_VTE_CURSOR_BLINKS_MODE
 	gint cursor_blinks;
-#else
-	gboolean cursor_blinks;
-#endif
 	gboolean allow_bold_text;
 	gboolean open_url_with_ctrl_pressed;
 	gboolean disable_url_when_ctrl_pressed;
@@ -1449,21 +987,17 @@ struct Window
 #if defined(ENABLE_VISIBLE_BELL) || defined(UNIT_TEST)
 	gboolean visible_bell;
 #endif
-#if defined(ENABLE_BEEP_SINGAL) || defined(UNIT_TEST)
 	// urgent_bell will stores the currect setting
 	gboolean urgent_bell;
 	// urgent_bell will stores the currect status
 	gboolean urgent_bell_status;
 	gulong urgent_bell_focus_in_event_id;
-#endif
 	gint erase_binding;
 	GtkWidget *menuitem_erase_binding[ERASE_BINDING];
 	GtkWidget *current_menuitem_erase_binding;
-#if defined(ENABLE_CURSOR_SHAPE) || defined(UNIT_TEST)
 	gint cursor_shape;
 	GtkWidget *menuitem_cursor_shape[CURSOR_SHAPE];
 	GtkWidget *current_menuitem_cursor_shape;
-#endif
 
 // ---- other ---- //
 
@@ -1526,9 +1060,7 @@ struct Page
 	// It holds a single pane, or a tree of GtkPaned with the panes as leaves.
 	GtkWidget *tab_box;
 	GtkWidget *vte;
-#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 	GtkBorder *border;
-#endif
 	GtkAdjustment *adjustment;
 	GtkWidget *scroll_bar;
 
@@ -1702,9 +1234,6 @@ typedef enum {
 	CHANGE_THE_CURSOR_COLOR,
 	ADJUST_THE_BRIGHTNESS_OF_ANSI_COLORS_USED_IN_TERMINAL,
 	ADJUST_THE_BRIGHTNESS_OF_ANSI_COLORS_WHEN_INACTIVE,
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND)
-	CHANGE_BACKGROUND_SATURATION,
-#endif
 	CHANGE_THE_OPACITY_OF_WINDOW,
 	CHANGE_THE_OPACITY_OF_WINDOW_WHEN_INACTIVE,
 	CHANGE_THE_TEXT_COLOR_OF_WINDOW_TITLE,
