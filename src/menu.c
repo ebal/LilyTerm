@@ -792,7 +792,7 @@ void set_allow_bold_text(GtkWidget *menuitem_allow_bold_text, struct Window *win
 #ifdef SAFEMODE
 		if (page_data)
 #endif
-			vte_terminal_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
+			lilyterm_vte_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
 	}
 	g_ptr_array_unref(all_pages);
 }
@@ -1478,7 +1478,7 @@ void set_encoding(GtkWidget *menuitem, gpointer user_data)
 	page_data->encoding_str = g_strdup(encoding);
 
 	// g_debug("Trying to set %d page (%p) to encoding %s...", page_data->page_no, vte, encoding);
-	vte_terminal_set_encoding(VTE_TERMINAL(win_data->current_vte), encoding);
+	lilyterm_vte_set_encoding(VTE_TERMINAL(win_data->current_vte), encoding);
 
 	// page_data->page_name==NULL: add_page() will call set_encoding() before page_data->label is created.
 	// And it will cause the following error: "Document ended unexpectedly while inside an attribute value"
@@ -1669,7 +1669,7 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 	gchar **supported_locales = split_string(full_locales_list, " ", -1);
 	// print_array("refresh_locale_and_encoding_list(): supported_locales", supported_locales);
 
-	// g_debug("Get current_encoding = %s", (gchar *)vte_terminal_get_encoding(
+	// g_debug("Get current_encoding = %s", (gchar *)lilyterm_vte_get_encoding(
 	//								VTE_TERMINAL(win_data->current_vte)));
 	// g_debug("lc_all = %s", lc_all);
 #ifdef SAFEMODE
@@ -1708,7 +1708,7 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 #endif
 	// g_debug("init_LC_CTYPE = %s, Recover to %s", init_LC_CTYPE, (char*)g_getenv("LC_CTYPE"));
 	// g_debug("create_menu(): encoding_list_from_locale = %s", encoding_list_from_locale->str);
-	// g_debug("vte_terminal_get_encoding() = %s", (gchar *)vte_terminal_get_encoding(
+	// g_debug("vte_terminal_get_encoding() = %s", (gchar *)lilyterm_vte_get_encoding(
 	//								VTE_TERMINAL(win_data->current_vte)));
 	// g_debug("init_encoding = %s", init_encoding);
 	// g_debug("win_data->runtime_encoding = %s", win_data->runtime_encoding);
@@ -1722,7 +1722,7 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 	{
 		if (win_data->current_vte)
 			full_encodings_list = join_strings_to_string(' ', 4,
-								     (gchar *)vte_terminal_get_encoding(
+								     (gchar *)lilyterm_vte_get_encoding(
 										VTE_TERMINAL(win_data->current_vte)),
 								     "UTF-8",
 								     init_encoding,
@@ -1739,7 +1739,7 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 		if (win_data->current_vte)
 #endif
 			full_encodings_list = join_strings_to_string(' ', 5,
-								     (gchar *)vte_terminal_get_encoding(
+								     (gchar *)lilyterm_vte_get_encoding(
 										VTE_TERMINAL(win_data->current_vte)),
 								     "UTF-8",
 								     init_encoding,

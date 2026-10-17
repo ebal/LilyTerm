@@ -44,6 +44,10 @@ gchar *full_argv[] = {"/bin/sh", "/bin/sh", NULL};
 #endif
 
 static void collect_pages(GtkWidget *widget, gpointer pages);
+#ifndef USE_OLD_VTE_FORK_COMMAND
+static gboolean spawn_in_vte(GtkWidget *vte, VtePtyFlags pty_flags, const gchar *working_directory,
+			     gchar **argv, gchar **envv, GSpawnFlags spawn_flags, GPid *child_pid, GError **error);
+#endif
 
 // Set by split_page() for the duration of one add_page() call: the new vte is
 // then a new pane next to split_from, in the same tab, instead of a new tab.
@@ -447,7 +451,7 @@ struct Page *add_page(struct Window *win_data,
 #ifdef SAFEMODE
 	if (page_data->encoding_str && (page_data->encoding_str[0]!='\0'))
 #endif
-		vte_terminal_set_encoding(VTE_TERMINAL(page_data->vte), page_data->encoding_str);
+		lilyterm_vte_set_encoding(VTE_TERMINAL(page_data->vte), page_data->encoding_str);
 	//g_debug("The encoding of new vte is %s",
 	//	vte_terminal_get_encoding(VTE_TERMINAL(page_data->vte)));
 #ifdef USE_GTK_SCROLLABLE
@@ -593,17 +597,14 @@ struct Page *add_page(struct Window *win_data,
 	if (win_data->utmp)
 		pty_flags = (VTE_PTY_NO_LASTLOG | VTE_PTY_NO_UTMP | VTE_PTY_NO_WTMP | VTE_PTY_DEFAULT);
 
-	fork_stats = vte_terminal_spawn_sync(VTE_TERMINAL(page_data->vte),
-					     pty_flags,
-					     page_data->pwd,
-					     final_argv,
-					     new_environs,
-					     spawn_flags,
-					     NULL,
-					     NULL,
-					     &(page_data->pid),
-					     NULL,
-					     &error);
+	fork_stats = spawn_in_vte(page_data->vte,
+				  pty_flags,
+				  page_data->pwd,
+				  final_argv,
+				  new_environs,
+				  spawn_flags,
+				  &(page_data->pid),
+				  &error);
 	if (final_argv_need_be_free) g_strfreev(final_argv);
 	login_shell_str[0] = NULL;
 #endif
@@ -2462,3 +2463,57 @@ gchar *get_lang_str_from_locale(const gchar *locale, const gchar *split)
 	g_strfreev(split_locales);
 	return language;
 }
+
+#ifndef USE_OLD_VTE_FORK_COMMAND
+// The child: the pty is its controlling terminal, and it starts with the
+// default signal handling (GLib and GTK+ may block or ignore some).
+static void spawn_child_setup(gpointer pty)
+{
+	vte_pty_child_setup(VTE_PTY(pty));
+
+	sigset_t set;
+	sigemptyset(&set);
+	sigprocmask(SIG_SETMASK, &set, NULL);
+	gint sig;
+	for (sig = 1; sig < NSIG; sig++)
+		if ((sig != SIGKILL) && (sig != SIGSTOP))
+			signal(sig, SIG_DFL);
+}
+
+// vte_terminal_spawn_sync() is deprecated (vte 0.48). This does the same, and
+// still knows the pid at once (vte_terminal_spawn_async() only tells it later):
+// a pty of the size of the terminal, the command spawned on it, and VTE
+// watching it. Like VTE, it sets TERM, COLORTERM and VTE_VERSION.
+static gboolean spawn_in_vte(GtkWidget *vte, VtePtyFlags pty_flags, const gchar *working_directory,
+			     gchar **argv, gchar **envv, GSpawnFlags spawn_flags, GPid *child_pid, GError **error)
+{
+#ifdef DETAIL
+	g_debug("! Launch spawn_in_vte() with vte = %p, working_directory = %s", vte, working_directory);
+#endif
+	VtePty *pty = vte_terminal_pty_new_sync(VTE_TERMINAL(vte), pty_flags, NULL, error);
+	if (pty==NULL) return FALSE;
+
+	gchar **env = g_strdupv(envv);
+	env = g_environ_setenv(env, "TERM", "xterm-256color", TRUE);
+	env = g_environ_setenv(env, "COLORTERM", "truecolor", TRUE);
+	gchar *vte_version = g_strdup_printf("%u", vte_get_major_version() * 10000 +
+						   vte_get_minor_version() * 100 +
+						   vte_get_micro_version());
+	env = g_environ_setenv(env, "VTE_VERSION", vte_version, TRUE);
+	g_free(vte_version);
+	env = g_environ_unsetenv(env, "COLUMNS");
+	env = g_environ_unsetenv(env, "LINES");
+
+	gboolean spawned = g_spawn_async(working_directory, argv, env,
+					 spawn_flags | G_SPAWN_DO_NOT_REAP_CHILD,
+					 spawn_child_setup, pty, child_pid, error);
+	g_strfreev(env);
+	if (spawned)
+	{
+		vte_terminal_set_pty(VTE_TERMINAL(vte), pty);
+		vte_terminal_watch_child(VTE_TERMINAL(vte), *child_pid);
+	}
+	g_object_unref(pty);
+	return spawned;
+}
+#endif

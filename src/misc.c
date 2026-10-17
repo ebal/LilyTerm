@@ -1227,3 +1227,23 @@ GtkWidget *lilyterm_button_new_from_stock(const gchar *stock_id)
 	return button;
 }
 #endif
+
+// VTE deprecated these without a replacement: other encodings than UTF-8
+// (vte 0.54) and allow_bold (vte 0.60). They still work, so LilyTerm keeps
+// them, here in one place.
+G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+const gchar *lilyterm_vte_get_encoding(VteTerminal *vte)
+{
+	return vte_terminal_get_encoding(vte);
+}
+
+void lilyterm_vte_set_encoding(VteTerminal *vte, const gchar *encoding)
+{
+	vte_terminal_set_encoding(vte, encoding);
+}
+
+void lilyterm_vte_set_allow_bold(VteTerminal *vte, gboolean allow_bold)
+{
+	vte_terminal_set_allow_bold(vte, allow_bold);
+}
+G_GNUC_END_IGNORE_DEPRECATIONS

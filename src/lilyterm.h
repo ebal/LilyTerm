@@ -58,6 +58,9 @@ gint parse_geometry_str(const gchar *geometry_str, gint *offset_x, gint *offset_
 gint get_default_VTE_CJK_WIDTH(void);
 void restore_SYSTEM_VTE_CJK_WIDTH_STR(void);
 void set_env(const gchar *variable, const gchar *value, gboolean overwrite);
+const gchar *lilyterm_vte_get_encoding(VteTerminal *vte);
+void lilyterm_vte_set_encoding(VteTerminal *vte, const gchar *encoding);
+void lilyterm_vte_set_allow_bold(VteTerminal *vte, gboolean allow_bold);
 const gchar *get_default_lc_data(gint lc_type);
 gchar *get_encoding_from_locale(const gchar *locale);
 gboolean check_string_in_array(gchar *str, gchar **lists);

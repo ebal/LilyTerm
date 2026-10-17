@@ -634,6 +634,10 @@
 	// END: vte-0.36.3/src/vte-private.h: GtkBorder inner_border;
 	#define VTE_HAS_INNER_BORDER
 #endif
+#if VTE_CHECK_VERSION(0,78,0) && ! defined(OUT_OF_MEMORY)
+	// END: vte-0.78.0/src/vte/vteterminal.h: vte_terminal_get_window_title() VTE_DEPRECATED_IN_0_78_FOR(termprops)
+	#define vte_terminal_get_window_title(x) vte_terminal_get_termprop_string(x, VTE_TERMPROP_XTERM_TITLE, NULL)
+#endif
 #if VTE_CHECK_VERSION(0,40,0)
 	// SINCE: vte-0.40.0/src/vte/vteterminal.h: void vte_terminal_set_word_char_exceptions()
 	#define ENABLE_SET_WORD_CHARS

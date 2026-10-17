@@ -186,7 +186,7 @@ void init_new_page(struct Window *win_data,
 	set_hyperlink(win_data, page_data);
 	set_cursor_blink(win_data, page_data);
 
-	vte_terminal_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
+	lilyterm_vte_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
 
 	vte_terminal_set_audible_bell (VTE_TERMINAL(page_data->vte), win_data->audible_bell);
 #ifdef ENABLE_VISIBLE_BELL
@@ -973,7 +973,7 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 		set_cursor_blink(win_data, page_data);
 
 	if (win_data_orig->allow_bold_text != win_data->allow_bold_text)
-		vte_terminal_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
+		lilyterm_vte_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
 
 	if (win_data_orig->audible_bell != win_data->audible_bell)
 		vte_terminal_set_audible_bell (VTE_TERMINAL(page_data->vte), win_data->audible_bell);
