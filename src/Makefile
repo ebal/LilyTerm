@@ -20,7 +20,7 @@
 #
 # grep 'g_debug *( *" *[^\!@+\?-]' * | grep -v '\/\/'
 # (\(console\|dialog\|font\|main\|menu\|misc\|notebook\|pagename\|profile\|property\|window\|socket\).c:[0-9]*)
-# MANWIDTH=80 man data/lilyterm.1 | col -b > README
+# MANWIDTH=80 man data/lilyterm.1 | col -b   (the full manual; README.md is written by hand)
 
 include ../.default
 -include ../.config
