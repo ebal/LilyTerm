@@ -476,9 +476,6 @@ gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
 	// g_debug("proc_exist = %d", proc_exist);
 	if (! proc_exist) return NULL;
 	if (pid<1) return NULL;
-#ifdef UNIT_TEST
-	if (file==NULL) return NULL;
-#endif
 	gchar *contents=NULL;
 	gint timeout=0;
 	gchar *proc_path = g_strdup_printf("%s/%d", proc_file_system_path, (gint)pid);
@@ -486,7 +483,7 @@ gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
 	gchar *file_path = g_strdup_printf("%s/%s", proc_path, file);
 	// g_debug("file_path = %s", file_path);
 
-#if defined(OUT_OF_MEMORY) || defined(UNIT_TEST)
+#if defined(OUT_OF_MEMORY)
 	if (proc_path && file_path)
 	{
 #endif
@@ -542,7 +539,7 @@ gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
 				break;
 			}
 		}
-#if defined(OUT_OF_MEMORY) || defined(UNIT_TEST)
+#if defined(OUT_OF_MEMORY)
 	}
 #endif
 	g_free(file_path);
@@ -821,7 +818,7 @@ gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba)
 	return g_strdup_printf("#%04x%04x%04x", (unsigned int)(rgba->red*0xFFFF), (unsigned int)(rgba->green*0xFFFF), (unsigned int)(rgba->blue*0xFFFF));
 }
 
-#if defined(GEOMETRY) || defined(UNIT_TEST)
+#if defined(GEOMETRY)
 void widget_size_allocate (GtkWidget *widget, GtkAllocation *allocation, gchar *name)
 {
 #  ifdef DETAIL
@@ -876,23 +873,8 @@ GtkWidget *dirty_gtk_hbox_new(gboolean homogeneous, gint spacing)
 	return box;
 }
 
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
-void dirty_vte_terminal_set_background_tint_color(VteTerminal *vte, const GdkRGBA rgba)
-{
-#  ifdef DETAIL
-	g_debug("! Launch dirty_vte_terminal_set_background_tint_color() with vte = %p", vte);
-#  endif
-#  ifdef SAFEMODE
-	if (vte==NULL) return;
-#  endif
-#    ifndef USE_FAKE_FUNCTIONS
-	GdkColor color = convert_rgba_to_color(rgba);
-#    endif
-	vte_terminal_set_background_tint_color(VTE_TERMINAL(vte), &(color));
-}
-#endif
 
-#if defined(OUT_OF_MEMORY) || defined(UNIT_TEST)
+#if defined(OUT_OF_MEMORY)
 gchar *fake_g_strdup(const gchar *str)
 {
 #  ifdef DETAIL

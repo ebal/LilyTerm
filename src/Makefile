@@ -6,11 +6,6 @@
 #	make dev: compile lilyeterm_dev with CLAGS -g.
 #	make vdev: compile lilyeterm_dev with full compiling command message.
 #	make ddev: compile lilyeterm_dev with -DSAFEMODE compile option.
-#	make ut: run a tiny unit testing script with gdb debug information.
-#	make uto: build *.o binary files for using in the unit testing programs.
-#	make utb: build the the unit testing programs only.
-#	make utd: run a tiny unit testing script with full runtime debug information.
-#	make utf: run a tiny unit testing script with glib, gtk, gdb and valgrind debug information.
 #	make geometry: compile lilyeterm_dev with geometry debug information.
 #	make pagename: compile lilyeterm_dev with pagename debug information.
 #	make detail: compile lilyeterm_dev with detail runtime debug information.
@@ -155,45 +150,6 @@ pagename: INCLUDES := $(INCLUDES) -DAUTHOR=\"$(AUTHOR_CONVERT)\" -DPAGENAME -DRE
 pagename: BINARY := $(BINARY)_dev
 pagename: $(BINARY)
 
-.PHONY: ut
-ut: unit_test
-.PHONY: unit_test
-unit_test: CFLAGS := $(CFLAGS) -g
-unit_test: INCLUDES := $(INCLUDES) -DAUTHOR=\"$(PACKAGE)\" -DSAFEMODE -DDEBUG -DFATAL -DDEVELOP -DUNIT_TEST -DVERSION=\"$(VERSION)_UNIT_TEST_$(date)\"
-unit_test: $(OBJ)
-	@ sh unit_test.sh "$(INCLUDES)" --enable-gdb --test_all
-
-.PHONY: uto
-uto: unit_test_object
-.PHONY: unit_test_object
-unit_test_object: CFLAGS := $(CFLAGS) -g
-unit_test_object: INCLUDES := $(INCLUDES) -DAUTHOR=\"$(PACKAGE)\" -DGEOMETRY -DPAGENAME -DSAFEMODE -DDEBUG -DFATAL -DDEVELOP -DDETAIL -DFULL -DUNIT_TEST -DVERSION=\"$(VERSION)_UNIT_TEST_$(date)\"
-unit_test_object: $(OBJ)
-
-.PHONY: utb
-utb: unit_test_build
-.PHONY: unit_test_build
-unit_test_build: CFLAGS := $(CFLAGS) -g
-unit_test_build: INCLUDES := $(INCLUDES) -DAUTHOR=\"$(PACKAGE)\" -DGEOMETRY -DPAGENAME -DSAFEMODE -DDEBUG -DFATAL -DDEVELOP -DDETAIL -DFULL -DUNIT_TEST -DVERSION=\"$(VERSION)_UNIT_TEST_$(date)\"
-unit_test_build: $(OBJ)
-	@ sh unit_test.sh "$(INCLUDES)" --build_program_only
-
-.PHONY: utd
-utd: unit_test_debug
-.PHONY: unit_test_debug
-unit_test_debug: CFLAGS := $(CFLAGS) -g
-unit_test_debug: INCLUDES := $(INCLUDES) -DAUTHOR=\"$(PACKAGE)\" -DGEOMETRY -DPAGENAME -DSAFEMODE -DDEBUG -DFATAL -DDEVELOP -DDETAIL -DFULL -DUNIT_TEST -DVERSION=\"$(VERSION)_UNIT_TEST_$(date)\"
-unit_test_debug: $(OBJ)
-	@ sh unit_test.sh "$(INCLUDES)" --enable-glib-debugger --enable-gtk-debugger --enable-gdb
-
-.PHONY: utf
-utf: unit_test_full
-.PHONY: unit_test_full
-unit_test_full: CFLAGS := $(CFLAGS) -g
-unit_test_full: INCLUDES := $(INCLUDES) -DAUTHOR=\"$(PACKAGE)\" -DSAFEMODE -DDEBUG -DFATAL -DDEVELOP -DUNIT_TEST -DVERSION=\"$(VERSION)_UNIT_TEST_$(date)\"
-unit_test_full: $(OBJ)
-	@ sh unit_test.sh "$(INCLUDES)" --enable-glib-debugger --enable-gtk-debugger --enable-gdb --enable-valgrind
-
 .PHONY: memory
 memory: CFLAGS = -Wall -Wformat -Wformat-security -Werror=format-security -O2
 memory: INCLUDES := $(INCLUDES) -DAUTHOR=\"$(AUTHOR_CONVERT)\" -DSAFEMODE -DDEBUG -DFATAL -DDEVELOP -DOUT_OF_MEMORY -DVERSION=\"$(VERSION)\ Develop\ Version\ \($(date)\)\"
@@ -202,7 +158,7 @@ memory: $(BINARY)
 
 .PHONY: clean
 clean:
-	-@ for FileName in $(BINARY) $(BINARY)_dev $(BINARY)_dbg $(OBJ) unit_test unit_test.[co] gdb_batch gdb.log valgrind.log vgcore.*; \
+	-@ for FileName in $(BINARY) $(BINARY)_dev $(BINARY)_dbg $(OBJ) gdb_batch gdb.log valgrind.log vgcore.*; \
 	do \
 		if [ -f "$$FileName" ]; then \
 			$(PRINTF) "\033[1;35m** deleting \033[1;32m$$FileName\033[1;35m ...\033[0m\n"; \

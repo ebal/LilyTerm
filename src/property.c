@@ -496,61 +496,6 @@ void add_remove_window_title_changed_signal(struct Page *page_data)
 
 }
 
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
-gboolean set_background_saturation(GtkRange *range, GtkScrollType scroll, gdouble value, GtkWidget *vte)
-{
-#  ifdef DETAIL
-	g_debug("! Launch set_background_saturation() with value = %f, vte = %p", value, vte);
-#  endif
-#  ifdef SAFEMODE
-	if (vte==NULL) return FALSE;
-#  endif
-	struct Page *page_data = (struct Page *)g_object_get_data(G_OBJECT(vte), "Page_Data");
-#  ifdef SAFEMODE
-	if (page_data==NULL || (page_data->window==NULL)) return FALSE;
-#  endif
-	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(page_data->window), "Win_Data");
-#  ifdef SAFEMODE
-	if (win_data==NULL) return FALSE;
-#  endif
-	// g_debug("Get win_data = %d when set background saturation!", win_data);
-
-	value = CLAMP(value, 0, 1);
-
-	if (win_data->use_rgba == -1)
-	{
-		if (win_data->transparent_background)
-			vte_terminal_set_opacity(VTE_TERMINAL(vte), (1-value) * 65535);
-		else
-			vte_terminal_set_opacity(VTE_TERMINAL(vte), 65535);
-	}
-	else
-		vte_terminal_set_background_transparent(VTE_TERMINAL(vte), win_data->transparent_background);
-
-	// g_debug("set_background_saturation(): win_data->transparent_background = %d, value = %1.3f",
-	//	win_data->transparent_background, value);
-	// g_debug("set_background_saturation(): win_data->background_image = %s", win_data->background_image);
-	if (win_data->transparent_background)
-	{
-		vte_terminal_set_background_image_file (VTE_TERMINAL(vte), NULL_DEVICE);
-		vte_terminal_set_background_saturation( VTE_TERMINAL(vte), value);
-	}
-	else
-	{
-		if (compare_strings(win_data->background_image, NULL_DEVICE, TRUE))
-		{
-			vte_terminal_set_background_saturation( VTE_TERMINAL(vte), value);
-			vte_terminal_set_background_image_file (VTE_TERMINAL(vte), win_data->background_image);
-			vte_terminal_set_scroll_background(VTE_TERMINAL(vte), win_data->scroll_background);
-		}
-		else
-			vte_terminal_set_background_saturation( VTE_TERMINAL(vte), 0);
-	}
-
-	dirty_vte_terminal_set_background_tint_color(VTE_TERMINAL(page_data->vte), win_data->color[0]);
-	return FALSE;
-}
-#endif
 
 gboolean set_window_opacity(GtkRange *range, GtkScrollType scroll, gdouble value, struct Window *win_data)
 {
@@ -682,7 +627,6 @@ void get_hint_min_size(GtkWidget *notebook, GtkWidget *scrollbar, gint *min_widt
 #  endif
 }
 
-#if defined(vte_terminal_get_padding) || defined(UNIT_TEST)
 // This function is for replce the removed vte_terminal_get_padding()
 void fake_vte_terminal_get_padding(VteTerminal *vte, gint *width, gint *height)
 {
@@ -695,7 +639,6 @@ void fake_vte_terminal_get_padding(VteTerminal *vte, gint *width, gint *height)
 	*width = 0;
 	*height = 0;
 }
-#endif
 
 void apply_new_win_data_to_page (struct Window *win_data_orig,
 				 struct Window *win_data,

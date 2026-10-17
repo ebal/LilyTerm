@@ -37,9 +37,6 @@
 // the max size of saddr.sun_path in Linux is 108!
 #define UNIX_PATH_MAX 108
 
-#ifdef UNIT_TEST
-int fake_main(int argc, char *argv[]);
-#endif
 
 gboolean set_fd_non_block(gint *fd);
 gboolean init_socket_server(GSourceFunc read_function);

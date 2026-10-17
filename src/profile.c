@@ -2175,9 +2175,7 @@ gchar *check_string_value(GKeyFile *keyfile, const gchar *group_name, const gcha
 	if ((setting == NULL) && (original_value))
 		setting = g_strdup(original_value);
 
-#  ifndef UNIT_TEST
 	if (free_original_value) g_free(original_value);
-#  endif
 
 	// g_debug("Got key value \"%s = %s\"", key, setting);
 	return setting;
@@ -2208,13 +2206,8 @@ gboolean check_color_value(const gchar *key_name, const gchar *color_name, GdkRG
 		return TRUE;
 	}
 
-#ifdef UNIT_TEST
-	g_message("\"%s = %s\" is not a valid color value! Please check!",
-		  key_name, color_name);
-#else
 	g_warning("\"%s = %s\" is not a valid color value! Please check!",
 		  key_name, color_name);
-#endif
 	return FALSE;
 }
 
@@ -3088,16 +3081,9 @@ void convert_string_to_user_key(gint i, gchar *value, struct Window *win_data)
 		}
 		else
 		{
-#ifdef UNIT_TEST
-			g_debug("\"%s = %s\" is not a valid key! Please check!",
-				system_keys[i].name, value);
-#else
 			g_critical("\"%s = %s\" is not a valid key! Please check!",
 				   system_keys[i].name, value);
-#endif
-#ifndef UNIT_TEST
 			g_free(value);
-#endif
 		}
 		// if (pagekeys[i].key)
 		//	g_debug("Got %s = key %x(%s), mods = %x.", pagekeys[i].name,

@@ -47,13 +47,8 @@ gchar *proc_file_system_path = NULL;
 extern gboolean force_to_quit;
 extern gchar *restricted_locale_message;
 
-#ifdef UNIT_TEST
-int fake_main(int   argc,
-	      char *argv[])
-#else
 int main( int   argc,
 	  char *argv[])
-#endif
 {
 	// command_line_path = argv[0];
 
@@ -114,9 +109,7 @@ int main( int   argc,
 	// GTK3: get gtk_test_widget_click() working...
 	// gdk_disable_multidevice();
 
-#ifndef UNIT_TEST
 	gtk_init(&argc, &argv);
-#endif
 	// FIXME: we should get the single_process from profile. Current is command-line option only.
 	if (single_process)
 	{
@@ -233,12 +226,6 @@ int main( int   argc,
 		g_free(system_keys[i].topic);
 		g_free(system_keys[i].comment);
 		g_free(system_keys[i].translation);
-#ifdef UNIT_TEST
-		system_keys[i].name = NULL;
-		system_keys[i].topic = NULL;
-		system_keys[i].comment = NULL;
-		system_keys[i].translation = NULL;
-#endif
 	}
 
 	// g_free(pwd);
@@ -252,17 +239,6 @@ int main( int   argc,
 	g_list_free(window_list);
 	g_free(init_LC_CTYPE);
 	g_free(init_LC_MESSAGES);
-#ifdef UNIT_TEST
-	// empty_environ = NULL;
-	environ_str = NULL;
-	init_encoding = NULL;
-	system_locale_list = NULL;
-	profile_dir = NULL;
-	restricted_locale_message = NULL;
-	window_list = NULL;
-	init_LC_CTYPE = NULL;
-	init_LC_MESSAGES = NULL;
-#endif
 	return 0;
 }
 

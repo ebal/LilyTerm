@@ -414,9 +414,6 @@ struct Page *add_page(struct Window *win_data,
 	//g_debug("The default encoding of vte is %s",
 	//	vte_terminal_get_encoding(VTE_TERMINAL(page_data->vte)));
 
-#if (defined (VTE_HAS_INNER_BORDER) && defined(USE_GTK3_GEOMETRY_METHOD)) || defined(UNIT_TEST)
-	gtk_widget_style_get(GTK_WIDGET(page_data->vte), "inner-border", &(page_data->border), NULL);
-#endif
 
 	// save the data first
 	// g_debug("Save the data with page_data->vte = %p, page_data = %p", page_data->vte, page_data);
@@ -674,7 +671,7 @@ struct Page *add_page(struct Window *win_data,
 	show_and_hide_scroll_bar(page_data, check_show_or_hide_scroll_bar(win_data));
 	gtk_widget_set_no_show_all(page_data->scroll_bar, TRUE);
 
-#if defined(GEOMETRY) || defined(UNIT_TEST)
+#if defined(GEOMETRY)
 	g_signal_connect(G_OBJECT(page_data->vte), "size-allocate",
 			 G_CALLBACK(vte_size_allocate), page_data);
 #endif
@@ -903,11 +900,9 @@ void create_child_process_failed_dialog(struct Window *win_data, gchar *message,
 					  temp_str[1],
 					  "</span></b>",
 					  NULL);
-#ifndef UNIT_TEST
 	else
 		temp_str[2] = _("Error while creating the child process!\n"
 				"Please make sure the /dev/pts is mounted as a devpts file system!");
-#endif
 	// g_debug("message = %s", message);
 	// for (i=0; i<3; i++)
 	//	g_debug("temp_str[%d] = %s", i, temp_str[i]);
@@ -945,30 +940,8 @@ void clear_arg(struct Window *win_data)
 	win_data->argv = NULL;
 }
 
-#if defined (USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
-void label_size_request (GtkWidget *label, GtkRequisition *requisition, struct Page *page_data)
-{
-#  ifdef DETAIL
-	g_debug("! Launch label_size_request() with page_data = %p", page_data);
-#  endif
-#  ifdef SAFEMODE
-	if ((page_data==NULL) || (page_data->window==NULL)) return;
-#  endif
-	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(page_data->window), "Win_Data");
-#  ifdef SAFEMODE
-	if (win_data==NULL) return;
-#  endif
-	// g_debug("label_size_request(): launch keep_window_size()!");
 
-#  ifdef GEOMETRY
-	g_debug("@ label_size_request(for %p): Call keep_gtk2_window_size() with keep_vte_size = 0x%X",
-		win_data->window, win_data->keep_vte_size);
-#  endif
-	keep_gtk2_window_size (win_data, page_data->vte, GEOMETRY_UPDATE_PAGE_NAME);
-}
-#endif
-
-#if defined(GEOMETRY) || defined(UNIT_TEST)
+#if defined(GEOMETRY)
 void vte_size_allocate (GtkWidget *vte, GtkAllocation *allocation, struct Page *page_data)
 {
 #  ifdef DETAIL

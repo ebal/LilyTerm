@@ -141,7 +141,6 @@
 	#define gtk_widget_get_child_requisition(x,y) gtk_widget_get_preferred_size(x,y,NULL)
 	// END: gtk+-2.91.1/gtk/gtkwidget.h: gtk_widget_hide_all()
 	#define gtk_widget_hide_all(x) gtk_widget_hide(x)
-	#define USE_GTK3_GEOMETRY_METHOD
 	#define SCROLL_LINE 5
 	// END: gtk+-3.3.4/gtk/deprecated/gtkvscrollbar.h: gtk_vscrollbar_new()
 	#define gtk_vscrollbar_new(x) gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL,x)
@@ -216,15 +215,6 @@
 	// END: vte-0.25.1/src/vtedeprecated.h: void vte_terminal_set_font_from_string_full()
 	#define vte_terminal_set_font_from_string_full(x,y,z) vte_terminal_set_font_from_string(x,y)
 	#define MAX_COLOR 1
-#  ifdef UNIT_TEST
-	#define USE_FAKE_FUNCTIONS
-	#define vte_terminal_set_opacity(x,y) NULL
-	#define vte_terminal_set_background_transparent(x,y) vte_terminal_set_size(x,1,1)
-	#define vte_terminal_set_background_image_file(x,y) vte_terminal_set_size(x,1,1)
-	#define vte_terminal_set_background_saturation(x,y) vte_terminal_set_size(x,1,1)
-	#define vte_terminal_set_scroll_background(x,y) vte_terminal_set_size(x,1,1)
-	#define vte_terminal_set_background_tint_color(x,y) vte_terminal_set_size(x,1,1)
-#  endif
 	// END: ./vte-0.36.3/src/vte.h: void vte_terminal_set_color_foreground_rgba()
 	#define vte_terminal_set_colors_rgba vte_terminal_set_colors
 	#define vte_terminal_set_color_foreground_rgba vte_terminal_set_color_foreground
@@ -237,9 +227,6 @@
 #endif
 	// SINCE: ./vte-0.37.90/src/vteterminal.h: gboolean vte_terminal_set_encoding(VteTerminal *terminal, const char *codeset, GError **error)
 	#define vte_terminal_set_encoding(a,b) vte_terminal_set_encoding(a,b,NULL)
-#  ifdef UNIT_TEST
-	#define vte_terminal_set_visible_bell(x,y) vte_terminal_set_size(x,1,1)
-#  endif
 	#define PCRE2_CODE_UNIT_WIDTH 0
 	#include <pcre2.h>
 
@@ -405,70 +392,6 @@ typedef enum {
 	ANSI_THEME_SET_ANSI_THEME,
 } Set_ANSI_Theme_Type;
 
-#if defined(USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
-typedef enum {
-	FULLSCREEN_UNFS_OK =  2,
-	FULLSCREEN_UNFS_ING = 1,
-	FULLSCREEN_NORMAL =   0,
-	FULLSCREEN_FS_ING =  -1,
-	FULLSCREEN_FS_OK =   -2,
-} FullScreen_Type;
-
-typedef enum {
-	// RESIZING : Means that the Window is resizing.
-	// ONCE :     Trying to resize 'ONCE'. setted to 0 after resized.
-	// TWICE:     Trying to resize 'TWICE'. setted to 0 after resized.
-
-	GEOMETRY_NONE					=      0,
-	// 0000 0000 0000 0yx1 (0x0007): Updating Page Name. It should run window_size_request() twice.
-	GEOMETRY_UPDATE_PAGE_NAME_RESIZING		=    0x1,
-	GEOMETRY_UPDATE_PAGE_NAME_ONCE			=    0x2,
-	GEOMETRY_UPDATE_PAGE_NAME_TWICE			=    0x4,
-	GEOMETRY_UPDATE_PAGE_NAME			= GEOMETRY_UPDATE_PAGE_NAME_RESIZING | GEOMETRY_UPDATE_PAGE_NAME_ONCE |
-							  GEOMETRY_UPDATE_PAGE_NAME_TWICE,
-	GEOMETRY_UPDATE_PAGE_NAME_MASK			= 0xFFFF ^ GEOMETRY_UPDATE_PAGE_NAME,
-
-	// 0000 0000 0yx1 0000 (0x0070): Changing Themes. It should run window_size_request() twice.
-	GEOMETRY_CHANGING_THEME_RESIZING		=   0x10,
-	GEOMETRY_CHANGING_THEME_ONCE			=   0x20,
-	GEOMETRY_CHANGING_THEME_TWICE			=   0x40,
-	GEOMETRY_CHANGING_THEME				= GEOMETRY_CHANGING_THEME_RESIZING | GEOMETRY_CHANGING_THEME_ONCE |
-							  GEOMETRY_CHANGING_THEME_TWICE,
-
-	// 0000 0yx1 0000 0000 (0x0700): Hide/Show scroll_bar It should run window_size_request() twice.
-	GEOMETRY_SHOW_HIDE_SCROLL_BAR_RESIZING		=  0x100,
-	GEOMETRY_SHOW_HIDE_SCROLL_BAR_ONCE		=  0x200,
-	GEOMETRY_SHOW_HIDE_SCROLL_BAR_TWICE		=  0x400,
-	GEOMETRY_SHOW_HIDE_SCROLL_BAR			= GEOMETRY_SHOW_HIDE_SCROLL_BAR_RESIZING | GEOMETRY_SHOW_HIDE_SCROLL_BAR_ONCE |
-							  GEOMETRY_SHOW_HIDE_SCROLL_BAR_TWICE,
-
-	// 00x1 0000 0000 0000 (0x3000): Showing/Hiding tabs bar, It should only run window_size_request() once.
-	GEOMETRY_SHOW_HIDE_TAB_BAR_RESIZING		= 0x1000,
-	GEOMETRY_SHOW_HIDE_TAB_BAR_ONCE			= 0x2000,
-	GEOMETRY_SHOW_HIDE_TAB_BAR			= GEOMETRY_SHOW_HIDE_TAB_BAR_RESIZING | GEOMETRY_SHOW_HIDE_TAB_BAR_ONCE,
-
-	// x100 0000 0000 0000 (0xC000): Change the vte font, It should only run window_size_request() once.
-	GEOMETRY_CHANGING_FONT_RESIZING			= 0x4000,
-	GEOMETRY_CHANGING_FONT_ONCE			= 0x8000,
-	GEOMETRY_CHANGING_FONT				= GEOMETRY_CHANGING_FONT_RESIZING | GEOMETRY_CHANGING_FONT_ONCE,
-
-	// 1010 0010 0010 0010 (0xA222): Only check x, Means that it needs resize.
-	GEOMETRY_NEEDS_RUN_SIZE_REQUEST_MASK		= GEOMETRY_UPDATE_PAGE_NAME_ONCE | GEOMETRY_CHANGING_THEME_ONCE |
-							  GEOMETRY_SHOW_HIDE_SCROLL_BAR_ONCE |
-							  GEOMETRY_SHOW_HIDE_TAB_BAR_ONCE | GEOMETRY_CHANGING_FONT_ONCE,
-
-	// 0000 0100 0100 0100 (0x0444): Only check y, Means that it needs resize twice.
-	GEOMETRY_NEEDS_RUN_SIZE_REQUEST_AGAIN_MASK	= GEOMETRY_UPDATE_PAGE_NAME_TWICE | GEOMETRY_CHANGING_THEME_TWICE |
-							  GEOMETRY_SHOW_HIDE_SCROLL_BAR_TWICE,
-
-	// 1111 0011 0011 0011 (0xF333): Clean y, Means that it is resized once.
-	GEOMETRY_HAD_BEEN_RESIZED_ONCE_MASK		= GEOMETRY_UPDATE_PAGE_NAME_RESIZING | GEOMETRY_UPDATE_PAGE_NAME_ONCE |
-							  GEOMETRY_CHANGING_THEME_RESIZING | GEOMETRY_CHANGING_THEME_ONCE |
-							  GEOMETRY_SHOW_HIDE_SCROLL_BAR_RESIZING | GEOMETRY_SHOW_HIDE_SCROLL_BAR_ONCE |
-							  GEOMETRY_SHOW_HIDE_TAB_BAR_RESIZING | GEOMETRY_SHOW_HIDE_TAB_BAR_ONCE |
-							  GEOMETRY_CHANGING_FONT_RESIZING | GEOMETRY_CHANGING_FONT_ONCE,
-} Geometry_Resize_Type;
-#endif
 
 typedef enum {
 	HINTS_FONT_BASE,
@@ -492,7 +415,7 @@ typedef enum {
 	GEOMETRY_CUSTOM,
 } Geometry_Resize_Type;
 
-#if defined(GEOMETRY) || defined(UNIT_TEST) || defined(DEBUG) || defined(PAGENAME)
+#if defined(GEOMETRY) || defined(DEBUG) || defined(PAGENAME)
 typedef enum {
 	ANSI_COLOR_BLACK =   30,
 	ANSI_COLOR_RED =     31,
@@ -732,21 +655,6 @@ struct Window
 
 // ---- the component of a single window ---- //
 
-#if defined(USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
-	// Startup with fullscreen
-	gboolean startup_fullscreen;
-	gboolean fullscreen;
-	// true_fullscreen = <Alt><Enter>
-	gboolean true_fullscreen;
-	// 0: No work
-	// 1: Normal
-	// 2: Force ON
-	// 3: Force OFF
-	// gboolean fullscreen_show_scroll_bar;
-	//  0: Normal
-	// >0: unfullscreening
-	// <0: fullscreening
-#endif
 	Window_Status window_status;
 	Switch_Type show_tabs_bar;
 	gboolean new_tab_next_to_current;
@@ -873,9 +781,6 @@ struct Window
 	GtkWidget *menuitem_open_url_with_ctrl_pressed;
 	GtkWidget *menuitem_disable_url_when_ctrl_pressed;
 	GtkWidget *menuitem_audible_bell;
-#if defined(ENABLE_VISIBLE_BELL) || defined(UNIT_TEST)
-	GtkWidget *menuitem_visible_bell;
-#endif
 	GtkWidget *menuitem_urgent_bell;
 	GtkWidget *menuitem_show_tabs_bar;
 	GtkWidget *menuitem_hide_tabs_bar;
@@ -970,12 +875,6 @@ struct Window
 	// 0: left
 	// 1: right
 	gboolean scroll_bar_position;			/* Should be take care when drag to another window */
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
-	gint transparent_background;
-	gdouble background_saturation;
-	gboolean scroll_background;
-	gchar *background_image;
-#endif
 //	gboolean use_scrollback_lines;
 	gint scrollback_lines;
 	gboolean dim_text;
@@ -984,9 +883,6 @@ struct Window
 	gboolean open_url_with_ctrl_pressed;
 	gboolean disable_url_when_ctrl_pressed;
 	gboolean audible_bell;
-#if defined(ENABLE_VISIBLE_BELL) || defined(UNIT_TEST)
-	gboolean visible_bell;
-#endif
 	// urgent_bell will stores the currect setting
 	gboolean urgent_bell;
 	// urgent_bell will stores the currect status

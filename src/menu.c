@@ -300,11 +300,6 @@ gboolean create_menu(struct Window *win_data)
 	// Audible bell
 	win_data->menuitem_audible_bell = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Audible bell"), NULL, NULL,
 								(GSourceFunc)set_audible_bell, win_data);
-#if defined(ENABLE_VISIBLE_BELL) || defined(UNIT_TEST)
-	// Visible bell
-	win_data->menuitem_visible_bell = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Visible bell"), NULL, NULL,
-								(GSourceFunc)set_visible_bell, win_data);
-#endif
 	// Urgent bell
 	win_data->menuitem_urgent_bell = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Urgent bell"), NULL, NULL,
 								(GSourceFunc)set_urgent_bell, win_data);
@@ -791,32 +786,6 @@ void set_audible_bell(GtkWidget *menuitem_audible_bell, struct Window *win_data)
 	g_ptr_array_unref(all_pages);
 }
 
-#if defined(ENABLE_VISIBLE_BELL) || defined(UNIT_TEST)
-void set_visible_bell(GtkWidget *menuitem_visible_bell, struct Window *win_data)
-{
-#ifdef DETAIL
-	g_debug("! Launch set_visible_bell() with win_data = %p", win_data);
-#endif
-#ifdef SAFEMODE
-	if ((menuitem_visible_bell==NULL) || (win_data==NULL)) return;
-#endif
-	// win_data->visible_bell = GTK_CHECK_MENU_ITEM(menuitem_visible_bell)->active;
-	win_data->visible_bell = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM(menuitem_visible_bell));
-	gint i;
-	struct Page *page_data = NULL;
-
-	GPtrArray *all_pages = get_pages_in_window(win_data);
-	for (i=0; i<all_pages->len; i++)
-	{
-		page_data = g_ptr_array_index(all_pages, i);
-#ifdef SAFEMODE
-		if (page_data)
-#endif
-			vte_terminal_set_visible_bell (VTE_TERMINAL(page_data->vte), win_data->visible_bell);
-	}
-	g_ptr_array_unref(all_pages);
-}
-#endif
 
 void set_urgent_bell(GtkWidget *menuitem_urgent_bell, struct Window *win_data)
 {
@@ -1131,33 +1100,6 @@ void reset_vte(GtkWidget *widget, struct Window *win_data)
 #endif
 	vte_terminal_reset(VTE_TERMINAL(win_data->current_vte), TRUE, FALSE);
 }
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
-void set_trans_bg(GtkWidget *menuitem_trans_bg, struct Window *win_data)
-{
-#  ifdef DETAIL
-	g_debug("! Launch set_trans_bg() for win_data %p", win_data);
-#  endif
-#  ifdef SAFEMODE
-	if ((menuitem_trans_bg==NULL) || (win_data==NULL)) return;
-#  endif
-	// win_data->transparent_background = GTK_CHECK_MENU_ITEM(menuitem_trans_bg)->active;
-	win_data->transparent_background = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM(menuitem_trans_bg));
-
-	gint i;
-	struct Page *page_data = NULL;
-
-	GPtrArray *all_pages = get_pages_in_window(win_data);
-	for (i=0; i<all_pages->len; i++)
-	{
-		page_data = g_ptr_array_index(all_pages, i);
-#  ifdef SAFEMODE
-		if (page_data)
-#  endif
-			set_background_saturation (NULL, 0, win_data->background_saturation, page_data->vte);
-	}
-	g_ptr_array_unref(all_pages);
-}
-#endif
 
 void set_trans_win(GtkWidget *widget, GtkWidget *window)
 {
@@ -2418,158 +2360,7 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 	}
 }
 
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
-void load_background_image_from_file(GtkWidget *widget, struct Window *win_data)
-{
-#  ifdef DETAIL
-	g_debug("! Launch load_background_from_file() with widget = %p, win_data = %p", widget, win_data);
-#  endif
-#  ifdef SAFEMODE
-	if (win_data==NULL) return;
-#  endif
-	gchar *background_image_path = "";
-	if (compare_strings(win_data->background_image, NULL_DEVICE, TRUE))
-		background_image_path = win_data->background_image;
-	GtkWidget *dialog = create_load_file_dialog(GTK_FILE_CHOOSER_ACTION_OPEN, win_data->window,
-						    GTK_FAKE_STOCK_OPEN, background_image_path);
 
-	struct Preview *preview = g_new0(struct Preview, 1);
-#  ifdef SAFEMODE
-	if (preview==NULL) return;
-#  endif
-
-	preview->vbox = dirty_gtk_vbox_new (FALSE, 0);
-	preview->image = gtk_image_new();
-	g_signal_connect (dialog, "update-preview", G_CALLBACK (update_preview_image), preview);
-	gtk_box_pack_end (GTK_BOX(preview->vbox), preview->image, FALSE, FALSE, 0);
-	preview->no_image_text = gtk_label_new(NULL);
-	set_markup_key_value(FALSE, "blue",
-			     _("Disable: Trying to use [Transparent Background] instead."),
-			     preview->no_image_text);
-	gtk_box_pack_end (GTK_BOX(preview->vbox), preview->no_image_text, FALSE, FALSE, 0);
-	preview->frame = gtk_frame_new (NULL);
-	gtk_frame_set_shadow_type (GTK_FRAME (preview->frame), GTK_SHADOW_IN);
-	gtk_container_add (GTK_CONTAINER (preview->frame), preview->vbox);
-	preview->scroll_background = gtk_check_button_new_with_label(_("Scroll the background image along with the text"));
-	// GTK_TOGGLE_BUTTON(preview->scroll_background)->active = win_data->scroll_background;
-	gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(preview->scroll_background),
-				      win_data->scroll_background);
-
-	preview->mainbox = dirty_gtk_vbox_new (FALSE, 0);
-	gtk_box_pack_start (GTK_BOX(preview->mainbox), preview->frame, FALSE, FALSE, 5);
-	gtk_box_pack_start (GTK_BOX(preview->mainbox), preview->scroll_background, FALSE, FALSE, 0);
-	gtk_file_chooser_set_extra_widget (GTK_FILE_CHOOSER(dialog), preview->mainbox);
-	gtk_widget_show_all(dialog);
-	preview->default_filename = g_strdup(background_image_path);
-	update_preview_image (GTK_FILE_CHOOSER(dialog), preview);
-	GtkResponseType response;
-#  ifdef UNIT_TEST
-	for (response=GTK_RESPONSE_HELP; response<=GTK_RESPONSE_NONE; response++)
-#  else
-	response = gtk_dialog_run (GTK_DIALOG (dialog));
-	if (response == GTK_RESPONSE_ACCEPT)
-#  endif
-	{
-		// g_debug("gtk_widget_get_mapped(preview->no_image_text) = %d",
-		//	gtk_widget_get_mapped (preview->no_image_text));
-		g_free(win_data->background_image);
-		win_data->transparent_background = gtk_widget_get_mapped (preview->no_image_text);
-		if (win_data->transparent_background)
-			win_data->background_image = g_strdup(NULL_DEVICE);
-		else
-			win_data->background_image = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
-
-		// g_debug("Get new win_data->background_image = %s", win_data->background_image);
-		win_data->scroll_background = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(preview->scroll_background));
-		gint i;
-		struct Page *page_data = NULL;
-#  ifdef SAFEMODE
-		if (win_data->notebook)
-		{
-#  endif
-			GPtrArray *all_pages = get_pages_in_window(win_data);
-			for (i=0; i<all_pages->len; i++)
-			{
-				page_data = g_ptr_array_index(all_pages, i);
-#  ifdef SAFEMODE
-				if (page_data)
-#  endif
-					set_background_saturation (NULL, 0, win_data->background_saturation,
-								   page_data->vte);
-			}
-			g_ptr_array_unref(all_pages);
-#  ifdef SAFEMODE
-		}
-#  endif
-	}
-	gtk_widget_destroy (dialog);
-	g_free(preview);
-}
-#endif
-
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
-void update_preview_image (GtkFileChooser *dialog, struct Preview *preview)
-{
-#  ifdef DETAIL
-	g_debug("! Launch update_preview_image() with dialog = %p, preview = %p!", dialog, preview);
-#  endif
-#  ifdef SAFEMODE
-	if ((preview==NULL) || (dialog==NULL)) return;
-#  endif
-	gchar *filename = preview->default_filename;
-	if (filename)
-		// filename will be free() later.
-		preview->default_filename = NULL;
-	else
-		filename = gtk_file_chooser_get_preview_filename (dialog);
-	// g_debug("Get filename = %s in gtk_file_chooser_get_preview_filename()", filename);
-	if (filename!=NULL)
-	{
-		gtk_widget_show_all(preview->frame);
-		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file (filename, NULL);
-		GdkPixbuf *show_pixbuf = NULL;
-		if (pixbuf)
-		{
-			gint width = gdk_pixbuf_get_width(pixbuf);
-			gint height = gdk_pixbuf_get_height(pixbuf);
-
-			// g_debug("Get the current size of vbox is %d x %d",
-			//	preview->vbox->allocation.width, preview->vbox->allocation.height);
-			gint allocation_width;
-			GtkAllocation allocation;
-			gtk_widget_get_allocation(preview->vbox, &allocation);
-			allocation_width = allocation.width;
-
-			if (width > allocation_width) width = allocation_width;
-
-			GtkRequisition requisition;
-			gtk_window_get_size(GTK_WINDOW(dialog),
-					    &(requisition.width),
-					    &(requisition.height));
-			// g_debug("Get the window size of dialog is %d x %d, Child width should be %d",
-			//	requisition.width, requisition.height, requisition.width-28);
-			if (height > requisition.height * 0.4) height = requisition.height * 0.4;
-
-			show_pixbuf = gdk_pixbuf_new_from_file_at_size (filename, width, height, NULL);
-			if (show_pixbuf)
-			{
-				// g_debug("Set the background to %s...", filename);
-				gtk_widget_show(preview->image);
-				gtk_image_set_from_pixbuf (GTK_IMAGE (preview->image), show_pixbuf);
-				gtk_widget_hide (preview->no_image_text);
-				g_object_unref (show_pixbuf);
-			}
-			g_object_unref (pixbuf);
-			goto FINISH;
-		}
-		// g_debug("preview->image = %p", preview->image);
-		gtk_image_set_from_pixbuf (GTK_IMAGE (preview->image), NULL);
-	}
-
-FINISH:
-	g_free (filename);
-}
-#endif
 
 void reload_settings(GtkWidget *menu_item, struct Window *win_data)
 {
@@ -2806,13 +2597,9 @@ void print_active_window_is_null_error_dialog(gchar *function)
 #ifdef SAFEMODE
 	if (err_msg)
 #endif
-#ifdef UNIT_TEST
-		g_debug(_("The following error occurred: %s"), err_msg);
-#else
 		error_dialog(NULL, _("The following error occurred:"),
 			     "The following error occurred:",
 			     GTK_FAKE_STOCK_DIALOG_ERROR, err_msg, NULL);
-#endif
 	g_free(err_msg);
 }
 #endif

@@ -511,14 +511,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			dialog_data->original_color = win_data->cursor_color;
 			create_color_selection_widget(dialog_data, (GSourceFunc)adjust_vte_color, win_data->current_vte);
 			dialog_data->original_custom_cursor_color = win_data->custom_cursor_color;
-#if defined(USE_OLD_GTK_COLOR_SELECTION) || defined(UNIT_TEST)
-			// ---- Create the [Drawn the text under the cursor with foreground and background colors reversed] check button ----
-			dialog_data->custom_cursor_color_checkbox = gtk_check_button_new_with_label(_("Drawn the text under the cursor with foreground and background colors reversed"));
-			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(dialog_data->custom_cursor_color_checkbox), ! win_data->custom_cursor_color);
-			gtk_box_pack_start (GTK_BOX(dialog_data->box), dialog_data->custom_cursor_color_checkbox, FALSE, FALSE, 10);
-			g_signal_connect(G_OBJECT(dialog_data->custom_cursor_color_checkbox), "toggled",
-						  G_CALLBACK(update_custom_cursor_color), win_data);
-#endif
 			break;
 		case CHANGE_THE_ANSI_COLORS:					// 9
 		{
@@ -1371,12 +1363,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 	// Or, the vertical size of title label may be cut, and some text may not shown.
 	if ((dialog_data->title_label) && (gtk_label_get_max_width_chars(GTK_LABEL(dialog_data->title_label)) > 0))
 		gtk_label_set_ellipsize(GTK_LABEL(dialog_data->title_label), PANGO_ELLIPSIZE_MIDDLE);
-#ifdef UNIT_TEST
-	for (dialog_response=GTK_RESPONSE_HELP; dialog_response<=GTK_RESPONSE_NONE; dialog_response++)
-	{
-#else
 	dialog_response = gtk_dialog_run(GTK_DIALOG(dialog_data->window));
-#endif
 
 	switch (dialog_response)
 	{
@@ -1746,9 +1733,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			break;
 		}
 	}
-#ifdef UNIT_TEST
-	}
-#endif
 #ifdef SAFEMODE
 DESTROY_WINDOW:
 #endif
@@ -1827,20 +1811,6 @@ void init_dialog_ansi_colors_from_win_data(struct Window *win_data, struct Dialo
 	// print_color(i, "dialog_data->ansi_colors", dialog_data->ansi_colors_orig[i]);
 }
 
-#if defined(USE_OLD_GTK_COLOR_SELECTION) || defined(UNIT_TEST)
-void update_custom_cursor_color(GtkWidget *menuitem, struct Window *win_data)
-{
-#ifdef DETAIL
-	g_debug("! Launch update_custom_cursor_color() with menuitem = %p, win_data = %p", menuitem, win_data);
-#endif
-#ifdef SAFEMODE
-	if ((menuitem==NULL) || (win_data==NULL)) return;
-#endif
-
-	win_data->custom_cursor_color = ! gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(menuitem));
-	enable_custom_cursor_color(win_data->current_vte, win_data->custom_cursor_color, &(win_data->cursor_color));
-}
-#endif
 
 void dialog_invert_color_theme(GtkWidget *menuitem, struct Window *win_data)
 {
@@ -3045,9 +3015,6 @@ void error_dialog(GtkWidget *window, gchar *title_translation, gchar *title,
 	// g_debug("Set dialog_activated = %d", dialog_activated);
 
 	gchar *utf8_message = convert_str_to_utf8(message, encoding);
-#ifdef UNIT_TEST
-	g_message("%s", utf8_message);
-#else
 	struct Dialog *dialog_data = g_new0(struct Dialog, 1);
 
 	// void create_dialog(gchar *dialog_title, Dialog_Button_Type type, GtkWidget *window, gboolean center,
@@ -3061,7 +3028,6 @@ void error_dialog(GtkWidget *window, gchar *title_translation, gchar *title,
 	gtk_dialog_run(GTK_DIALOG(dialog_data->window));
 	gtk_widget_destroy(dialog_data->window);
 	g_free(dialog_data);
-#endif
 	g_free(utf8_message);
 	dialog_activated--;
 	// g_debug("Set dialog_activated = %d", dialog_activated);

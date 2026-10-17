@@ -481,11 +481,7 @@ gboolean socket_fault(Unix_Socket_Error type, GError *error, GIOChannel *channel
 #ifdef DETAIL
 	g_debug("! Launch socket_fault(%d) to show the error message !", type);
 #endif
-#ifdef UNIT_TEST
-#  define G_WARNING g_message
-#else
 #  define G_WARNING g_warning
-#endif
 	switch (type)
 	{
 		case GTK_SOCKET_ERROR_CREATE_SOCKET_FILE:

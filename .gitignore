@@ -5,9 +5,6 @@ src/*.swp
 src/lilyterm
 src/lilyterm_dbg
 src/lilyterm_dev
-src/unit_test
-src/unit_test.c
-src/unit_test.o
 src/gdb_batch
 src/gdb.log
 src/valgrind.log

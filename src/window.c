@@ -400,7 +400,6 @@ GtkNotebook *new_window(int argc,
 
 // ---- finish! ---- //
 
-#ifndef UNIT_TEST
 	// Due to the bug(?) in GTK3+, window must shown before gtk_window_parse_geometry()
 	// ERR MSG: gtk_window_parse_geometry() called on a window with no visible children;
 	//	    the window should be set up before gtk_window_parse_geometry() is called.
@@ -409,7 +408,6 @@ GtkNotebook *new_window(int argc,
 	// if (gtk_widget_get_window (win_data->window))
 	//	g_debug("WINDOW(%p): WINDOWID = %ld", win_data->window, GDK_WINDOW_XID (gtk_widget_get_window (win_data->window)));
 
-#endif
 
 	if (win_data_orig==NULL)
 	{
@@ -458,12 +456,7 @@ GtkNotebook *new_window(int argc,
 		deal_key_press(win_data->window, KEY_FULL_SCREEN, win_data);
 		menu_active_window = menu_active_windows_orig;
 	}
-#ifdef UNIT_TEST
-	gtk_widget_destroy(win_data->window);
-	return NULL;
-#else
 	return GTK_NOTEBOOK(win_data->notebook);
-#endif
 }
 
 gchar *get_init_dir(pid_t pid, gchar *pwd, gchar *home)
@@ -1625,95 +1618,6 @@ void window_style_set(GtkWidget *window, GtkStyle *previous_style, struct Window
 	}
 }
 
-#if defined(USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
-void window_size_request (GtkWidget *window, GtkRequisition *requisition, struct Window *win_data)
-{
-#  ifdef DETAIL
-	if (win_data)
-		g_debug("! Launch window_size_request() with window =%p, win_data = %p, keep_vte_size = 0x%X",
-			window, win_data, win_data->keep_vte_size);
-	else
-		g_debug("! Launch window_size_request() with window =%p, win_data = %p",
-			window, win_data);
-#  endif
-#  ifdef SAFEMODE
-	if (win_data==NULL) return;
-#  endif
-
-#  ifdef GEOMETRY
-	fprintf(stderr, "@ window_size_request(\033[1;%dm%p\033[0m): Got keep_vte_size (\033[1;%dmBEFORE\033[0m) = 0x%X\n",
-			ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window, ANSI_COLOR_YELLOW, win_data->keep_vte_size);
-
-	GtkRequisition window_requisition;
-#  ifdef SAFEMODE
-	if (window)
-#  endif
-		gtk_widget_get_child_requisition (window, &window_requisition);
-	fprintf(stderr, "@ window_size_request(\033[1;%dm%p\033[0m): request_size (before) = %d x %d\n",
-			ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window, window_requisition.width, window_requisition.height);
-#  endif
-	// [Showing/Hiding tabs bar] and [Change the vte font] won't run the following codes.
-	if (win_data->keep_vte_size & GEOMETRY_NEEDS_RUN_SIZE_REQUEST_MASK)
-	{
-		// g_debug("Got keep_vte_size (before) = %d", win_data->keep_vte_size);
-		GtkRequisition window_requisition;
-
-		gtk_widget_get_child_requisition (window, &window_requisition);
-		// g_debug("! The requested window (for %p) requisition is %d x %d",
-		//	window, window_requisition.width, window_requisition.height);
-		if ( window_requisition.width>0 && window_requisition.height>0 )
-		{
-			GtkRequisition current_window_requisition;
-			// FIXME: Due to a bug in the old GTK+2(?), we should get the requisition after the window is shown, or it will get segfault.
-			if (gtk_widget_get_mapped(win_data->window))
-				gtk_window_get_size(GTK_WINDOW(window),
-						    &current_window_requisition.width,
-						    &current_window_requisition.height);
-#  ifdef GEOMETRY
-			fprintf(stderr, "@ The current window size (\033[1;%dm%p\033[0m) is %d x %d, request size is %d x %d!!\n",
-					ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window,
-					current_window_requisition.width,
-					current_window_requisition.height,
-					window_requisition.width,
-					window_requisition.height);
-#  endif
-			// clean y
-			win_data->keep_vte_size &= GEOMETRY_HAD_BEEN_RESIZED_ONCE_MASK;
-
-			if ((window_requisition.width != current_window_requisition.width) ||
-			    (window_requisition.height != current_window_requisition.height))
-			{
-#  ifdef GEOMETRY
-				fprintf(stderr, "@ \033[1;%dmwindow_size_request\033[0m(\033[1;%dm%p\033[0m): "
-						"Call \033[1;%dmgtk_window_resize()\033[0m to resize to %d x %d!\n",
-						ANSI_COLOR_YELLOW, ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6),
-						window, ANSI_COLOR_MAGENTA, window_requisition.width, window_requisition.height);
-#  endif
-				gtk_window_resize(GTK_WINDOW(window), window_requisition.width, window_requisition.height);
-			}
-		}
-		else
-		{
-#  ifdef GEOMETRY
-			fprintf(stderr, "@ window_size_request(\033[1;%dm%p\033[0m): \033[1;%dmINFO\033[0m: "
-					"window_requisition.width = %d, window_requisition.height = %d. Don't do anything!!\n",
-					ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window, ANSI_COLOR_RED,
-					window_requisition.width, window_requisition.height);
-#  endif
-			win_data->keep_vte_size = 0;
-		}
-#  ifdef GEOMETRY
-		fprintf(stderr, "@ window_size_request(\033[1;%dm%p\033[0m): Got keep_vte_size (\033[1;%dmAFTER\033[0m) = 0x%X\n",
-				ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window, ANSI_COLOR_YELLOW, win_data->keep_vte_size);
-#  endif
-	}
-#  ifdef GEOMETRY
-	else
-		fprintf(stderr, "@ window_size_request(\033[1;%dm%p\033[0m): \033[1;%dmINFO\033[0m: keep_vte_size = %X. Don't do anything!!\n",
-				ANSI_COLOR_RED+(GPOINTER_TO_INT(window)%6), window, ANSI_COLOR_RED, win_data->keep_vte_size);
-#  endif
-}
-#endif
 
 
 void window_size_allocate(GtkWidget *window, GtkAllocation *allocation, struct Window *win_data)
@@ -1923,10 +1827,8 @@ void clear_win_data(struct Window *win_data)
 //		current_vte = NULL;
 //	}
 
-#ifndef UNIT_TEST
 	// g_debug("clear_win_data: clear win_data = %p for window = %p!", win_data, win_data->window);
 	g_free(win_data);
-#endif
 
 	// win_data=NULL;
 }
@@ -2185,10 +2087,8 @@ void remove_notebook_page(GtkNotebook *notebook, GtkWidget *child, guint page_nu
 				g_message("%s had been closed normally!", PACKAGE);
 #endif
 			}
-#ifndef UNIT_TEST
 			else
 				exit (1);
-#endif
 		}
 		else
 			destroy_window(win_data);
@@ -2255,55 +2155,7 @@ GtkNotebook *create_window (GtkNotebook *notebook, GtkWidget *page, gint x, gint
 			  (notebook==NULL)? NULL :page_data);
 }
 
-#if defined(USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
-gboolean window_state_event (GtkWidget *widget, GdkEventWindowState *event, struct Window *win_data)
-{
-#  ifdef DETAIL
-	g_debug("! Launch window_state_event() with win_data = %p", win_data);
-#  endif
-#  ifdef SAFEMODE
-	if ((win_data==NULL) || (event==NULL)) return FALSE;
-#  endif
-	// g_debug("win_data->keep_vte_size = %d", win_data->keep_vte_size);
 
-	if (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN)
-		win_data->fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN;
-	// g_debug("window_state_event: win_data->fullscreen = %d", win_data->fullscreen);
-
-	if (! win_data->fullscreen)
-		win_data->true_fullscreen = FALSE;
-	else
-		win_data->true_fullscreen = TRUE;
-#  ifdef GEOMETRY
-	fprintf(stderr, "\033[1;31m** window_state_event(): win_data->true_fullscreen = %d\033[0m\n", win_data->true_fullscreen);
-#  endif
-	return FALSE;
-}
-#endif
-
-#if defined(USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
-void keep_gtk2_window_size (struct Window *win_data, GtkWidget *vte, Geometry_Resize_Type keep_vte_size)
-{
-#  ifdef DETAIL
-	g_debug("! Launch keep_gtk2_window_size() with win_data = %p, vte = %p, keep_vte_size = 0x%X",
-		win_data, vte, keep_vte_size);
-#  endif
-#  ifdef SAFEMODE
-	if (win_data==NULL) return;
-#  endif
-	win_data->keep_vte_size |= keep_vte_size;
-#  ifdef GEOMETRY
-	fprintf(stderr, "@ \033[1;%dmkeep_gtk2_window_size\033[0m(\033[1;%dm%p\033[0m): "
-			"Call \033[1;%dmwindow_resizable\033[0m(\033[1;%dmHINTS_NONE\033[0m)!\n",
-			ANSI_COLOR_YELLOW, ANSI_COLOR_RED+(GPOINTER_TO_INT(win_data->window)%6),
-			win_data->window, ANSI_COLOR_MAGENTA, ANSI_COLOR_CYAN);
-#  endif
-	window_resizable(win_data->window, vte, HINTS_NONE);
-#  ifdef GEOMETRY
-	g_debug("@ keep_gtk2_window_size(%p): Got keep_vte_size (final) = 0x%X", win_data->window, win_data->keep_vte_size);
-#  endif
-}
-#endif
 
 void keep_gtk3_window_size(struct Window *win_data, gboolean idle)
 {

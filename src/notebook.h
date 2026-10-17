@@ -36,9 +36,6 @@ gchar **get_argv(struct Window *win_data, gboolean *argv_need_be_free);
 void create_utf8_child_process_failed_dialog (struct Window *win_data, gchar *message, gchar *encoding);
 void create_child_process_failed_dialog(struct Window *win_data, gchar *message, gchar *encoding);
 void clear_arg(struct Window *win_data);
-#if defined (USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
-void label_size_request (GtkWidget *label, GtkRequisition *requisition, struct Page *page_data);
-#endif
 gboolean vte_button_press(GtkWidget *widget, GdkEventButton *event, struct Page *page_data);
 gboolean vte_button_release(GtkWidget *widget, GdkEventButton *event,  struct Page *page_data);
 void vte_grab_focus(GtkWidget *vte, gpointer user_data);
@@ -47,7 +44,7 @@ gboolean compare_win_page_encoding(GtkWidget *menu_item_encoding, gchar *encodin
 // void vte_size_request (GtkWidget *vte, GtkRequisition *requisition, gpointer user_data);
 // void vte_size_allocate (GtkWidget *vte, GtkAllocation *allocation, gpointer user_data);
 gchar *get_url (GdkEventButton *event, struct Page *page_data, gint *tag);
-#if defined(GEOMETRY) || defined(UNIT_TEST)
+#if defined(GEOMETRY)
 void vte_size_allocate (GtkWidget *vte, GtkAllocation *allocation, struct Page *page_data);
 #endif
 void vte_size_changed(VteTerminal *vte, Font_Set_Type type);

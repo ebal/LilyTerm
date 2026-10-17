@@ -73,14 +73,11 @@ gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba);
 gboolean dirty_gdk_color_parse(const gchar *spec, GdkRGBA *color);
 GtkWidget *dirty_gtk_vbox_new(gboolean homogeneous, gint spacing);
 GtkWidget *dirty_gtk_hbox_new(gboolean homogeneous, gint spacing);
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
-void dirty_vte_terminal_set_background_tint_color(VteTerminal *vte, const GdkRGBA rgba);
-#endif
-#if defined(GEOMETRY) || defined(UNIT_TEST)
+#if defined(GEOMETRY)
 void widget_size_allocate (GtkWidget *widget, GtkAllocation *allocation, gchar *name);
 #endif
 
-#if defined(OUT_OF_MEMORY) || defined(UNIT_TEST)
+#if defined(OUT_OF_MEMORY)
 gchar *fake_g_strdup(const gchar *gchar);
 gchar *fake_g_strdup_printf(const StrLists *format, ...);
 #endif
@@ -124,9 +121,6 @@ GtkNotebook *new_window(int argc,
 			struct Window *win_data_orig,
 			struct Page *page_data_orig);
 gchar *get_init_dir(pid_t pid, gchar *pwd, gchar *home);
-#if defined(USE_GTK2_GEOMETRY_METHOD) || defined(UNIT_TEST)
-void keep_gtk2_window_size (struct Window *win_data, GtkWidget *vte, Geometry_Resize_Type keep_vte_size);
-#endif
 void keep_gtk3_window_size(struct Window *win_data, gboolean idle);
 gboolean show_or_hide_tabs_bar_and_scroll_bar(struct Window *win_data);
 gboolean idle_set_vte_font_to_selected(struct Window *win_data);
@@ -147,7 +141,7 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type);
 gboolean hide_and_show_tabs_bar(struct Window *win_data , Switch_Type show_tabs_bar);
 void set_widget_can_not_get_focus(GtkWidget *widget);
 gboolean hide_scrollback_lines(GtkWidget *widget, struct Window *win_data);
-#if defined(FATAL) || defined(UNIT_TEST)
+#if defined(FATAL)
 void print_array(gchar *name, gchar **data);
 #endif
 void clear_win_data(struct Window *win_data);
@@ -199,13 +193,8 @@ void set_page_width(struct Window *win_data, struct Page *page_data);
 void pack_vte_and_scroll_bar_to_hbox(struct Window *win_data, struct Page *page_data);
 void add_remove_page_timeout_id(struct Window *win_data, struct Page *page_data);
 void add_remove_window_title_changed_signal(struct Page *page_data);
-#if defined(ENABLE_VTE_BACKGROUND) || defined(FORCE_ENABLE_VTE_BACKGROUND) || defined(UNIT_TEST)
-gboolean set_background_saturation(GtkRange *range, GtkScrollType scroll, gdouble value, GtkWidget *vte);
-#endif
 gboolean set_window_opacity (GtkRange *range, GtkScrollType scroll, gdouble value, struct Window *win_data);
-#if defined(vte_terminal_get_padding) || defined(UNIT_TEST)
 void fake_vte_terminal_get_padding(VteTerminal *vte, gint *width, gint *height);
-#endif
 void apply_new_win_data_to_page (struct Window *win_data_orig, struct Window *win_data, struct Page *page_data);
 gboolean compare_color(GdkRGBA *a, GdkRGBA *b);
 gboolean check_show_or_hide_scroll_bar(struct Window *win_data);
@@ -300,7 +289,7 @@ gboolean check_and_add_locale_to_warned_locale_list(struct Window *win_data, gch
 void create_invalid_locale_error_message(gchar *locale);
 void error_dialog(GtkWidget *window, gchar *title_translation, gchar *title,
 		  gchar *icon, gchar *message, gchar *encoding);
-#if defined(FATAL) || defined(UNIT_TEST)
+#if defined(FATAL)
 void print_switch_out_of_range_error_dialog(gchar *function, gchar *var, gint value);
 #endif
 GdkRGBA get_inactive_color(GdkRGBA original_fg_color, gdouble new_brightness, gdouble old_brightness);
@@ -328,7 +317,7 @@ long get_profile_dir_modtime(void);
 gboolean check_if_win_data_is_still_alive(struct Window *win_data);
 void clean_scrollback_lines(GtkWidget *widget, struct Window *win_data);
 
-#if defined(FATAL) || defined(UNIT_TEST)
+#if defined(FATAL)
 void print_active_window_is_null_error_dialog(gchar *function);
 #endif
 
