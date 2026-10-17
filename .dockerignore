@@ -1,0 +1,12 @@
+.git
+dist
+**/*.o
+src/lilyterm
+src/lilyterm_dev
+src/lilyterm_dbg
+po/*.mo
+.config
+release
+test-output
+.github
+claude.session

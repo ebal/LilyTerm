@@ -1641,9 +1641,10 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 					{
 						struct Page *tmp_page_data = NULL;
 						// change the saturation of background and foreground/background color
-						for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+						GPtrArray *all_pages = get_pages_in_window(win_data);
+						for (i=0; i<all_pages->len; i++)
 						{
-							tmp_page_data = get_page_data_from_nth_page(win_data, i);
+							tmp_page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 							if (tmp_page_data==NULL) goto DESTROY_WINDOW;
 #endif
@@ -1675,6 +1676,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 									break;
 							}
 						}
+						g_ptr_array_unref(all_pages);
 					}
 					break;
 				}
@@ -1781,15 +1783,17 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 
 					struct Page *page_data;
 					gboolean default_vte_color = use_default_vte_theme(win_data);
-					for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+					GPtrArray *all_pages = get_pages_in_window(win_data);
+					for (i=0; i<all_pages->len; i++)
 					{
-						page_data = get_page_data_from_nth_page(win_data, i);
+						page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 						if (page_data==NULL) goto DESTROY_WINDOW;
 #endif
 						set_vte_color(page_data->vte, default_vte_color, win_data->custom_cursor_color,
 							      win_data->cursor_color, win_data->color, FALSE, FALSE);
 					}
+					g_ptr_array_unref(all_pages);
 					// g_debug("win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
 					//	win_data->color_brightness, win_data->color_brightness_inactive);
 					break;
@@ -2591,14 +2595,16 @@ void paste_text_to_vte_terminal(GtkWidget *widget, struct Dialog *dialog_data)
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data==NULL) continue;
 #endif
 		vte_terminal_feed_child(VTE_TERMINAL(page_data->vte), past_str, -1);
 	}
+	g_ptr_array_unref(all_pages);
 	g_free(past_str);
 	gtk_entry_set_text (GTK_ENTRY(dialog_data->operate[0]), "");
 	gtk_window_set_focus(GTK_WINDOW(win_data->window), dialog_data->operate[0]);
@@ -2910,9 +2916,10 @@ gboolean grab_key_press (GtkWidget *window, GdkEventKey *event, struct Dialog *d
 	if (win_data==NULL) return FALSE;
 #endif
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data==NULL) continue;
 #endif
@@ -2920,6 +2927,7 @@ gboolean grab_key_press (GtkWidget *window, GdkEventKey *event, struct Dialog *d
 		// gtk_test_widget_send_key (page_data->vte, event->keyval, event->state);
 		gtk_widget_event(page_data->vte, (GdkEvent *)event);
 	}
+	g_ptr_array_unref(all_pages);
 	g_free(key_value);
 	return TRUE;
 }

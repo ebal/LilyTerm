@@ -234,6 +234,17 @@ gboolean create_menu(struct Window *win_data)
 	// ----------------------------------------
 	add_separator_menu (win_data->menu);
 
+	// split panes: the keys for them are in [Set key binding]
+	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Split right"), NULL, GTK_FAKE_STOCK_ADD,
+			  (GSourceFunc)menu_split_right, win_data);
+	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Split down"), NULL, GTK_FAKE_STOCK_ADD,
+			  (GSourceFunc)menu_split_down, win_data);
+	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Close pane"), NULL, GTK_FAKE_STOCK_CLOSE,
+			  (GSourceFunc)menu_close_pane, win_data);
+
+	// ----------------------------------------
+	add_separator_menu (win_data->menu);
+
 	GtkWidget *misc_sub_menu = create_sub_item (win_data->menu, _("Misc"), GTK_FAKE_STOCK_CONVERT);
 
 	create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Paste to every Vte Terminal"), NULL, GTK_FAKE_STOCK_PASTE,
@@ -582,7 +593,11 @@ void copy_clipboard(GtkWidget *widget, struct Window *win_data)
 #ifdef SAFEMODE
 	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
 #endif
+#if VTE_CHECK_VERSION(0,50,0)
+	vte_terminal_copy_clipboard_format(VTE_TERMINAL(win_data->current_vte), VTE_FORMAT_TEXT);
+#else
 	vte_terminal_copy_clipboard(VTE_TERMINAL(win_data->current_vte));
+#endif
 }
 
 void paste_clipboard(GtkWidget *widget, struct Window *win_data)
@@ -643,15 +658,31 @@ void view_current_page_info(GtkWidget *widget, struct Window *win_data)
 	if (page_data==NULL) return;
 #endif
 	gchar *old_temp_data = win_data->temp_data;
+	// A X11 window ID only exists when running on a X server.
+	// Under Wayland (or any other GDK backend) there is no such thing.
+	gulong window_id = 0;
+	const gchar *display_type = "unknown";
+	GdkWindow *gdk_window = gtk_widget_get_window (page_data->vte);
+#ifdef GDK_WINDOWING_X11
+	if (gdk_window && GDK_IS_X11_WINDOW (gdk_window))
+	{
+		window_id = GDK_WINDOW_XID (gdk_window);
+		display_type = "X11";
+	}
+#endif
+	if (gdk_window && (window_id==0))
+		display_type = G_OBJECT_TYPE_NAME (gdk_window_get_display (gdk_window));
 	win_data->temp_data = g_strdup_printf("%s%c%s%c"
 					      "Encoding=%s\n"
 					      "VTE_CJK_WIDTH=%s\n"
-					      "WINDOWID=%ld",
+					      "WINDOWID=%lu\n"
+					      "Display=%s",
 					      _("View current page information"), SEPARATE_CHAR,
 					      "View current page information", SEPARATE_CHAR,
 					      page_data->encoding_str,
 					      page_data->VTE_CJK_WIDTH_STR,
-					      (gtk_widget_get_window (page_data->vte))?GDK_WINDOW_XID (gtk_widget_get_window (page_data->vte)):0);
+					      window_id,
+					      display_type);
 	dialog(NULL, GENERAL_INFO);
 	g_free(win_data->temp_data);
 	win_data->temp_data=old_temp_data;
@@ -730,14 +761,16 @@ void set_cursor_blinks(GtkWidget *menuitem_cursor_blinks, struct Window *win_dat
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			set_cursor_blink(win_data, page_data);
 	}
+	g_ptr_array_unref(all_pages);
 }
 
 void set_allow_bold_text(GtkWidget *menuitem_allow_bold_text, struct Window *win_data)
@@ -752,14 +785,16 @@ void set_allow_bold_text(GtkWidget *menuitem_allow_bold_text, struct Window *win
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
 	}
+	g_ptr_array_unref(all_pages);
 }
 
 void set_open_url_with_ctrl_pressed(GtkWidget *menuitem_open_url_with_ctrl_pressed, struct Window *win_data)
@@ -800,14 +835,16 @@ void set_audible_bell(GtkWidget *menuitem_audible_bell, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_audible_bell (VTE_TERMINAL(page_data->vte), win_data->audible_bell);
 	}
+	g_ptr_array_unref(all_pages);
 }
 
 #if defined(ENABLE_VISIBLE_BELL) || defined(UNIT_TEST)
@@ -824,14 +861,16 @@ void set_visible_bell(GtkWidget *menuitem_visible_bell, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_visible_bell (VTE_TERMINAL(page_data->vte), win_data->visible_bell);
 	}
+	g_ptr_array_unref(all_pages);
 }
 #endif
 
@@ -857,14 +896,16 @@ void set_urgent_bell(GtkWidget *menuitem_urgent_bell, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			set_vte_urgent_bell(win_data, page_data);
 	}
+	g_ptr_array_unref(all_pages);
 	win_data->urgent_bell_status = win_data->urgent_bell;
 }
 
@@ -1163,14 +1204,16 @@ void set_trans_bg(GtkWidget *menuitem_trans_bg, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #  ifdef SAFEMODE
 		if (page_data)
 #  endif
 			set_background_saturation (NULL, 0, win_data->background_saturation, page_data->vte);
 	}
+	g_ptr_array_unref(all_pages);
 }
 #endif
 
@@ -1277,15 +1320,17 @@ void set_ansi_theme(GtkWidget *menuitem, Set_ANSI_Theme_Type type, gboolean use_
 
 	if (menuitem)
 	{
-		for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+		GPtrArray *all_pages = get_pages_in_window(win_data);
+		for (i=0; i<all_pages->len; i++)
 		{
-			page_data = get_page_data_from_nth_page(win_data, i);
+			page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 			if (page_data)
 #endif
 				set_vte_color(page_data->vte, default_vte_theme, win_data->custom_cursor_color, win_data->cursor_color,
 					      win_data->color, FALSE, (win_data->color_theme_index==(THEME-1)));
 		}
+		g_ptr_array_unref(all_pages);
 
 		if (menuitem != win_data->menuitem_invert_color)
 		{
@@ -1347,14 +1392,16 @@ void set_erase_binding (GtkWidget *menuitem, gint value)
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_backspace_binding (VTE_TERMINAL(page_data->vte), win_data->erase_binding);
 	}
+	g_ptr_array_unref(all_pages);
 	win_data->current_menuitem_erase_binding = menuitem;
 }
 
@@ -1381,14 +1428,16 @@ void set_cursor_shape (GtkWidget *menuitem, gint value)
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_cursor_shape(VTE_TERMINAL(page_data->vte), win_data->cursor_shape);
 	}
+	g_ptr_array_unref(all_pages);
 	win_data->current_menuitem_cursor_shape = menuitem;
 }
 #endif
@@ -2398,9 +2447,10 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		}
 
 		struct Page *page_data = NULL;
-		for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+		GPtrArray *all_pages = get_pages_in_window(win_data);
+		for (i=0; i<all_pages->len; i++)
 		{
-			page_data = get_page_data_from_nth_page(win_data, i);
+			page_data = g_ptr_array_index(all_pages, i);
 #  ifdef SAFEMODE
 			if (page_data==NULL) continue;
 #  endif
@@ -2412,6 +2462,7 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 
 			if (refresh_match) set_hyperlink(win_data, page_data);
 		}
+		g_ptr_array_unref(all_pages);
 
 		glong column=0, row=0;
 		get_row_and_column_from_geometry_str(&column, &row, &(win_data->default_column), &(win_data->default_row), win_data->geometry);
@@ -2541,15 +2592,17 @@ void load_background_image_from_file(GtkWidget *widget, struct Window *win_data)
 		if (win_data->notebook)
 		{
 #  endif
-			for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+			GPtrArray *all_pages = get_pages_in_window(win_data);
+			for (i=0; i<all_pages->len; i++)
 			{
-				page_data = get_page_data_from_nth_page(win_data, i);
+				page_data = g_ptr_array_index(all_pages, i);
 #  ifdef SAFEMODE
 				if (page_data)
 #  endif
 					set_background_saturation (NULL, 0, win_data->background_saturation,
 								   page_data->vte);
 			}
+			g_ptr_array_unref(all_pages);
 #  ifdef SAFEMODE
 		}
 #  endif
@@ -2833,7 +2886,7 @@ GtkWidget *add_separator_menu (GtkWidget *sub_menu)
 	return menu_item;
 }
 
-long get_profile_dir_modtime()
+long get_profile_dir_modtime(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch get_profile_dir_modtime()");

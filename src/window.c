@@ -129,7 +129,15 @@ GtkNotebook *new_window(int argc,
 	if ((wmclass_class[0]>='a') && (wmclass_class[0]<='z'))
 #endif
 		win_data->wmclass_class[0] += ('A' - 'a');
+	// Deprecated since gtk+ 3.22, but still the only way to honor --name/--class
+	// on X11. It does nothing on Wayland, where the app_id is the program name.
+#ifdef G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+	G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+#endif
 	gtk_window_set_wmclass(GTK_WINDOW(win_data->window), win_data->wmclass_name, win_data->wmclass_class);
+#ifdef G_GNUC_END_IGNORE_DEPRECATIONS
+	G_GNUC_END_IGNORE_DEPRECATIONS
+#endif
 
 	win_data->runtime_locale_list = g_strdup(locale_list);
 	win_data->runtime_encoding = g_strdup(encoding);
@@ -401,7 +409,7 @@ GtkNotebook *new_window(int argc,
 #ifdef USE_GTK2_GEOMETRY_METHOD
 			// DIRTY HACK: Specify a befit size to Notebook to keep from window using 200x200 as an init size.
 			GtkWidget *notebook_size_orig = (get_hide_or_show_tabs_bar(win_data, win_data->show_tabs_bar)) ? win_data_orig->notebook
-														       : page_data_orig->hbox;
+														       : page_data_orig->tab_box;
 			GtkRequisition notebook_requisition;
 			gtk_widget_get_child_requisition (notebook_size_orig, &notebook_requisition);
 			gtk_widget_set_size_request(win_data->notebook, notebook_requisition.width, notebook_requisition.height);
@@ -449,9 +457,12 @@ GtkNotebook *new_window(int argc,
 				win_data->window, win_data->geometry);
 #endif
 #ifdef USE_XPARSEGEOMETRY
+			// Wayland clients can not place their own toplevels: there
+			// gtk_window_move() is a no-op, and only the size is honored.
 			gint offset_x = 0, offset_y = 0;
-			guint column, row;
-			if (XParseGeometry (win_data->geometry, &offset_x, &offset_y, &column, &row))
+			gint mask = parse_geometry_str(win_data->geometry, &offset_x, &offset_y, NULL, NULL);
+			if ((mask & GEOMETRY_HAS_X) && (mask & GEOMETRY_HAS_Y) &&
+			    (! (mask & (GEOMETRY_X_NEGATIVE | GEOMETRY_Y_NEGATIVE))))
 				gtk_window_move (GTK_WINDOW(win_data->window), offset_x, offset_y);
 #else
 			gtk_window_parse_geometry(GTK_WINDOW(win_data->window), win_data->geometry);
@@ -602,20 +613,23 @@ GString *close_multi_tabs(struct Window *win_data, int window_no)
 #ifdef SAFEMODE
 		if (process_data==NULL) return child_process_list;
 #endif
-		for (i=0; i<total_page; i++)
+		GPtrArray *all_pages = get_pages_in_window(win_data);
+		for (i=0; i<all_pages->len; i++)
 		{
-			page_data = get_page_data_from_nth_page(win_data, i);
+			page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 			if (page_data==NULL) continue;
 #endif
+			// the tab number, as the user sees it. Panes of a tab share it.
 			if (window_no)
-				child_process_list = get_child_process_list(win_data->window, window_no, i+1,
+				child_process_list = get_child_process_list(win_data->window, window_no, page_data->page_no+1,
 									    child_process_list, page_data->pid,
 									    win_data, TRUE);
 			else
-				child_process_list = get_child_process_list(0, 0, i+1, child_process_list,
+				child_process_list = get_child_process_list(0, 0, page_data->page_no+1, child_process_list,
 									    page_data->pid, win_data, TRUE);
 		}
+		g_ptr_array_unref(all_pages);
 		//for (i=0; i<10; i++)
 		//	g_debug("i=%d, window = %p, page_no = %d, ppid = %d, cmd = %s",
 		//		i, process_data[i].window, process_data[i].page_no, process_data[i].ppid, process_data[i].cmd);
@@ -641,18 +655,22 @@ GString *close_multi_tabs(struct Window *win_data, int window_no)
 		g_string_free(child_process_list, TRUE);
 	}
 
-	for (i=total_page-1; i>-1; i--)
+	// close every pane, the last one first. The list is a snapshot:
+	// closing the last pane of the window frees win_data.
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=all_pages->len-1; i>-1; i--)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 		if (close_page(page_data->vte, CLOSE_WITH_WINDOW_CLOSE_BUTTON)==FALSE)
 			break;
 	}
+	g_ptr_array_unref(all_pages);
 	force_to_quit = FALSE;
 	clean_process_data();
 	return NULL;
 }
 
-void clean_process_data()
+void clean_process_data(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch clean_process_data()");
@@ -1184,10 +1202,11 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			win_data->enable_key_binding = ! win_data->enable_key_binding;
 			if (win_data->enable_hyperlink)
 			{
-				gint i;
-				for (i=0; i<total_page; i++)
-					set_hyperlink(win_data,
-						      get_page_data_from_nth_page(win_data, i));
+				guint i;
+				GPtrArray *all_pages = get_pages_in_window(win_data);
+				for (i=0; i<all_pages->len; i++)
+					set_hyperlink(win_data, g_ptr_array_index(all_pages, i));
+				g_ptr_array_unref(all_pages);
 			}
 			break;
 		case KEY_NEW_TAB:
@@ -1216,9 +1235,9 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 				 win_data->new_tab_next_to_current);
 			break;
 		case KEY_CLOSE_TAB:
-			// close page
+			// close page: every pane of it
 			// g_debug("Trying to close page!");
-			close_page (win_data->current_vte, CLOSE_WITH_KEY_STRIKE);
+			close_tab (get_page_data_from_vte(win_data->current_vte, win_data, -1), CLOSE_WITH_KEY_STRIKE);
 			break;
 		case KEY_EDIT_LABEL:
 			// edit page's label
@@ -1280,7 +1299,7 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			if (page_data==NULL) return FALSE;
 #endif
 			// move current page forward
-			gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook), page_data->hbox,
+			gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook), page_data->tab_box,
 						   page_data->page_no -1);
 			break;
 		case KEY_MOVE_TAB_BACKWARD:
@@ -1289,24 +1308,24 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 #endif
 			// move current page backward
 			if (page_data->page_no == (gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook))-1))
-				gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook), page_data->hbox, 0);
+				gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook), page_data->tab_box, 0);
 			else
 				gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook),
-							   page_data->hbox, page_data->page_no+1);
+							   page_data->tab_box, page_data->page_no+1);
 			break;
 		case KEY_MOVE_TAB_FIRST:
 #ifdef SAFEMODE
 			if (page_data==NULL) return FALSE;
 #endif
 			// move current page to first
-			gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook), page_data->hbox, 0);
+			gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook), page_data->tab_box, 0);
 			break;
 		case KEY_MOVE_TAB_LAST:
 #ifdef SAFEMODE
 			if (page_data==NULL) return FALSE;
 #endif
 			// move current page to last
-			gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook), page_data->hbox, -1);
+			gtk_notebook_reorder_child(GTK_NOTEBOOK(win_data->notebook), page_data->tab_box, -1);
 			break;
 		case KEY_SWITCH_TO_TAB_1:
 		case KEY_SWITCH_TO_TAB_2:
@@ -1335,7 +1354,11 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 #endif
 			break;
 		case KEY_COPY_CLIPBOARD:
+#if VTE_CHECK_VERSION(0,50,0)
+			vte_terminal_copy_clipboard_format(VTE_TERMINAL(win_data->current_vte), VTE_FORMAT_TEXT);
+#else
 			vte_terminal_copy_clipboard(VTE_TERMINAL(win_data->current_vte));
+#endif
 			break;
 		case KEY_PASTE_CLIPBOARD:
 		{
@@ -1534,6 +1557,18 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 #endif
 		case KEY_CLEAN_SCROLLBACK_LINES:
 			clean_scrollback_lines(NULL, win_data);
+			break;
+		case KEY_SPLIT_RIGHT:
+			split_page(win_data, page_data, GTK_ORIENTATION_HORIZONTAL);
+			break;
+		case KEY_SPLIT_DOWN:
+			split_page(win_data, page_data, GTK_ORIENTATION_VERTICAL);
+			break;
+		case KEY_NEXT_PANE:
+			focus_next_pane(win_data);
+			break;
+		case KEY_CLOSE_PANE:
+			close_page(win_data->current_vte, CLOSE_WITH_KEY_STRIKE);
 			break;
 		case KEY_DISABLE_URL_L:
 		case KEY_DISABLE_URL_R:
@@ -2220,8 +2255,8 @@ void notebook_page_added(GtkNotebook *notebook, GtkWidget *child, guint page_num
 		page_data->notebook = win_data->notebook;
 
 #ifdef ENABLE_TAB_REORDER
-		gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(notebook), page_data->hbox, TRUE);
-		gtk_notebook_set_tab_detachable(GTK_NOTEBOOK(notebook), page_data->hbox, TRUE);
+		gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(notebook), page_data->tab_box, TRUE);
+		gtk_notebook_set_tab_detachable(GTK_NOTEBOOK(notebook), page_data->tab_box, TRUE);
 #endif
 		set_fill_tabs_bar(GTK_NOTEBOOK(notebook), win_data->fill_tabs_bar, page_data);
 
@@ -2299,18 +2334,18 @@ void set_fill_tabs_bar(GtkNotebook *notebook, gboolean fill_tabs_bar, struct Pag
 		notebook, fill_tabs_bar, page_data);
 #endif
 #ifdef SAFEMODE
-	if ((notebook==NULL) || (page_data==NULL) || (page_data->hbox==NULL)) return;
+	if ((notebook==NULL) || (page_data==NULL) || (page_data->tab_box==NULL)) return;
 #endif
 #ifdef USE_OLD_GTK_LABEL_PACKING
-	gtk_notebook_set_tab_label_packing(GTK_NOTEBOOK(notebook), page_data->hbox,
+	gtk_notebook_set_tab_label_packing(GTK_NOTEBOOK(notebook), page_data->tab_box,
 					   fill_tabs_bar, fill_tabs_bar, GTK_PACK_START);
 #else
 	GValue value = { 0, };
 	g_value_init (&value, G_TYPE_BOOLEAN);
 	g_value_set_boolean (&value, fill_tabs_bar);
-	gtk_container_child_set_property (GTK_CONTAINER(notebook), page_data->hbox,
+	gtk_container_child_set_property (GTK_CONTAINER(notebook), page_data->tab_box,
 					  (gchar*) "tab-expand", &value);
-	gtk_container_child_set_property (GTK_CONTAINER(notebook), page_data->hbox,
+	gtk_container_child_set_property (GTK_CONTAINER(notebook), page_data->tab_box,
 					  (gchar*) "tab-fill", &value);
 	g_value_unset (&value);
 #endif
@@ -2566,6 +2601,9 @@ void keep_gtk3_window_size(struct Window *win_data, gboolean idle)
 		ANSI_COLOR_MAGENTA, win_data->window_status, win_data->hints_type);
 #  endif
 	if ((win_data->window_status != WINDOW_NORMAL) || (win_data->current_vte==NULL)) return;
+	// The window keeps the size of the current vte in columns and rows.
+	// That means nothing for a split tab: leave the window alone.
+	if (page_is_split((struct Page *)g_object_get_data(G_OBJECT(win_data->current_vte), "Page_Data"))) return;
 
 	switch (win_data->hints_type)
 	{
@@ -2658,7 +2696,7 @@ void resize_to_exist_widget(struct Window *win_data)
 #  ifdef SAFEMODE
 		if (page_data) return;
 #  endif
-			widget = page_data->hbox;
+			widget = page_data->tab_box;
 	}
 
 	GtkAllocation allocation = {0};
@@ -3090,6 +3128,7 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- page_data->label_text = %p", page_data->label_text);
 	g_debug("- page_data->label_button = %p", page_data->label_button);
 	g_debug("- page_data->hbox = %p", page_data->hbox);
+	g_debug("- page_data->tab_box = %p", page_data->tab_box);
 	g_debug("- page_data->vte = %p", page_data->vte);
 	g_debug("- page_data->scroll_bar = %p", page_data->scroll_bar);
 	g_debug("- page_data->encoding_str = %s", page_data->encoding_str);
@@ -3793,20 +3832,16 @@ gboolean hide_scrollback_lines(GtkWidget *menu_item, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	gint total_page = -1;
-#ifdef SAFEMODE
-	if (win_data->notebook)
-#endif
-		total_page = gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook));
-
-	for (i=0; i<total_page; i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data==NULL) continue;
 #endif
 		show_and_hide_scroll_bar(page_data, show);
 	}
+	g_ptr_array_unref(all_pages);
 
 	// Trying to keep vte size
 #ifdef USE_GTK2_GEOMETRY_METHOD

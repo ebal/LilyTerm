@@ -20,7 +20,8 @@
 // Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSourceFunc read_function)
 //
 // package_name: The uniq name of package.
-//		 The socket server will create an unix soket file at /tmp/.PACKAGENAME_USERNAME:DISPLAY
+//		 The socket server will create an unix soket file at $XDG_RUNTIME_DIR/.PACKAGENAME_USERNAME:DISPLAY
+//		 (or in /tmp, if there is no usable $XDG_RUNTIME_DIR)
 // socket_str: A string will be sent to the socket server, if it exist.
 // read_function: A function that will headle the socket_str as it's the socket server.
 //		  gboolean read_function(gchar *socket_str)
@@ -71,6 +72,11 @@
 //							  (g_io_channel_unref)
 
 
+// for struct ucred (SO_PEERCRED)
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
 #include <gtk/gtk.h>
 
 // for exit()
@@ -116,6 +122,7 @@ gboolean init_socket_server(GSourceFunc read_function);
 gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc read_function);
 gboolean read_socket(GIOChannel *channel, GIOCondition condition, GSourceFunc read_function);
 gint shutdown_socket_server(gpointer data);
+static void shutdown_socket_server_at_exit(void);
 gboolean socket_fault(Unix_Socket_Error type, GError *error, GIOChannel *channel, gboolean unref);
 
 // for unix socket
@@ -167,7 +174,7 @@ Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSour
 		// no socket server exist. create a socket server
 		if (init_socket_server(read_function))
 		{
-			g_atexit((GVoidFunc)shutdown_socket_server);
+			atexit(shutdown_socket_server_at_exit);
 			return UNIX_SOCKET_SERVER_INITED;
 		}
 	}
@@ -175,7 +182,7 @@ Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSour
 	return UNIX_SOCKET_ERROR;
 }
 
-gboolean init_socket_fd()
+gboolean init_socket_fd(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_socket_fd()");
@@ -202,7 +209,13 @@ gboolean init_socket_data(gchar *package_name)
 	// init the address of socket
 	address.sun_family = AF_UNIX;
 
-	const gchar *tmp_dir = g_get_tmp_dir();
+	// Prefer $XDG_RUNTIME_DIR: it is owned by the user with mode 0700, so no one
+	// else can squat the socket name or connect to it. A world writable /tmp
+	// offers neither, and is only the fallback for systems without a runtime dir.
+	const gchar *tmp_dir = g_getenv("XDG_RUNTIME_DIR");
+	if ((tmp_dir==NULL) || (! g_path_is_absolute(tmp_dir)) ||
+	    (! g_file_test(tmp_dir, G_FILE_TEST_IS_DIR)) || access(tmp_dir, W_OK | X_OK))
+		tmp_dir = g_get_tmp_dir();
 
 	if (tmp_dir)
 		g_snprintf(address.sun_path, UNIX_PATH_MAX, "%s/.%s_%s%s",
@@ -244,7 +257,7 @@ gboolean set_fd_non_block(gint *fd)
 
 
 // it will return TRUE if scucceed
-gboolean query_socket()
+gboolean query_socket(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch query_socket() to connect to an existing %s !", PACKAGE);
@@ -390,6 +403,22 @@ gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc r
 
 		if (read_fd < 0) return socket_fault(GTK_SOCKET_ERROR_CREATE_SOCKET_FILE, error, source, FALSE);
 
+#ifdef SO_PEERCRED
+		// The request ends up as a command line that is executed with our
+		// privileges: never take one from another user.
+		struct ucred peer;
+		socklen_t peer_len = sizeof(peer);
+		if ((getsockopt(read_fd, SOL_SOCKET, SO_PEERCRED, &peer, &peer_len) < 0) ||
+		    (peer_len != sizeof(peer)) || (peer.uid != getuid()))
+		{
+			g_warning("Refused a request on the %s socket: it does not come from uid %d.",
+				  PACKAGE, (gint) getuid());
+			close(read_fd);
+			// keep the socket server alive
+			return TRUE;
+		}
+#endif
+
 		if ( ! set_fd_non_block(&read_fd)) return FALSE;
 
 		GIOChannel* channel = g_io_channel_unix_new(read_fd);
@@ -438,6 +467,12 @@ gboolean read_socket(GIOChannel *channel, GIOCondition condition, GSourceFunc re
 }
 
 
+// g_atexit() is gone, and atexit() wants a real void (*)(void).
+static void shutdown_socket_server_at_exit(void)
+{
+	shutdown_socket_server(NULL);
+}
+
 // It should always return 0.
 gint shutdown_socket_server(gpointer data)
 {
@@ -468,7 +503,10 @@ gboolean socket_fault(Unix_Socket_Error type, GError *error, GIOChannel *channel
 				  address.sun_path, g_strerror (errno));
 			break;
 		case GTK_SOCKET_ERROR_CONNECT_SOCKET:
-			g_message("Can NOT connect to a existing unix socket!");
+			// No socket file, or a stale one without a server behind it:
+			// that is simply the first LilyTerm starting. Not worth a word.
+			if ((errno != ENOENT) && (errno != ECONNREFUSED))
+				g_message("Can NOT connect to a existing unix socket: %s", g_strerror (errno));
 			break;
 		case GTK_SOCKET_ERROR_BIND_SOCKET:
 			G_WARNING("Can NOT bind on the socket!");

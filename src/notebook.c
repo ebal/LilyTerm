@@ -43,6 +43,226 @@ gchar *login_shell_str[] = {NULL, "-", NULL};
 gchar *full_argv[] = {"/bin/sh", "/bin/sh", NULL};
 #endif
 
+static void collect_pages(GtkWidget *widget, gpointer pages);
+
+// Set by split_page() for the duration of one add_page() call: the new vte is
+// then a new pane next to split_from, in the same tab, instead of a new tab.
+static struct Page *split_from = NULL;
+static GtkOrientation split_orientation = GTK_ORIENTATION_HORIZONTAL;
+
+
+// ---- Split panes ---- //
+//
+// A tab (page_data->tab_box, the notebook page) holds one pane, or a tree of
+// GtkPaned whose leaves are panes (page_data->hbox: a vte and its scroll bar).
+// Every pane has its own struct Page. The panes of a tab share the tab label;
+// the label's "VteBox" is the pane that had the focus last, and it is the one
+// get_page_data_from_nth_page() returns for the tab.
+
+// TRUE if the tab that page_data is in holds more than one pane.
+gboolean page_is_split(struct Page *page_data)
+{
+	if ((page_data==NULL) || (page_data->hbox==NULL) || (page_data->tab_box==NULL)) return FALSE;
+	return gtk_widget_get_parent(page_data->hbox) != page_data->tab_box;
+}
+
+static GtkWidget *new_paned(GtkOrientation orientation)
+{
+#if GTK_CHECK_VERSION(2,91,0)
+	return gtk_paned_new(orientation);
+#else
+	if (orientation == GTK_ORIENTATION_HORIZONTAL)
+		return gtk_hpaned_new();
+	else
+		return gtk_vpaned_new();
+#endif
+}
+
+// Put new_child where old_child is in parent: a GtkPaned, or the tab box.
+// The caller has to hold a reference on old_child if it wants to keep it.
+static void replace_child(GtkWidget *parent, GtkWidget *old_child, GtkWidget *new_child)
+{
+	if (GTK_IS_PANED(parent))
+	{
+		gboolean first = (gtk_paned_get_child1(GTK_PANED(parent)) == old_child);
+		gtk_container_remove(GTK_CONTAINER(parent), old_child);
+		if (first)
+			gtk_paned_pack1(GTK_PANED(parent), new_child, TRUE, FALSE);
+		else
+			gtk_paned_pack2(GTK_PANED(parent), new_child, TRUE, FALSE);
+	}
+	else
+	{
+		gtk_container_remove(GTK_CONTAINER(parent), old_child);
+		gtk_box_pack_start(GTK_BOX(parent), new_child, TRUE, TRUE, 0);
+	}
+}
+
+// Put the pane of page_data next to the pane of from, in a new GtkPaned.
+static void insert_split_pane(struct Window *win_data, struct Page *from, struct Page *page_data,
+			      GtkOrientation orientation)
+{
+#ifdef DETAIL
+	g_debug("! Launch insert_split_pane() with from = %p, page_data = %p, orientation = %d",
+		from, page_data, orientation);
+#endif
+	GtkWidget *paned = new_paned(orientation);
+	g_object_ref(from->hbox);
+	replace_child(gtk_widget_get_parent(from->hbox), from->hbox, paned);
+	gtk_paned_pack1(GTK_PANED(paned), from->hbox, TRUE, FALSE);
+	gtk_paned_pack2(GTK_PANED(paned), page_data->hbox, TRUE, FALSE);
+	g_object_unref(from->hbox);
+	gtk_widget_show(paned);
+
+	// what notebook_page_added() does for a new tab
+	page_data->tab_box = from->tab_box;
+	page_data->page_no = from->page_no;
+	page_data->window = win_data->window;
+	page_data->notebook = win_data->notebook;
+#ifdef ENABLE_TAB_REORDER
+	// Not supported yet: dragging a split tab to another window.
+	gtk_notebook_set_tab_detachable(GTK_NOTEBOOK(win_data->notebook), page_data->tab_box, FALSE);
+#endif
+	if (page_data->pid > 0) monitor_cmdline(page_data);
+	update_window_hint(win_data, page_data);
+}
+
+// Remove the pane of page_data from its tab: its sibling takes the place of
+// their GtkPaned. The vte is destroyed with it. page_data itself is not freed.
+static void remove_split_pane(struct Window *win_data, struct Page *page_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch remove_split_pane() with page_data = %p", page_data);
+#endif
+	GtkWidget *paned = gtk_widget_get_parent(page_data->hbox);
+	GtkWidget *sibling = (gtk_paned_get_child1(GTK_PANED(paned)) == page_data->hbox) ?
+			     gtk_paned_get_child2(GTK_PANED(paned)) : gtk_paned_get_child1(GTK_PANED(paned));
+	gboolean had_focus = (win_data->current_vte == page_data->vte);
+	gboolean on_label = (g_object_get_data(G_OBJECT(page_data->label), "VteBox") == page_data->vte);
+
+	g_object_ref(sibling);
+	gtk_container_remove(GTK_CONTAINER(paned), sibling);
+	// destroys the paned, and the pane of page_data with it
+	replace_child(gtk_widget_get_parent(paned), paned, sibling);
+	g_object_unref(sibling);
+
+	// the pane that takes over the tab label, and the focus
+	GPtrArray *rest = g_ptr_array_new();
+	collect_pages(sibling, rest);
+	struct Page *next = rest->len ? g_ptr_array_index(rest, 0) : NULL;
+	g_ptr_array_unref(rest);
+	if (next==NULL) return;
+
+	if (on_label) g_object_set_data(G_OBJECT(page_data->label), "VteBox", next->vte);
+	if (had_focus)
+	{
+		win_data->current_vte = NULL;
+		gtk_widget_grab_focus(next->vte);
+	}
+#ifdef ENABLE_TAB_REORDER
+	if (! page_is_split(next))
+		gtk_notebook_set_tab_detachable(GTK_NOTEBOOK(win_data->notebook), next->tab_box, TRUE);
+#endif
+	update_window_hint(win_data, next);
+}
+
+// Split the pane of page_data in two: the new pane runs the default shell,
+// in the directory of page_data. HORIZONTAL: side by side; VERTICAL: one above the other.
+struct Page *split_page(struct Window *win_data, struct Page *page_data, GtkOrientation orientation)
+{
+#ifdef DETAIL
+	g_debug("! Launch split_page() with win_data = %p, page_data = %p, orientation = %d",
+		win_data, page_data, orientation);
+#endif
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (page_data==NULL) || (page_data->vte==NULL)) return NULL;
+#endif
+	split_from = page_data;
+	split_orientation = orientation;
+	struct Page *new_page = add_page(win_data,
+					 page_data,
+					 NULL,
+					 page_data->encoding_str,
+					 page_data->encoding_str,
+					 page_data->locale,
+					 NULL,
+					 page_data->environ,
+					 page_data->VTE_CJK_WIDTH_STR,
+					 FALSE);
+	split_from = NULL;
+	if (new_page) gtk_widget_grab_focus(new_page->vte);
+	return new_page;
+}
+
+// The right click menu items for split panes: they act on the current pane.
+void menu_split_right(GtkWidget *menuitem, struct Window *win_data)
+{
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
+#endif
+	split_page(win_data, get_page_data_from_vte(win_data->current_vte, win_data, -1), GTK_ORIENTATION_HORIZONTAL);
+}
+
+void menu_split_down(GtkWidget *menuitem, struct Window *win_data)
+{
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
+#endif
+	split_page(win_data, get_page_data_from_vte(win_data->current_vte, win_data, -1), GTK_ORIENTATION_VERTICAL);
+}
+
+void menu_close_pane(GtkWidget *menuitem, struct Window *win_data)
+{
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
+#endif
+	close_page(win_data->current_vte, CLOSE_WITH_KEY_STRIKE);
+}
+
+// Close the tab that page_data is in: every pane of it, the last one first.
+// Stops (and returns FALSE) if the user does not confirm closing a pane.
+gboolean close_tab(struct Page *page_data, gint close_type)
+{
+#ifdef DETAIL
+	g_debug("! Launch close_tab() with page_data = %p, close_type = %d", page_data, close_type);
+#endif
+#ifdef SAFEMODE
+	if (page_data==NULL) return FALSE;
+#endif
+	GPtrArray *panes = get_pages_in_tab(page_data);
+	gint i;
+	gboolean closed = TRUE;
+	for (i=panes->len-1; i>-1; i--)
+		if (! (closed = close_page(((struct Page *)g_ptr_array_index(panes, i))->vte, close_type)))
+			break;
+	g_ptr_array_unref(panes);
+	return closed;
+}
+
+// Move the focus to the next pane of the current tab.
+void focus_next_pane(struct Window *win_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch focus_next_pane() with win_data = %p", win_data);
+#endif
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
+#endif
+	struct Page *page_data = get_page_data_from_vte(win_data->current_vte, win_data, -1);
+	GPtrArray *panes = get_pages_in_tab(page_data);
+	guint i;
+	for (i=0; i<panes->len; i++)
+	{
+		if (g_ptr_array_index(panes, i) == page_data)
+		{
+			struct Page *next = g_ptr_array_index(panes, (i+1) % panes->len);
+			gtk_widget_grab_focus(next->vte);
+			break;
+		}
+	}
+	g_ptr_array_unref(panes);
+}
+
 // prev_vte: the new vte will be the clone of prev_vte.
 // menuitem_encoding: using right menu to open a new vtw with specified locale.
 //		      Lilyterm will update page_data->encoding_str with it.
@@ -206,7 +426,7 @@ struct Page *add_page(struct Window *win_data,
 #else
 		if (environ_str->len)
 #endif
-			new_environs = split_string(environ_str->str, "\t", -1);
+			new_environs = sanitize_environs(split_string(environ_str->str, "\t", -1));
 	// print_array("! add_page() environ", new_environs);
 	g_string_free(environ_str, TRUE);
 
@@ -320,7 +540,9 @@ struct Page *add_page(struct Window *win_data,
 	//				     GCancellable *cancellable,
 	//				     GError **error);
 	gboolean fork_stats;
-	GSpawnFlags spawn_flags = G_SPAWN_SEARCH_PATH | G_SPAWN_CHILD_INHERITS_STDIN;
+	// G_SPAWN_CHILD_INHERITS_STDIN is refused by vte >= 0.62 ("forbidden spawn flags"),
+	// and it never had a meaning here: the child always gets the pty as its stdin.
+	GSpawnFlags spawn_flags = G_SPAWN_SEARCH_PATH;
 	GError *error = NULL;
 	gint final_argv_need_be_free = FALSE;
 
@@ -413,6 +635,18 @@ struct Page *add_page(struct Window *win_data,
 	// create label
 	// g_debug("Creating label!!");
 
+	if (split_from)
+	{
+		// A pane shares the label of its tab, and the name of the tab.
+		page_data->label = split_from->label;
+		page_data->label_text = split_from->label_text;
+		page_data->label_button = split_from->label_button;
+		page_data->tab_color = split_from->tab_color;
+		g_free(page_data->custom_page_name);
+		page_data->custom_page_name = g_strdup(split_from->custom_page_name);
+	}
+	else
+	{
 	page_data->label=dirty_gtk_hbox_new(FALSE, 0);
 	g_object_set_data(G_OBJECT(page_data->label), "VteBox", page_data->vte);
 	set_widget_thickness(page_data->label, 0);
@@ -444,6 +678,7 @@ struct Page *add_page(struct Window *win_data,
 	gtk_box_pack_start(GTK_BOX(page_data->label), page_data->label_button, FALSE, FALSE, 0);
 	g_signal_connect(G_OBJECT(page_data->label_button), "clicked", G_CALLBACK(close_page), GINT_TO_POINTER(CLOSE_WITH_TAB_CLOSE_BUTTON));
 	gtk_widget_show_all(page_data->label);
+	}
 	// done in notebook_page_added()
 	// if (! (win_data->show_close_button_on_tab || win_data->show_close_button_on_all_tabs))
 	//	gtk_widget_hide (page_data->label_button);
@@ -469,6 +704,16 @@ struct Page *add_page(struct Window *win_data,
 		column = vte_terminal_get_column_count(VTE_TERMINAL(page_data_prev->vte));
 		row = vte_terminal_get_row_count(VTE_TERMINAL(page_data_prev->vte));
 		// g_debug("got prev_vte = %d x %d", column, row);
+		if (split_from)
+		{
+			// Halve the size the two panes ask for, or the window grows to fit
+			// two full sized terminals. One cell is left for the handle.
+			if (split_orientation == GTK_ORIENTATION_HORIZONTAL)
+				column = MAX((column - 1) / 2, 2);
+			else
+				row = MAX((row - 1) / 2, 1);
+			vte_terminal_set_size(VTE_TERMINAL(split_from->vte), column, row);
+		}
 	}
 	else
 	{
@@ -543,6 +788,18 @@ struct Page *add_page(struct Window *win_data,
 	// Therefore, it is recommended to show child widgets before adding them to a notebook.
 	gtk_widget_show_all(page_data->hbox);
 
+	if (split_from)
+	{
+		insert_split_pane(win_data, split_from, page_data, split_orientation);
+		goto PAGE_IN_PLACE;
+	}
+
+	// The notebook page is a container of panes, so that a pane can be split later
+	// without removing the page from the notebook.
+	page_data->tab_box = dirty_gtk_vbox_new(FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(page_data->tab_box), page_data->hbox, TRUE, TRUE, 0);
+	gtk_widget_show(page_data->tab_box);
+
 	// if (! win_data->show_scroll_bar)
 	//	hide_scroll_bar(win_data, page_data);
 
@@ -556,7 +813,7 @@ struct Page *add_page(struct Window *win_data,
 	if (page_data->notebook) {
 #endif
 		page_data->page_no = gtk_notebook_append_page(GTK_NOTEBOOK(page_data->notebook),
-						      page_data->hbox, page_data->label);
+						      page_data->tab_box, page_data->label);
 		// g_debug("Got page_data->page_no = %d", page_data->page_no);
 
 #ifdef DISABLE_PAGE_ADDED
@@ -566,13 +823,14 @@ struct Page *add_page(struct Window *win_data,
 		// move the page to next to original page
 		if (page_data_prev && add_to_next)
 		{
-			gtk_notebook_reorder_child(GTK_NOTEBOOK(page_data->notebook), page_data->hbox,
+			gtk_notebook_reorder_child(GTK_NOTEBOOK(page_data->notebook), page_data->tab_box,
 								page_data_prev->page_no + 1);
 			// g_debug("New Page No after move to next to prev page = %d", page_data->page_no);
 		}
 #ifdef SAFEMODE
 	}
 #endif
+PAGE_IN_PLACE:
 	win_data->current_vte = page_data->vte;
 
 // ---- Monitor cmdline ---- //
@@ -881,6 +1139,10 @@ gboolean close_page(GtkWidget *vte, gint close_type)
 	if (win_data==NULL) return FALSE;
 #endif
 
+	// The close button of a split tab closes every pane of it.
+	if ((close_type==CLOSE_WITH_TAB_CLOSE_BUTTON) && page_is_split(page_data))
+		return close_tab(page_data, CLOSE_WITH_KEY_STRIKE);
+
 	if (win_data->confirm_to_kill_running_command == FALSE)
 	{
 		force_to_quit=TRUE;
@@ -1018,6 +1280,27 @@ gboolean close_page(GtkWidget *vte, gint close_type)
 	if (! force_to_quit)
 		using_kill = FALSE;
 
+	// One pane of a split tab: only that pane goes away, the tab stays.
+	if (page_is_split(page_data))
+	{
+#if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
+		gtk_border_free(page_data->border);
+#endif
+		remove_split_pane(win_data, page_data);
+		g_free(page_data->page_name);
+		g_free(page_data->pid_cmdline);
+		g_free(page_data->custom_page_name);
+		g_free(page_data->pwd);
+		g_free(page_data->font_name);
+		g_free(page_data->encoding_str);
+		g_free(page_data->locale);
+		g_free(page_data->VTE_CJK_WIDTH_STR);
+		g_free(page_data->window_title_pwd);
+		g_free(page_data->environ);
+		g_free(page_data);
+		return TRUE;
+	}
+
 	if (vte==win_data->current_vte)
 	{
 		win_data->current_vte = NULL;
@@ -1114,6 +1397,14 @@ void vte_grab_focus(GtkWidget *vte, gpointer user_data)
 	// Recover the dim text of vte
 	dim_vte_text (win_data, page_data, 0);
 
+	// The tab shows the pane that has the focus.
+	gboolean pane_changed = FALSE;
+	if (page_data->label && (g_object_get_data(G_OBJECT(page_data->label), "VteBox") != vte))
+	{
+		g_object_set_data(G_OBJECT(page_data->label), "VteBox", vte);
+		pane_changed = TRUE;
+	}
+
 	// if (gtk_widget_get_window (page_data->vte))
 	//	g_debug("VTE(%p): WINDOWID = %ld", page_data->vte, GDK_WINDOW_XID (gtk_widget_get_window (page_data->vte)));
 
@@ -1198,6 +1489,15 @@ void vte_grab_focus(GtkWidget *vte, gpointer user_data)
 					  page_data->encoding_str, page_data->custom_window_title,
 					  FALSE);
 		}
+		else if (pane_changed)
+			update_page_name (page_data->window, vte, page_data->page_name, page_data->label_text,
+					  page_data->page_no+1, page_data->custom_page_name, page_data->tab_color,
+					  page_data->is_root, page_data->is_bold,
+					  compare_strings(win_data->runtime_encoding,
+							  page_data->encoding_str,
+							  FALSE),
+					  page_data->encoding_str, page_data->custom_window_title,
+					  FALSE);
 	}
 }
 
@@ -1298,6 +1598,8 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 	}
 	else if (event->button == 3)
 	{
+		// The menu acts on the current pane: make it the one that was clicked.
+		if (win_data->current_vte != vte) gtk_widget_grab_focus(vte);
 		menu_activated = TRUE;
 		// Find/Add the encoding of current tab on right click menu
 		if (win_data->locale_sub_menu)
@@ -1539,7 +1841,13 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 			//	(win_data->always_show_tabs_bar==1)? 1 : 0;
 		}
 
+#if GTK_CHECK_VERSION(3,22,0)
+		// gtk_menu_popup() is deprecated since gtk+ 3.22. And only with the
+		// triggering event at hand can a Wayland compositor place the menu.
+		gtk_menu_popup_at_pointer(GTK_MENU(win_data->menu), (GdkEvent *)event);
+#else
 		gtk_menu_popup(GTK_MENU(win_data->menu), NULL, NULL, NULL, NULL, event->button, event->time);
+#endif
 		return TRUE;
 	}
 	else if (event->button == 1)
@@ -1713,7 +2021,7 @@ gboolean open_url_with_external_command (gchar *url, gint tag, struct Window *wi
 #else
 			if (environ_str->len)
 #endif
-				new_environs = split_string(environ_str->str, "\t", -1);
+				new_environs = sanitize_environs(split_string(environ_str->str, "\t", -1));
 
 			// gboolean g_spawn_async_with_pipes (const gchar *working_directory,
 			//				      gchar **argv,
@@ -1907,6 +2215,7 @@ void page_data_dup(struct Page *page_data_prev, struct Page *page_data)
 	page_data->label_text = NULL;
 	page_data->label_button = NULL;
 	page_data->hbox = NULL;
+	page_data->tab_box = NULL;
 	page_data->vte = NULL;
 	page_data->scroll_bar = NULL;
 
@@ -1974,6 +2283,54 @@ struct Page *get_page_data_from_nth_page(struct Window *win_data, guint page_no)
 									 page_no))),
 							"VteBox");
 	return (struct Page *)g_object_get_data(G_OBJECT(vte), "Page_Data");
+}
+
+// gtk_container_foreach() callback: add the page data of every vte found under widget.
+static void collect_pages(GtkWidget *widget, gpointer pages)
+{
+	if (VTE_IS_TERMINAL(widget))
+	{
+		struct Page *page_data = (struct Page *)g_object_get_data(G_OBJECT(widget), "Page_Data");
+		if (page_data) g_ptr_array_add((GPtrArray *)pages, page_data);
+	}
+	else if (GTK_IS_CONTAINER(widget))
+		gtk_container_foreach(GTK_CONTAINER(widget), collect_pages, pages);
+}
+
+// All the panes (vte terminals) of the tab that page_data is in, in the order they are shown.
+// Free it with g_ptr_array_unref().
+GPtrArray *get_pages_in_tab(struct Page *page_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_pages_in_tab() with page_data = %p", page_data);
+#endif
+	GPtrArray *pages = g_ptr_array_new();
+#ifdef SAFEMODE
+	if (page_data==NULL) return pages;
+#endif
+	if (page_data->tab_box)
+		collect_pages(page_data->tab_box, pages);
+	else
+		g_ptr_array_add(pages, page_data);
+	return pages;
+}
+
+// All the panes (vte terminals) of a window: every pane of every tab, tab by tab.
+// Use it instead of looping over the notebook pages whenever something is about
+// the terminals, not about the tabs. Free it with g_ptr_array_unref().
+GPtrArray *get_pages_in_window(struct Window *win_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_pages_in_window() with win_data = %p", win_data);
+#endif
+	GPtrArray *pages = g_ptr_array_new();
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->notebook==NULL)) return pages;
+#endif
+	gint i;
+	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+		collect_pages(gtk_notebook_get_nth_page(GTK_NOTEBOOK(win_data->notebook), i), pages);
+	return pages;
 }
 
 struct Page *get_page_data_from_vte(GtkWidget *vte, struct Window *win_data, gint page_no)

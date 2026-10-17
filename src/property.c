@@ -261,9 +261,16 @@ void set_hyperlink(struct Window *win_data, struct Page *page_data)
 #else
 			page_data->tag[i] = vte_terminal_match_add (VTE_TERMINAL(page_data->vte), match);
 #endif
+#if VTE_CHECK_VERSION(0,40,0)
+			// a CSS cursor name works for every GDK backend, GDK_HAND2 is a X11 cursor font glyph.
+			vte_terminal_match_set_cursor_name(VTE_TERMINAL(page_data->vte),
+							   page_data->tag[i],
+							   "pointer");
+#else
 			vte_terminal_match_set_cursor_type(VTE_TERMINAL(page_data->vte),
 							   page_data->tag[i],
 							   GDK_HAND2);
+#endif
 		}
 		page_data->match_regex_setted = TRUE;
 		// g_debug("clean_hyperlink(): set page_data->match_regex_setted = %d", page_data->match_regex_setted);
@@ -594,6 +601,14 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
 
 	// DIRTY HACK: don't run window_resizable too much times before window is shown!
 	if ((hints_type != HINTS_FONT_BASE) && (gtk_widget_get_mapped(window) == FALSE)) return;
+
+	// A split tab has no single character grid to size the window by:
+	// let the window be any size, and the panes share it.
+	if (page_is_split((struct Page *)g_object_get_data(G_OBJECT(vte), "Page_Data")))
+	{
+		gtk_window_set_geometry_hints (GTK_WINDOW (window), NULL, NULL, 0);
+		return;
+	}
 
 	// vte=NULL when creating a new root window with drag & drop.
 	// if (vte==NULL) return;

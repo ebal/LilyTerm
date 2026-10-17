@@ -25,8 +25,12 @@
 include ../.default
 -include ../.config
 
-PKGCONFIG := $(shell whereis "pkg-config" | tr -s ' ' '\n' | grep "bin/""pkg-config""$$" | head -n 1)
-STRIP := $(shell whereis "strip" | tr -s ' ' '\n' | grep "bin/""strip""$$" | head -n 1)
+# PKG_CONFIG: the pkg-config command to use.
+# PKG_CONFIG_FLAGS: extra flags for it, e.g. "--static" for a static build.
+# LIBS: extra libraries appended to the end of the link command.
+PKG_CONFIG ?= pkg-config
+PKGCONFIG := $(shell command -v $(PKG_CONFIG) 2>/dev/null)
+STRIP := $(shell command -v strip 2>/dev/null)
 
 VTE ?=
 
@@ -42,16 +46,16 @@ ifeq ($(VTE), vte-2.90)
 GTK := $(shell $(PKGCONFIG) --exists 'gtk+-3.0' && $(ECHO) 'gtk+-3.0')
 endif
 ifeq ($(VTE), )
-VTE := $(shell $(PKGCONFIG) --exists 'vte' && $(ECHO) 'vte')
-GTK := $(shell $(PKGCONFIG) --exists 'gtk+-2.0' && $(ECHO) 'gtk+-2.0')
-endif
-ifeq ($(VTE), )
 VTE := $(shell $(PKGCONFIG) --exists 'vte-2.91' && $(ECHO) 'vte-2.91')
 GTK := $(shell $(PKGCONFIG) --exists 'gtk+-3.0' && $(ECHO) 'gtk+-3.0')
 endif
 ifeq ($(VTE), )
 VTE := $(shell $(PKGCONFIG) --exists 'vte-2.90' && $(ECHO) 'vte-2.90')
 GTK := $(shell $(PKGCONFIG) --exists 'gtk+-3.0' && $(ECHO) 'gtk+-3.0')
+endif
+ifeq ($(VTE), )
+VTE := $(shell $(PKGCONFIG) --exists 'vte' && $(ECHO) 'vte')
+GTK := $(shell $(PKGCONFIG) --exists 'gtk+-2.0' && $(ECHO) 'gtk+-2.0')
 endif
 
 endif
@@ -65,12 +69,8 @@ CFLAGS ?= -Wall -Werror -Os
 #	 -DG_DISABLE_SINGLE_INCLUDES -DGDK_DISABLE_DEPRECATED \
 #	 -DGDK_DISABLE_SINGLE_INCLUDES -DGTK_DISABLE_DEPRECATED \
 #	 -DGTK_DISABLE_SINGLE_INCLUDES -DGSEAL_ENABLE
-LDFLAGS += -L$(prefix)/local/lib
-ifeq ($(VTE), vte-2.91)
-LDFLAGS += -lX11
-endif
-OBJ_PKG_CMD = $(PKGCONFIG) --cflags $(GTK) $(VTE)
-BINARY_PKG_CMD = $(PKGCONFIG) --cflags --libs $(GTK) $(VTE)
+OBJ_PKG_CMD = $(PKGCONFIG) $(PKG_CONFIG_FLAGS) --cflags $(GTK) $(VTE)
+BINARY_PKG_CMD = $(PKGCONFIG) $(PKG_CONFIG_FLAGS) --cflags --libs $(GTK) $(VTE)
 SOURCE_FILES = socket.c menu.c profile.c dialog.c pagename.c notebook.c font.c \
 	       property.c window.c misc.c console.c main.c
 OBJ = $(SOURCE_FILES:.c=.o)
@@ -233,7 +233,7 @@ clean:
 
 $(BINARY): $(OBJ)
 	@ $(PRINTF) "\033[1;36m** compiling \033[1;32m$(BINARY)\033[1;36m ...\033[0m\n"
-	$(VERBOSITY_OUTPUT) $(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -o $(BINARY) $(OBJ) `$(BINARY_PKG_CMD)`
+	$(VERBOSITY_OUTPUT) $(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -o $(BINARY) $(OBJ) `$(BINARY_PKG_CMD)` $(LIBS)
 
 .PHONY: data
 data: debug

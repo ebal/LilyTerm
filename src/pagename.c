@@ -53,6 +53,12 @@ void reorder_page_number(GtkNotebook *notebook, GtkWidget *child, guint page_num
 #endif
 		// g_debug("Got page_data = %p", page_data);
 		// we store current_page_no in "struct Page" for performance.
+		// Every pane of the tab carries it: they share the tab.
+		GPtrArray *panes = get_pages_in_tab(page_data);
+		guint j;
+		for (j=0; j<panes->len; j++)
+			((struct Page *)g_ptr_array_index(panes, j))->page_no = i;
+		g_ptr_array_unref(panes);
 		page_data->page_no = i;
 
 		// g_debug("Launch get_and_update_page_name() in reorder_page_number()");
@@ -128,10 +134,21 @@ gboolean monitor_cmdline(struct Page *page_data)
 	g_debug("! Launch monitor_cmdline() with page_data = %p", page_data);
 #endif
 #ifdef SAFEMODE
-	if ((page_data==NULL) || (page_data->lost_focus==NULL) || (page_data->keep_vte_size==NULL) ||
-	    (page_data->current_vte==NULL) || (page_data->window_title_tpgid==NULL)) return FALSE;
+	if (page_data==NULL) return FALSE;
+	if ((page_data->lost_focus==NULL) || (page_data->keep_vte_size==NULL) ||
+	    (page_data->current_vte==NULL) || (page_data->window_title_tpgid==NULL))
+	{
+		page_data->timeout_id = 0;
+		return FALSE;
+	}
 #endif
-	if (page_data->pid<1) return FALSE;
+	if (page_data->pid<1)
+	{
+		// Returning FALSE destroys this timeout source. Forget its ID, or
+		// close_page() will g_source_remove() a source that is long gone.
+		page_data->timeout_id = 0;
+		return FALSE;
+	}
 
 	gboolean lost_focus = *(page_data->lost_focus);
 
@@ -692,6 +709,11 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 		// g_debug("page_name = NULL!! trying to call get_and_update_page_name()");
 		get_and_update_page_name(page_data, FALSE);
 	}
+
+	// The panes of a split tab share its label: only the one the tab shows may write it.
+	GtkWidget *tab_label = label ? gtk_widget_get_parent(label) : NULL;
+	GtkWidget *tab_vte = tab_label ? (GtkWidget *)g_object_get_data(G_OBJECT(tab_label), "VteBox") : NULL;
+	if (tab_vte && (tab_vte != vte)) return FALSE;
 
 	gboolean page_name_updated = FALSE;
 	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(window), "Win_Data");

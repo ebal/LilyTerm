@@ -249,7 +249,7 @@ struct Cursor_Shape cursor_shape[CURSOR_SHAPE] =
 	 VTE_CURSOR_SHAPE_UNDERLINE}};
 #endif
 
-void convert_system_color_to_rgba()
+void convert_system_color_to_rgba(void)
 {
 #ifdef USE_GDK_RGBA
 	gint i, j;
@@ -263,7 +263,7 @@ void convert_system_color_to_rgba()
 #endif
 }
 
-void init_command()
+void init_command(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_command()!");
@@ -753,6 +753,10 @@ void init_user_keys(struct Window *win_data)
 	win_data->user_keys[KEY_SCROLL_UP_1_LINE].value = g_strdup("Shift Up");
 	win_data->user_keys[KEY_SCROLL_DOWN_1_LINE].value = g_strdup("Shift Down");
 	win_data->user_keys[KEY_CLEAN_SCROLLBACK_LINES].value = g_strdup("Ctrl H");
+	win_data->user_keys[KEY_SPLIT_RIGHT].value = g_strdup("Ctrl+Shift E");
+	win_data->user_keys[KEY_SPLIT_DOWN].value = g_strdup("Ctrl+Shift O");
+	win_data->user_keys[KEY_NEXT_PANE].value = g_strdup("Ctrl+Shift N");
+	win_data->user_keys[KEY_CLOSE_PANE].value = g_strdup("Ctrl+Shift W");
 	win_data->user_keys[KEY_DISABLE_URL_L].value = g_strdup("Control_L");
 	win_data->user_keys[KEY_DISABLE_URL_R].value = g_strdup("Control_R");
 #ifdef FATAL
@@ -761,7 +765,7 @@ void init_user_keys(struct Window *win_data)
 #endif
 }
 
-void init_key_bindings_name_and_group()
+void init_key_bindings_name_and_group(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_key_bindings_name_and_group()!");
@@ -834,6 +838,14 @@ void init_key_bindings_name_and_group()
 	system_keys[KEY_SCROLL_DOWN_1_LINE].group = KEY_GROUP_SCROLL;
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].name = "clean_scrollback_lines";
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].group = KEY_GROUP_SCROLL;
+	system_keys[KEY_SPLIT_RIGHT].name = "split_right_key";
+	system_keys[KEY_SPLIT_RIGHT].group = KEY_GROUP_PANE;
+	system_keys[KEY_SPLIT_DOWN].name = "split_down_key";
+	system_keys[KEY_SPLIT_DOWN].group = KEY_GROUP_PANE;
+	system_keys[KEY_NEXT_PANE].name = "next_pane_key";
+	system_keys[KEY_NEXT_PANE].group = KEY_GROUP_PANE;
+	system_keys[KEY_CLOSE_PANE].name = "close_pane_key";
+	system_keys[KEY_CLOSE_PANE].group = KEY_GROUP_PANE;
 	system_keys[KEY_DISABLE_URL_L].name = "disable_url_for_temporary_L";
 	system_keys[KEY_DISABLE_URL_L].group = KEY_GROUP_NONE;
 	system_keys[KEY_DISABLE_URL_R].name = "disable_url_for_temporary_R";
@@ -844,7 +856,7 @@ void init_key_bindings_name_and_group()
 #endif
 }
 
-void init_key_bindings()
+void init_key_bindings(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_key_bindings()!");
@@ -858,6 +870,7 @@ void init_key_bindings()
 	key_groups[KEY_GROUP_TEXT] = _("Text operation");
 	key_groups[KEY_GROUP_SCROLL] = _("Scroll up/down");
 	key_groups[KEY_GROUP_FONT] = _("Font");
+	key_groups[KEY_GROUP_PANE] = _("Split panes");
 	key_groups[KEY_GROUP_NONE] = "None";
 
 
@@ -992,6 +1005,19 @@ void init_key_bindings()
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].topic = _("Clean scrollback lines");
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].comment = "# Asks to clean scrollback lines.";
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].translation = _("Asks to clean scrollback lines.");
+	// Split panes
+	system_keys[KEY_SPLIT_RIGHT].topic = _("Split right");
+	system_keys[KEY_SPLIT_RIGHT].comment = "# Split the current pane in two, side by side.";
+	system_keys[KEY_SPLIT_RIGHT].translation = _("Split the current pane in two, side by side.");
+	system_keys[KEY_SPLIT_DOWN].topic = _("Split down");
+	system_keys[KEY_SPLIT_DOWN].comment = "# Split the current pane in two, one above the other.";
+	system_keys[KEY_SPLIT_DOWN].translation = _("Split the current pane in two, one above the other.");
+	system_keys[KEY_NEXT_PANE].topic = _("Switch to next pane");
+	system_keys[KEY_NEXT_PANE].comment = "# Move the focus to the next pane of the current tab.";
+	system_keys[KEY_NEXT_PANE].translation = _("Move the focus to the next pane of the current tab.");
+	system_keys[KEY_CLOSE_PANE].topic = _("Close pane");
+	system_keys[KEY_CLOSE_PANE].comment = "# Close the current pane. The tab closes with its last pane.";
+	system_keys[KEY_CLOSE_PANE].translation = _("Close the current pane. The tab closes with its last pane.");
 	// disable URL for temporary
 	system_keys[KEY_DISABLE_URL_L].topic = "Disable URL for temporary";
 	system_keys[KEY_DISABLE_URL_L].comment = "# Disable URL for temporary.";
@@ -1006,7 +1032,7 @@ void init_key_bindings()
 #endif
 }
 
-void init_page_color_data()
+void init_page_color_data(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_page_color_data()!");
@@ -1025,7 +1051,7 @@ void init_page_color_data()
 	page_color[5].comment_eng = "Normal Text";
 }
 
-void init_page_color_data_comment()
+void init_page_color_data_comment(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_page_color_data_comment()!");
@@ -1064,7 +1090,7 @@ void init_locale_restrict_data(gchar *lc_messages)
 	}
 }
 
-void init_mod_keys()
+void init_mod_keys(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_mod_keys()!");
@@ -1107,7 +1133,7 @@ void init_mod_keys()
 	// modkeys[13].mod = GDK_META_MASK ;
 }
 
-void init_colors()
+void init_colors(void)
 {
 #ifdef DETAIL
 	g_debug("! Launch init_colors()");
@@ -2978,7 +3004,8 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 	gchar resolved_patch[PATH_MAX+1];
 	gchar *real_file_name = g_strdup(realpath((const gchar *)profile, resolved_patch));
 #  else
-	gchar *real_file_name = canonicalize_file_name((const gchar *)profile);
+	// POSIX.1-2008 realpath(): the portable canonicalize_file_name(), which is glibc only.
+	gchar *real_file_name = realpath((const gchar *)profile, NULL);
 #  endif
 	if (real_file_name==NULL)
 	{
@@ -3061,7 +3088,7 @@ void create_save_failed_dialog(struct Window *win_data, gchar *message)
 }
 
 #ifdef ENABLE_PROFILE
-gchar *get_profile()
+gchar *get_profile(void)
 {
 #  ifdef DETAIL
 	g_debug("! Launch get_profile()");
@@ -3309,13 +3336,10 @@ void get_row_and_column_from_geometry_str(glong *column, glong *row, glong *defa
 #endif
 	if (geometry_str && (geometry_str[0]!='\0'))
 	{
-		gint offset_x = 0, offset_y = 0;
-		guint new_column, new_row;
-		if (XParseGeometry (geometry_str, &offset_x, &offset_y, &new_column, &new_row))
-		{
-			*column = new_column;
-			*row = new_row;
-		}
+		guint new_column = 0, new_row = 0;
+		gint mask = parse_geometry_str(geometry_str, NULL, NULL, &new_column, &new_row);
+		if (mask & GEOMETRY_HAS_WIDTH) *column = new_column;
+		if (mask & GEOMETRY_HAS_HEIGHT) *row = new_row;
 	}
 
 	if (*column < 1) *column = *default_column;

@@ -11,7 +11,7 @@ endif
 PO_LIST ?= $(LANG_LIST:=.po)
 MO_LIST ?= $(LANG_LIST:=.mo)
 
-XGETTEXT := $(shell whereis "xgettext" | tr -s ' ' '\n' | grep "bin/""xgettext""$$" | head -n 1)
+XGETTEXT := $(shell command -v xgettext 2>/dev/null)
 ifneq ($(XGETTEXT), )
 
 XGETTEXT_PARAMETER = -k_
@@ -38,7 +38,7 @@ endif
 
 endif
 
-MSGCMP := $(shell whereis "msgcmp" | tr -s ' ' '\n' | grep "bin/""msgcmp""$$" | head -n 1)
+MSGCMP := $(shell command -v msgcmp 2>/dev/null)
 ifneq ($(MSGCMP), )
 
 SUPPORT_USE_UNTRANSLATED = $(shell $(MSGCMP) --help | grep -q -- '--use-untranslated' && echo Y)
@@ -48,7 +48,7 @@ endif
 
 endif
 
-MSGMERGE := $(shell whereis "msgmerge" | tr -s ' ' '\n' | grep "bin/""msgmerge""$$" | head -n 1)
+MSGMERGE := $(shell command -v msgmerge 2>/dev/null)
 ifneq ($(MSGMERGE), )
 
 SUPPORT_PREVIOUS = $(shell $(MSGMERGE) --help | grep -q -- '--previous' && echo Y)
@@ -58,8 +58,8 @@ endif
 
 endif
 
-MSGFMT := $(shell whereis "msgfmt" | tr -s ' ' '\n' | grep "bin/""msgfmt""$$" | head -n 1)
-TOUCH := $(shell whereis "touch" | tr -s ' ' '\n' | grep "bin/""touch""$$" | head -n 1)
+MSGFMT := $(shell command -v msgfmt 2>/dev/null)
+TOUCH := $(shell command -v touch 2>/dev/null)
 
 .PHONY: all
 all: $(MO_LIST)

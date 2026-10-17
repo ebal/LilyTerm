@@ -42,10 +42,10 @@ int fake_main(int argc, char *argv[]);
 #endif
 
 gboolean set_fd_non_block(gint *fd);
-gboolean init_socket_server();
+gboolean init_socket_server(GSourceFunc read_function);
 gboolean accept_socket(GIOChannel *source, GIOCondition condition, gpointer user_data);
 gboolean read_socket(GIOChannel *channel, GIOCondition condition, gpointer user_data);
 gboolean socket_fault(int i, GError *error, GIOChannel* channel, gboolean unref);
 gboolean clear_channel(GIOChannel* channel, gboolean unref);
 gint shutdown_socket_server(gpointer data);
-gchar *get_locale_list();
+gchar *get_locale_list(void);
