@@ -710,6 +710,11 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 		get_and_update_page_name(page_data, FALSE);
 	}
 
+	// The panes of a split tab share its label: only the one the tab shows may write it.
+	GtkWidget *tab_label = label ? gtk_widget_get_parent(label) : NULL;
+	GtkWidget *tab_vte = tab_label ? (GtkWidget *)g_object_get_data(G_OBJECT(tab_label), "VteBox") : NULL;
+	if (tab_vte && (tab_vte != vte)) return FALSE;
+
 	gboolean page_name_updated = FALSE;
 	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(window), "Win_Data");
 #ifdef SAFEMODE

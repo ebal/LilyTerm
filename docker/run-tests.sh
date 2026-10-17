@@ -226,6 +226,125 @@ run_gui_tests() {
 	else
 		ng "[$backend] lilyterm -p did not print a profile"
 	fi
+	# --- 5. split panes: split right, split down, close panes again
+	run_pane_tests "$backend" "$work"
+}
+
+# send_keys BACKEND COMBO: press a key combination (e.g. ctrl+alt+r) in LilyTerm
+send_keys() {
+	if [ "$1" = x11 ]; then
+		local id
+		id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1)
+		[ -n "$id" ] && xdotool windowfocus --sync "$id" 2>/dev/null
+		xdotool key --clearmodifiers "$2"
+	else
+		local key=${2##*+} mods m args=()
+		mods=$(echo "${2%+*}" | tr + ' ')
+		for m in $mods; do args+=(-M "$m"); done
+		args+=("$key")
+		for m in $mods; do args+=(-m "$m"); done
+		wtype "${args[@]}"
+	fi
+}
+
+# Every pane runs $SHELL: a script that reports the size of its terminal in
+# panes/pane-N/size, until panes/pane-N/quit shows up.
+run_pane_tests() {
+	local backend=$1 work=$2
+	local pdir="$work/panes"
+	mkdir -p "$pdir"
+	cat > "$pdir/shell" <<-'EOF'
+		#!/bin/sh
+		n=1
+		while ! mkdir "$PANE_DIR/pane-$n" 2>/dev/null; do n=$((n+1)); done
+		while [ ! -e "$PANE_DIR/pane-$n/quit" ]; do
+			stty size > "$PANE_DIR/pane-$n/size.tmp" && mv "$PANE_DIR/pane-$n/size.tmp" "$PANE_DIR/pane-$n/size"
+			sleep 0.2
+		done
+	EOF
+	chmod +x "$pdir/shell"
+	size() { cat "$pdir/pane-$1/size" 2>/dev/null; }
+	rows() { size "$1" | cut -d' ' -f1; }
+	cols() { size "$1" | cut -d' ' -f2; }
+	# for wait_for, which runs its arguments again on every try
+	size_is() { [ "$(size "$1")" = "$2" ]; }
+	rows_are() { [ "$(rows "$1")" = "$2" ]; }
+
+	# The pane "shell" is a script, not a known shell: without this LilyTerm
+	# asks for a confirmation before it closes a pane with Ctrl+Alt+W.
+	"$LILYTERM" -p | sed 's/^confirm_to_kill_running_command = .*/confirm_to_kill_running_command = 0/' > "$pdir/profile"
+	SHELL="$pdir/shell" PANE_DIR="$pdir" timeout 120 "$LILYTERM" -s -u "$pdir/profile" -g 100x30 > "$work/panes.log" 2>&1 &
+	local pid=$!
+	if ! wait_for 15 size_is 1 "30 100"; then
+		ng "[$backend] panes: the first pane did not start at 100x30 ($(size 1))"
+		kill "$pid" 2>/dev/null; return
+	fi
+	sleep 1
+
+	# split right: two panes side by side share the 100 columns
+	send_keys "$backend" ctrl+alt+r
+	if wait_for 10 test -s "$pdir/pane-2/size"; then
+		sleep 1
+		local c1 c2 r3 r2
+		c1=$(cols 1); c2=$(cols 2)
+		if [ "$(rows 1)" = 30 ] && [ "$(rows 2)" = 30 ] && [ "$c1" -ge 40 ] && [ "$c2" -ge 40 ] &&
+		   [ $((c1 + c2)) -ge 95 ] && [ $((c1 + c2)) -le 100 ]; then
+			ok "[$backend] Ctrl+Alt+R splits right: $(size 1 | tr ' ' x) + $(size 2 | tr ' ' x), the window keeps its size"
+		else
+			ng "[$backend] split right: pane sizes $(size 1 | tr ' ' x) and $(size 2 | tr ' ' x)"
+		fi
+	else
+		ng "[$backend] Ctrl+Alt+R did not open a second pane"
+	fi
+
+	# split the new (focused) pane down
+	send_keys "$backend" ctrl+alt+d
+	if wait_for 10 test -s "$pdir/pane-3/size"; then
+		sleep 1
+		r2=$(rows 2); r3=$(rows 3)
+		if [ "$(cols 3)" = "$(cols 2)" ] && [ "$r2" -ge 12 ] && [ "$r3" -ge 12 ] &&
+		   [ $((r2 + r3)) -ge 27 ] && [ $((r2 + r3)) -le 30 ] && [ "$(size 1)" = "30 $c1" ]; then
+			ok "[$backend] Ctrl+Alt+D splits the focused pane down: $(size 2 | tr ' ' x) over $(size 3 | tr ' ' x)"
+		else
+			ng "[$backend] split down: panes $(size 1 | tr ' ' x), $(size 2 | tr ' ' x), $(size 3 | tr ' ' x)"
+		fi
+	else
+		ng "[$backend] Ctrl+Alt+D did not open a third pane"
+	fi
+	if [ "$backend" = x11 ]; then
+		xwd -root -silent 2>/dev/null | $MAGICK xwd:- "$work/panes.png" 2>/dev/null
+	else
+		grim "$work/panes.png" 2>/dev/null
+	fi
+
+	# a pane whose shell exits goes away, and its neighbour gets the space back
+	touch "$pdir/pane-3/quit"
+	if wait_for 10 rows_are 2 30; then
+		ok "[$backend] closing a pane gives its space back ($(size 2 | tr ' ' x))"
+	else
+		ng "[$backend] after closing pane 3, pane 2 is $(size 2 | tr ' ' x)"
+	fi
+	# panes 1 | 2 are left, and pane 2 has the focus: move it to pane 1 and close that one
+	send_keys "$backend" ctrl+alt+n
+	sleep 0.5
+	send_keys "$backend" ctrl+alt+w
+	if wait_for 10 size_is 2 "30 100"; then
+		ok "[$backend] Ctrl+Alt+N moves the focus, Ctrl+Alt+W closes that pane: back to one pane of 100x30"
+	else
+		ng "[$backend] after Ctrl+Alt+N, Ctrl+Alt+W: panes $(size 1 | tr ' ' x) and $(size 2 | tr ' ' x)"
+	fi
+
+	touch "$pdir/pane-2/quit"
+	if wait "$pid"; then
+		ok "[$backend] exits cleanly when the last pane closes"
+	else
+		ng "[$backend] exit status $? after the last pane closed"
+	fi
+	if grep -E 'CRITICAL|WARNING \*\*.*(VTE|Gtk|Gdk|GLib)|-WARNING|Segmentation|assertion' "$work/panes.log" > "$work/panes.bad"; then
+		ng "[$backend] criticals while splitting:"; sort "$work/panes.bad" | uniq -c | sed 's/^/      /' | head -20
+	else
+		ok "[$backend] no GLib/GTK criticals while splitting"
+	fi
 }
 
 for backend in $BACKENDS; do

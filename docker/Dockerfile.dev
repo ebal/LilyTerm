@@ -12,7 +12,7 @@ RUN apk add --no-cache \
 	bash coreutils util-linux-misc procps rsync file \
 	gdb valgrind \
 	xvfb xdotool xprop xwd imagemagick \
-	sway grim \
+	sway grim wtype \
 	dbus font-dejavu adwaita-icon-theme
 
 # sway carries file capabilities, which an unprivileged container refuses to

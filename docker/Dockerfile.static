@@ -223,7 +223,7 @@ RUN set -eu; cd /build/lilyterm; \
 # a font and the test script. If the binary runs here, it really is standalone.
 FROM alpine:${ALPINE_VERSION} AS test
 RUN apk add --no-cache bash coreutils procps file xvfb xdotool xprop xwd imagemagick \
-	sway grim font-dejavu xkeyboard-config && \
+	sway grim wtype font-dejavu xkeyboard-config && \
     install -m 755 /usr/bin/sway /usr/local/bin/sway-headless
 ENV LANG=C.UTF-8 NO_AT_BRIDGE=1 XDG_RUNTIME_DIR=/tmp/xdg-runtime \
     LILYTERM=/usr/bin/lilyterm BUILD=/tmp OUT=/tmp/test-output
