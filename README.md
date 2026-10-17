@@ -11,7 +11,7 @@ release was in 2019. The fork builds against current GTK+ 3 (3.24) and
 VTE (0.84), runs natively on Wayland and on X11, and is also released as
 one fully static binary that runs on any x86_64 Linux system.
 
-![Build](https://img.shields.io/github/actions/workflow/status/ebal/LilyTerm/build.yml?branch=master)
+![Build](https://img.shields.io/github/actions/workflow/status/ebal/LilyTerm/build.yml?branch=main)
 ![Release](https://img.shields.io/github/v/release/ebal/LilyTerm)
 ![License](https://img.shields.io/github/license/ebal/LilyTerm)
 
