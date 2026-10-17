@@ -262,8 +262,10 @@ send_keys() {
 	else
 		swaymsg -q '[app_id="(?i)lilyterm"] focus' 2>/dev/null
 		sleep 0.2
-		local key=${2##*+} mods m args=()
-		mods=$(echo "${2%+*}" | tr + ' ')
+		# wtype creates a new virtual keyboard every time: give LilyTerm 100 ms
+		# for its keymap, or the first keys can get lost
+		local key=${2##*+} mods='' m args=(-s 100)
+		case "$2" in *+*) mods=$(echo "${2%+*}" | tr + ' ');; esac
 		for m in $mods; do args+=(-M "$m"); done
 		# wtype types a bare argument as text: a named key (Down, F5, ...) needs -k
 		if [ ${#key} -gt 1 ]; then args+=(-k "$key"); else args+=("$key"); fi
@@ -273,7 +275,8 @@ send_keys() {
 }
 
 # Every pane runs $SHELL: a script that reports the size of its terminal in
-# panes/pane-N/size, until panes/pane-N/quit shows up.
+# panes/pane-N/size, until panes/pane-N/quit shows up. A key typed in the
+# pane creates panes/pane-N/typed: that shows which pane has the focus.
 run_pane_tests() {
 	local backend=$1 work=$2
 	local pdir="$work/panes"
@@ -282,7 +285,9 @@ run_pane_tests() {
 		#!/bin/sh
 		n=1
 		while ! mkdir "$PANE_DIR/pane-$n" 2>/dev/null; do n=$((n+1)); done
+		stty -icanon -echo min 0 time 0
 		while [ ! -e "$PANE_DIR/pane-$n/quit" ]; do
+			[ -n "$(dd bs=1 count=1 2>/dev/null)" ] && touch "$PANE_DIR/pane-$n/typed"
 			stty size > "$PANE_DIR/pane-$n/size.tmp" && mv "$PANE_DIR/pane-$n/size.tmp" "$PANE_DIR/pane-$n/size"
 			sleep 0.2
 		done
@@ -294,6 +299,19 @@ run_pane_tests() {
 	# for wait_for, which runs its arguments again on every try
 	size_is() { [ "$(size "$1")" = "$2" ]; }
 	rows_are() { [ "$(rows "$1")" = "$2" ]; }
+	typed() { ls "$pdir"/pane-*/typed > /dev/null 2>&1; }
+	# focused_pane: type a key, and print the number of the pane that got it
+	focused_pane() {
+		local f
+		for _ in 1 2; do
+			rm -f "$pdir"/pane-*/typed
+			send_keys "$backend" f
+			if wait_for 3 typed; then
+				for f in "$pdir"/pane-*/typed; do f=${f%/typed}; echo "${f##*-}"; done
+				return
+			fi
+		done
+	}
 
 	# The pane "shell" is a script, not a known shell: without this LilyTerm
 	# asks for a confirmation before it closes a pane with Ctrl+Shift+W.
@@ -353,14 +371,24 @@ run_pane_tests() {
 		ng "[$backend] after closing pane 3, pane 2 is $(size 2 | tr ' ' x)"
 	fi
 	# panes 1 | 2 are left, and pane 2 has the focus: move it to pane 1 and close that one
-	send_keys "$backend" ctrl+shift+n
-	sleep 0.5
-	send_keys "$backend" ctrl+shift+w
-	if wait_for 10 size_is 2 "30 100"; then
+	# (a lost Ctrl+Shift+N would close pane 2 instead: check the focus first)
+	local focus tries=0
+	focus=$(focused_pane)
+	while [ "$focus" != 1 ] && [ $tries -lt 2 ]; do
+		send_keys "$backend" ctrl+shift+n
+		tries=$((tries+1))
+		sleep 0.5
+		focus=$(focused_pane)
+	done
+	if [ "$focus" != 1 ]; then
+		ng "[$backend] Ctrl+Shift+N did not move the focus to pane 1 (the focus is on pane ${focus:-?})"
+	elif press_until "$backend" ctrl+shift+w size_is 2 "30 100"; then
 		ok "[$backend] Ctrl+Shift+N moves the focus, Ctrl+Shift+W closes that pane: back to one pane of 100x30"
 	else
 		ng "[$backend] after Ctrl+Shift+N, Ctrl+Shift+W: panes $(size 1 | tr ' ' x) and $(size 2 | tr ' ' x)"
 	fi
+	# a pane that is still open would keep LilyTerm running until its timeout
+	touch "$pdir/pane-1/quit"
 
 	touch "$pdir/pane-2/quit"
 	if wait "$pid"; then
