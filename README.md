@@ -161,8 +161,9 @@ docker build -f docker/Dockerfile.static --target export --output dist .
 ```
 
 [docker/README.md](docker/README.md) explains the tests, the static
-build and the release process. GitHub Actions runs both on every push,
-and publishes a release for every tag `vX.Y.Z`.
+build and the release process. GitHub Actions builds both on every push,
+and publishes a release for every tag `vX.Y.Z`. The X11 and Wayland tests
+only run locally.
 
 ## Contributing
 

@@ -49,6 +49,7 @@ For each of them it checks that
   sent with `xdotool` (X11) and `wtype` (Wayland); each pane reports its own `stty size`.
 
 Useful knobs: `BACKENDS="x11"` or `BACKENDS="wayland"` to test one of them,
+`BACKENDS=` (empty) for only the build and the tests that need no display,
 `LILYTERM=/path/to/binary` to test an existing binary instead of building.
 
 ## The static binary
@@ -124,9 +125,11 @@ and the terminfo entry of `$TERM`. Every desktop system has them.
 `install.sh` (from the tarball) installs into `~/.local`, or into `/usr/local`
 when run as root; `PREFIX=...` overrides it and `--uninstall` removes it again.
 
-The GitHub workflow in `.github/workflows/build.yml` runs both test suites on
-every push and pull request, and keeps the packaged files as a workflow
-artifact. The compiled dependencies are kept as a build cache in the GitHub
+The GitHub workflow in `.github/workflows/build.yml` builds LilyTerm and the
+static binary on every push and pull request, runs the tests that need no
+display (`BACKENDS=`), and keeps the packaged files as a workflow artifact.
+The X11 and Wayland tests only run locally: on the shared GitHub runners their
+key presses get lost now and then. Run them before you push a release tag. The compiled dependencies are kept as a build cache in the GitHub
 container registry (`ghcr.io/OWNER/lilyterm-buildcache`), shared by all
 branches and tags: a run takes a few minutes, and GLib, GTK+ and VTE are only
 compiled again (about half an hour) when `Dockerfile.static` changes.

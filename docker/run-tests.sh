@@ -11,6 +11,7 @@
 #   BUILD     scratch build directory          [/build]
 #   OUT       where logs/screenshots are kept  [$BUILD/test-output]
 #   BACKENDS  which display servers to test    ["x11 wayland"]
+#             (empty: only the build and the tests that need no display)
 #   CFLAGS    passed to ./configure            ["-Wall -O2 -g"]
 
 set -u
@@ -18,7 +19,7 @@ set -u
 SRC=${SRC:-/src}
 BUILD=${BUILD:-/build}
 OUT=${OUT:-$BUILD/test-output}
-BACKENDS=${BACKENDS:-x11 wayland}
+BACKENDS=${BACKENDS-x11 wayland}
 LILYTERM=${LILYTERM:-}
 
 PASS=0
@@ -403,6 +404,7 @@ run_pane_tests() {
 	fi
 }
 
+[ -n "$BACKENDS" ] || note "No X11 / Wayland tests (BACKENDS is empty)"
 for backend in $BACKENDS; do
 	case "$backend" in
 	x11)

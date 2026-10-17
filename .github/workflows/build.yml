@@ -1,7 +1,8 @@
 # Build and test LilyTerm, and publish a release when a version tag is pushed.
 #
-#   every push / pull request:  dynamic build + tests, static build + tests,
-#                               the packaged files are kept as a workflow artifact
+#   every push / pull request:  dynamic build, static build, the tests that
+#                               need no display; the packaged files are kept
+#                               as a workflow artifact
 #   push of a tag vX.Y.Z:       the same, then a GitHub release with
 #                               lilyterm-x86_64, the tarball and SHA256SUMS
 #
@@ -10,6 +11,9 @@
 # Actions cache it is shared by all branches and tags and never expires, so
 # they are only compiled again when docker/Dockerfile.static itself changes.
 # A normal run then takes a few minutes.
+#
+# The X11 and Wayland tests only run locally (docker/README.md): on the shared
+# runners their key presses get lost now and then. BACKENDS= turns them off.
 #
 # To release: set VERSION in .default, commit, then
 #   git tag v$(sed -n 's/^VERSION = //p' .default) && git push origin --tags
@@ -60,10 +64,10 @@ jobs:
           load: true
           cache-from: type=registry,ref=${{ steps.cache.outputs.ref }}:dev
           cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:dev,mode=max', steps.cache.outputs.ref) || '' }}
-      - name: Build LilyTerm and run the tests
+      - name: Build LilyTerm and run the tests that need no display
         run: |
           mkdir -p test-output
-          docker run --rm -e GITHUB_ACTIONS -v "$PWD":/src:ro -v "$PWD/test-output":/build/test-output lilyterm-dev
+          docker run --rm -e GITHUB_ACTIONS -e BACKENDS= -v "$PWD":/src:ro -v "$PWD/test-output":/build/test-output lilyterm-dev
       - name: Keep the logs and screenshots
         if: always()
         uses: actions/upload-artifact@v7
@@ -119,10 +123,10 @@ jobs:
           cache-from: type=registry,ref=${{ steps.cache.outputs.ref }}:static
           cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:static,mode=max', steps.cache.outputs.ref) || '' }}
 
-      - name: Test the static binary on X11 and Wayland
+      - name: Test the static binary (the tests that need no display)
         run: |
           mkdir -p test-output
-          docker run --rm -e GITHUB_ACTIONS -v "$PWD/test-output":/tmp/test-output lilyterm-static-test
+          docker run --rm -e GITHUB_ACTIONS -e BACKENDS= -v "$PWD/test-output":/tmp/test-output lilyterm-static-test
 
       - name: Keep the logs and screenshots
         if: always()
