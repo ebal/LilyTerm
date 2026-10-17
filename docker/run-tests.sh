@@ -405,6 +405,16 @@ run_pane_tests() {
 }
 
 [ -n "$BACKENDS" ] || note "No X11 / Wayland tests (BACKENDS is empty)"
+# read_counts BACKEND: take over the counts of a backend's subshell. If it
+# stopped before it wrote them, its results are lost: that is a failure.
+read_counts() {
+	if [ -s "$OUT/.count" ]; then
+		read -r PASS FAIL < "$OUT/.count"
+	else
+		ng "[$1] the tests stopped early: their results are lost"
+	fi
+}
+
 for backend in $BACKENDS; do
 	case "$backend" in
 	x11)
@@ -414,8 +424,9 @@ for backend in $BACKENDS; do
 		if ! wait_for 10 test -S /tmp/.X11-unix/X99; then
 			ng "Xvfb did not start"; continue
 		fi
+		rm -f "$OUT/.count"
 		( export DISPLAY=:99 GDK_BACKEND=x11; unset WAYLAND_DISPLAY; run_gui_tests x11; echo "$PASS $FAIL" > "$OUT/.count" )
-		read -r PASS FAIL < "$OUT/.count"
+		read_counts x11
 		;;
 	wayland)
 		note "Wayland (headless sway)"
@@ -434,8 +445,9 @@ for backend in $BACKENDS; do
 		# swaymsg (send_keys) talks to sway over this socket
 		SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock 2>/dev/null | head -n1)
 		# No DISPLAY at all: proves that nothing falls back to X11/XWayland.
+		rm -f "$OUT/.count"
 		( export WAYLAND_DISPLAY=wayland-1 GDK_BACKEND=wayland SWAYSOCK; unset DISPLAY; run_gui_tests wayland; echo "$PASS $FAIL" > "$OUT/.count" )
-		read -r PASS FAIL < "$OUT/.count"
+		read_counts wayland
 		;;
 	esac
 done
