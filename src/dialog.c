@@ -239,13 +239,13 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			label = create_button_with_image(_("Find previous string"),
 							 GTK_FAKE_STOCK_GO_UP,
 							 TRUE,
-							 (GSourceFunc)find_str,
+							 G_CALLBACK(find_str),
 							 GINT_TO_POINTER(FIND_PREV));
 			gtk_box_pack_end (GTK_BOX(hbox), label, FALSE, FALSE, 0);
 			label = create_button_with_image(_("Find next string"),
 							 GTK_FAKE_STOCK_GO_DOWN,
 							 TRUE,
-							 (GSourceFunc)find_str,
+							 G_CALLBACK(find_str),
 							 GINT_TO_POINTER(FIND_NEXT));
 			gtk_box_pack_end (GTK_BOX(hbox), label, FALSE, FALSE, 0);
 			gtk_box_pack_start (GTK_BOX(dialog_data->box), hbox, FALSE, FALSE, 0);
@@ -445,7 +445,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				dialog_data->original_color = win_data->custom_color_theme[win_data->color_theme_index].color[color_index];
 			else
 				dialog_data->original_color = system_color_theme[win_data->color_theme_index].color[color_index];
-			create_color_selection_widget(dialog_data, (GSourceFunc)adjust_vte_color, win_data->current_vte);
+			create_color_selection_widget(dialog_data, G_CALLBACK(adjust_vte_color), win_data->current_vte);
 			break;
 		}
 		case CHANGE_THE_BACKGROUND_COLOR:				// 10
@@ -470,7 +470,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				dialog_data->original_color = win_data->custom_color_theme[win_data->color_theme_index].color[color_index];
 			else
 				dialog_data->original_color = system_color_theme[win_data->color_theme_index].color[color_index];
-			create_color_selection_widget(dialog_data, (GSourceFunc)adjust_vte_color, win_data->current_vte);
+			create_color_selection_widget(dialog_data, G_CALLBACK(adjust_vte_color), win_data->current_vte);
 			break;
 		case CHANGE_THE_CURSOR_COLOR:				// 9
 			create_dialog(_("Change the cursor color in terminal"),
@@ -490,7 +490,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				      0,
 				      dialog_data);
 			dialog_data->original_color = win_data->cursor_color;
-			create_color_selection_widget(dialog_data, (GSourceFunc)adjust_vte_color, win_data->current_vte);
+			create_color_selection_widget(dialog_data, G_CALLBACK(adjust_vte_color), win_data->current_vte);
 			dialog_data->original_custom_cursor_color = win_data->custom_cursor_color;
 			break;
 		case CHANGE_THE_ANSI_COLORS:					// 9
@@ -631,7 +631,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			if (page_data)
 			{
 #endif
-				create_color_selection_widget(dialog_data, (GSourceFunc)adjust_vte_color, page_data->vte);
+				create_color_selection_widget(dialog_data, G_CALLBACK(adjust_vte_color), page_data->vte);
 				// store the is_bold data of 1st page...
 				dialog_data->tab_1_is_bold = page_data->is_bold;
 #ifdef SAFEMODE
@@ -826,12 +826,12 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 					 G_CALLBACK(deal_dialog_key_press), dialog_data);
 
 			dialog_data->operate[3] = create_button_with_image("", GTK_FAKE_STOCK_CLOSE, FALSE,
-								      (GSourceFunc)clear_key_group, dialog_data);
+								      G_CALLBACK(clear_key_group), dialog_data);
 			gtk_box_pack_end (GTK_BOX(dialog_data->box), dialog_data->operate[3], TRUE, TRUE, 0);
 			gtk_widget_set_no_show_all (dialog_data->operate[3], TRUE);
 
 			label = create_button_with_image(_("Disable all the function keys."),
-							 GTK_FAKE_STOCK_CLOSE, FALSE, (GSourceFunc)clear_key_group_all, dialog_data);
+							 GTK_FAKE_STOCK_CLOSE, FALSE, G_CALLBACK(clear_key_group_all), dialog_data);
 			gtk_box_pack_end (GTK_BOX(dialog_data->box), label, TRUE, TRUE, 0);
 
 			// Trying to get correct size of dialog_data->treeview, then put it into a gtk_scrolled_window
@@ -1055,7 +1055,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				      dialog_data);
 			create_scale_widget(dialog_data, 0, 1, 0.001,
 					    window_opacity,
-					    (GSourceFunc)set_window_opacity,
+					    G_CALLBACK(set_window_opacity),
 					    win_data);
 			dialog_data->original_window_opacity = window_opacity;
 			set_window_opacity(NULL, 0, window_opacity, win_data);
@@ -1109,7 +1109,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				      dialog_data);
 			create_scale_widget(dialog_data, -1, 1, 0.001,
 					    value,
-					    (GSourceFunc)set_ansi_color,
+					    G_CALLBACK(set_ansi_color),
 					    win_data->current_vte);
 			init_dialog_ansi_colors_from_win_data(win_data, dialog_data);
 			break;
@@ -1504,6 +1504,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 					if ((style==CONFIRM_TO_CLOSE_A_WINDOW_WITH_CHILD_PROCESS) ||
 					    (style==CONFIRM_TO_EXIT_WITH_CHILD_PROCESS))
 						force_to_quit = TRUE;
+					// fall through
 				// style  7: confirm to close running application
 				case CONFIRM_TO_CLOSE_RUNNING_APPLICATION:
 					if ((create_entry_hbox) && (gtk_toggle_button_get_active(
@@ -2263,7 +2264,7 @@ GtkWidget *create_frame_widget (struct Dialog *dialog_data, gchar *label,
 }
 
 GtkWidget *create_button_with_image(gchar *label_text, const gchar *stock_id, gboolean set_tooltip_text,
-				    GSourceFunc func, gpointer func_data)
+				    GCallback func, gpointer func_data)
 {
 #ifdef DETAIL
 	g_debug("! Launch create_button_with_image() with label_text = %s, stock_id = %s!",
@@ -2290,7 +2291,7 @@ GtkWidget *create_button_with_image(gchar *label_text, const gchar *stock_id, gb
 	return label;
 }
 
-void create_color_selection_widget(struct Dialog *dialog_data, GSourceFunc func, gpointer func_data)
+void create_color_selection_widget(struct Dialog *dialog_data, GCallback func, gpointer func_data)
 {
 #ifdef DETAIL
 	g_debug("! Launch create_color_selection_widget() with dialog_data = %p!", dialog_data);
@@ -2317,7 +2318,7 @@ void set_color_selection_colors(GtkWidget *color_selection, GdkRGBA *color)
 }
 
 void create_scale_widget(struct Dialog *dialog_data, gdouble min, gdouble max, gdouble step, gdouble value,
-			 GSourceFunc func, gpointer func_data)
+			 GCallback func, gpointer func_data)
 {
 #ifdef DETAIL
 	g_debug("! Launch create_scale_widget() with dialog_data = %p, min = %3f, max = %3f, step = %3f, value = %3f!",

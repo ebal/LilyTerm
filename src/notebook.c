@@ -1324,7 +1324,7 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 											GTK_RADIO_MENU_ITEM (menuitem_list->data)),
 										    win_data->encoding_sub_menu,
 										    page_data->encoding_str,
-										    (GSourceFunc)set_encoding,
+										    G_CALLBACK(set_encoding),
 										    NULL);
 #ifdef SAFEMODE
 						if (menuitem)

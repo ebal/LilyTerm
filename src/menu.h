@@ -92,7 +92,7 @@ GtkWidget *recreate_profile_menu_item(GtkWidget *menuitem, GtkWidget *subitem,
 				       struct Window *win_data, Apply_Profile_Type type);
 void create_new_window_from_menu_items(GtkWidget *sub_menu, const gchar *stock_id);
 void create_load_profile_from_menu_items(GtkWidget *sub_menu, const gchar *stock_id, struct Window *win_data);
-gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GSourceFunc func, gpointer func_data);
+gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GCallback func, gpointer func_data);
 void apply_profile_from_file_dialog(GtkWidget *menu_item, Apply_Profile_Type type);
 void apply_profile_from_menu_item(GtkWidget *menu_item, Apply_Profile_Type type);
 void apply_profile_from_file(const gchar *path, Apply_Profile_Type type);
@@ -100,7 +100,7 @@ void reload_settings(GtkWidget *menu_item, struct Window *win_data);
 void save_user_settings_as(GtkWidget *widget, struct Window *win_data);
 GtkWidget *create_load_file_dialog(GtkFileChooserAction action, GtkWidget *window, gchar *button_text, gchar *filename);
 GtkWidget *create_menu_item (Menu_Itemn_Type type, GtkWidget *sub_menu, const gchar *label, const gchar *label_name,
-			     const gchar *stock_id, GSourceFunc func, gpointer func_data);
+			     const gchar *stock_id, GCallback func, gpointer func_data);
 GtkWidget *create_sub_item (GtkWidget *menu, gchar *label, const gchar *stock_id);
 GtkWidget *create_sub_item_subitem (gchar *label, const gchar *stock_id);
 GtkWidget *create_sub_item_submenu (GtkWidget *menu, GtkWidget *menu_item);

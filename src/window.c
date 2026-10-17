@@ -1235,6 +1235,7 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			{
 				case WINDOW_NORMAL:
 					save_vte_geometry(win_data);
+					// fall through
 				case WINDOW_START_WITH_FULL_SCREEN:
 				case WINDOW_APPLY_PROFILE_FULL_SCREEN:
 				{
@@ -2910,12 +2911,14 @@ gboolean get_hide_or_show_tabs_bar(struct Window *win_data, Switch_Type show_tab
 			break;
 		case TEMPORARY_ON:
 			win_data->show_tabs_bar = AUTOMATIC;
+			// fall through
 		case ON:
 		case FORCE_ON:
 			show = TRUE;
 			break;
 		case TEMPORARY_OFF:
 			win_data->show_tabs_bar = AUTOMATIC;
+			// fall through
 		case OFF:
 		case FORCE_OFF:
 			show = FALSE;

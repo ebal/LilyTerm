@@ -66,7 +66,7 @@ gboolean create_menu(struct Window *win_data)
 
 	// Change the font for every tab
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Change the font"), NULL, GTK_FAKE_STOCK_SELECT_FONT,
-			  (GSourceFunc)select_font, win_data);
+			  G_CALLBACK(select_font), win_data);
 
 	if (win_data->show_color_selection_menu)
 	{
@@ -74,26 +74,26 @@ gboolean create_menu(struct Window *win_data)
 		sub_menu = create_sub_item (win_data->menu, _("Change colors"), GTK_FAKE_STOCK_SELECT_COLOR);
 
 		create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Change the cursor color"), NULL, GTK_FAKE_STOCK_SELECT_COLOR,
-				  (GSourceFunc)dialog, GINT_TO_POINTER (CHANGE_THE_CURSOR_COLOR));
+				  G_CALLBACK(dialog), GINT_TO_POINTER (CHANGE_THE_CURSOR_COLOR));
 
 		win_data->ansi_theme_menuitem[0] = create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Change the foreground color"),
-								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, (GSourceFunc)dialog,
+								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, G_CALLBACK(dialog),
 								     GINT_TO_POINTER (CHANGE_THE_FOREGROUND_COLOR));
 
 		win_data->ansi_theme_menuitem[1] = create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Change the ANSI colors"),
-								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, (GSourceFunc)dialog,
+								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, G_CALLBACK(dialog),
 								     GINT_TO_POINTER (CHANGE_THE_ANSI_COLORS));
 
 		win_data->ansi_theme_menuitem[2] = create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Change the background color"),
-								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, (GSourceFunc)dialog,
+								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, G_CALLBACK(dialog),
 								     GINT_TO_POINTER (CHANGE_THE_BACKGROUND_COLOR));
 
 		win_data->ansi_theme_menuitem[3] = create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Adjust the brightness of ANSI colors"),
-								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, (GSourceFunc)dialog,
+								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, G_CALLBACK(dialog),
 								     GINT_TO_POINTER (ADJUST_THE_BRIGHTNESS_OF_ANSI_COLORS_USED_IN_TERMINAL));
 
 		win_data->ansi_theme_menuitem[4] = create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Adjust the brightness when inactive"),
-								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, (GSourceFunc)dialog,
+								     NULL, GTK_FAKE_STOCK_SELECT_COLOR, G_CALLBACK(dialog),
 								     GINT_TO_POINTER (ADJUST_THE_BRIGHTNESS_OF_ANSI_COLORS_WHEN_INACTIVE));
 
 		if (win_data->use_color_page)
@@ -107,7 +107,7 @@ gboolean create_menu(struct Window *win_data)
 				gchar *label_name = g_strdup_printf(_("Change the %s color on tab"),
 								    page_color[i].comment);
 				if (create_menu_item (IMAGE_MENU_ITEM, sub_menu, label_name,
-						      NULL, GTK_FAKE_STOCK_SELECT_COLOR, (GSourceFunc)dialog,
+						      NULL, GTK_FAKE_STOCK_SELECT_COLOR, G_CALLBACK(dialog),
 						      GINT_TO_POINTER (CHANGE_THE_TEXT_COLOR_OF_WINDOW_TITLE+i)))
 					hide_separator_menu = FALSE;
 				g_free(label_name);
@@ -128,15 +128,15 @@ gboolean create_menu(struct Window *win_data)
 			// Transparent Window
 			win_data->menuitem_trans_win = create_menu_item (CHECK_MENU_ITEM, background_sub_menu,
 									 _("Transparent window"),
-									 NULL, NULL, (GSourceFunc)set_trans_win,
+									 NULL, NULL, G_CALLBACK(set_trans_win),
 									 win_data->window);
 
 			// Window opacity
 			create_menu_item (IMAGE_MENU_ITEM, background_sub_menu, _("Window opacity"), NULL, GTK_FAKE_STOCK_EXECUTE,
-					  (GSourceFunc)dialog, GINT_TO_POINTER (CHANGE_THE_OPACITY_OF_WINDOW));
+					  G_CALLBACK(dialog), GINT_TO_POINTER (CHANGE_THE_OPACITY_OF_WINDOW));
 
 			create_menu_item (IMAGE_MENU_ITEM, background_sub_menu, _("Window opacity when inactive"),
-					   NULL, GTK_FAKE_STOCK_EXECUTE, (GSourceFunc)dialog,
+					   NULL, GTK_FAKE_STOCK_EXECUTE, G_CALLBACK(dialog),
 					   GINT_TO_POINTER (CHANGE_THE_OPACITY_OF_WINDOW_WHEN_INACTIVE));
 
 			// ----------------------------------------
@@ -157,27 +157,27 @@ gboolean create_menu(struct Window *win_data)
 		if (win_data->enable_hyperlink)
 			// copy_url
 			win_data->menuitem_copy_url = create_menu_item (IMAGE_MENU_ITEM, clip_sub_menu, _("Copy URL"), NULL,
-									GTK_FAKE_STOCK_COPY, (GSourceFunc)copy_url_clipboard,
+									GTK_FAKE_STOCK_COPY, G_CALLBACK(copy_url_clipboard),
 									NULL);
 
 		// copy
 		win_data->menuitem_copy = create_menu_item (IMAGE_MENU_ITEM, clip_sub_menu, _("Copy"), NULL, GTK_FAKE_STOCK_COPY,
-							    (GSourceFunc)copy_clipboard, win_data);
+							    G_CALLBACK(copy_clipboard), win_data);
 
 		// paste
 		win_data->menuitem_paste = create_menu_item (IMAGE_MENU_ITEM, clip_sub_menu, _("Paste"), NULL, GTK_FAKE_STOCK_PASTE,
-							     (GSourceFunc)paste_clipboard, win_data);
+							     G_CALLBACK(paste_clipboard), win_data);
 
 		// ----------------------------------------
 		add_separator_menu (clip_sub_menu);
 
 		win_data->menuitem_clipboard = create_menu_item (IMAGE_MENU_ITEM, clip_sub_menu,
 								 _("View clipboard"), NULL, GTK_FAKE_STOCK_FILE,
-								 (GSourceFunc)view_clipboard, win_data);
+								 G_CALLBACK(view_clipboard), win_data);
 
 		win_data->menuitem_primary = create_menu_item (IMAGE_MENU_ITEM, clip_sub_menu,
 							       _("View primary clipboard"), NULL, GTK_FAKE_STOCK_FILE,
-							       (GSourceFunc)view_primary, win_data);
+							       G_CALLBACK(view_primary), win_data);
 
 		// ----------------------------------------
 		add_separator_menu (win_data->menu);
@@ -186,24 +186,24 @@ gboolean create_menu(struct Window *win_data)
 
 	// use scrollback lines
 	win_data->menuitem_hide_scroll_bar = create_menu_item (CHECK_MENU_ITEM, win_data->menu, _("Scrollback lines"), NULL, NULL,
-							       (GSourceFunc)hide_scrollback_lines, win_data);
+							       G_CALLBACK(hide_scrollback_lines), win_data);
 	gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_hide_scroll_bar),
 					check_show_or_hide_scroll_bar(win_data));
 
 	// clean scrollback lines
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Clean scrollback lines"), NULL, GTK_FAKE_STOCK_CLEAR,
-			  (GSourceFunc)clean_scrollback_lines, win_data);
+			  G_CALLBACK(clean_scrollback_lines), win_data);
 
 	// ----------------------------------------
 	add_separator_menu (win_data->menu);
 
 	// split panes: the keys for them are in [Set key binding]
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Split right"), NULL, GTK_FAKE_STOCK_ADD,
-			  (GSourceFunc)menu_split_right, win_data);
+			  G_CALLBACK(menu_split_right), win_data);
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Split down"), NULL, GTK_FAKE_STOCK_ADD,
-			  (GSourceFunc)menu_split_down, win_data);
+			  G_CALLBACK(menu_split_down), win_data);
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Close pane"), NULL, GTK_FAKE_STOCK_CLOSE,
-			  (GSourceFunc)menu_close_pane, win_data);
+			  G_CALLBACK(menu_close_pane), win_data);
 
 	// ----------------------------------------
 	add_separator_menu (win_data->menu);
@@ -211,15 +211,15 @@ gboolean create_menu(struct Window *win_data)
 	GtkWidget *misc_sub_menu = create_sub_item (win_data->menu, _("Misc"), GTK_FAKE_STOCK_CONVERT);
 
 	create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Paste to every Vte Terminal"), NULL, GTK_FAKE_STOCK_PASTE,
-							     (GSourceFunc)paste_to_every_vte, win_data);
+							     G_CALLBACK(paste_to_every_vte), win_data);
 
 	create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Launch file manager"), NULL, GTK_FAKE_STOCK_PASTE,
-							     (GSourceFunc)open_current_dir_with_file_manager, win_data);
+							     G_CALLBACK(open_current_dir_with_file_manager), win_data);
 
 	// ----------------------------------------
 	add_separator_menu (misc_sub_menu);
 	create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("View page info"), NULL, GTK_FAKE_STOCK_DIALOG_QUESTION,
-							     (GSourceFunc)view_current_page_info, win_data);
+							     G_CALLBACK(view_current_page_info), win_data);
 
 	// ----------------------------------------
 	add_separator_menu (misc_sub_menu);
@@ -231,7 +231,7 @@ gboolean create_menu(struct Window *win_data)
 		win_data->menuitem_erase_binding[i] = add_radio_menuitem_to_sub_menu (erase_binding_group,
 									      sub_menu,
 									      erase_binding[i].name,
-									      (GSourceFunc)set_erase_binding,
+									      G_CALLBACK(set_erase_binding),
 									      GINT_TO_POINTER(erase_binding[i].value));
 		erase_binding_group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (win_data->menuitem_erase_binding[i]));
 		if (win_data->erase_binding == erase_binding[i].value)
@@ -245,7 +245,7 @@ gboolean create_menu(struct Window *win_data)
 		win_data->menuitem_cursor_shape[i] = add_radio_menuitem_to_sub_menu (cursor_shape_group,
 									      sub_menu,
 									      cursor_shape[i].name,
-									      (GSourceFunc)set_cursor_shape,
+									      G_CALLBACK(set_cursor_shape),
 									      GINT_TO_POINTER(cursor_shape[i].value));
 		cursor_shape_group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (win_data->menuitem_cursor_shape[i]));
 		if (win_data->cursor_shape == cursor_shape[i].value)
@@ -255,46 +255,46 @@ gboolean create_menu(struct Window *win_data)
 	// Dim when inactive
 	win_data->ansi_theme_menuitem[5] = win_data->menuitem_dim_text = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu,
 											   _("Dim text when inactive"), NULL, NULL,
-											   (GSourceFunc)set_dim_text, win_data);
+											   G_CALLBACK(set_dim_text), win_data);
 	if (win_data->use_rgba == -1)
 		win_data->menuitem_dim_window = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu,
 								  _("Dim window when inactive"), NULL, NULL,
-								  (GSourceFunc)set_dim_window, win_data);
+								  G_CALLBACK(set_dim_window), win_data);
 
 	// Cursor Blinks
 	win_data->menuitem_cursor_blinks = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Cursor blinks"), NULL, NULL,
-							     (GSourceFunc)set_cursor_blinks, win_data);
+							     G_CALLBACK(set_cursor_blinks), win_data);
 
 	// Bold text
 	win_data->menuitem_allow_bold_text = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Allow bold text"), NULL, NULL,
-							       (GSourceFunc)set_allow_bold_text, win_data);
+							       G_CALLBACK(set_allow_bold_text), win_data);
 
 	// ----------------------------------------
 	add_separator_menu (misc_sub_menu);
 
 	// Need <Ctrl> pressed to open URL
 	win_data->menuitem_open_url_with_ctrl_pressed = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Need <Ctrl> pressed to open URL"), NULL, NULL,
-									  (GSourceFunc)set_open_url_with_ctrl_pressed, win_data);
+									  G_CALLBACK(set_open_url_with_ctrl_pressed), win_data);
 
 	win_data->menuitem_disable_url_when_ctrl_pressed = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Disable URL when <Ctrl> pressed"), NULL, NULL,
-									  (GSourceFunc)set_disable_url_when_ctrl_pressed, win_data);
+									  G_CALLBACK(set_disable_url_when_ctrl_pressed), win_data);
 
 	// ----------------------------------------
 	add_separator_menu (misc_sub_menu);
 
 	// Audible bell
 	win_data->menuitem_audible_bell = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Audible bell"), NULL, NULL,
-								(GSourceFunc)set_audible_bell, win_data);
+								G_CALLBACK(set_audible_bell), win_data);
 	// Urgent bell
 	win_data->menuitem_urgent_bell = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Urgent bell"), NULL, NULL,
-								(GSourceFunc)set_urgent_bell, win_data);
+								G_CALLBACK(set_urgent_bell), win_data);
 	// ----------------------------------------
 	add_separator_menu (misc_sub_menu);
 
 	// Edit tab name
 	if (win_data->show_change_page_name_menu)
 		create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Rename this tab"), NULL, GTK_FAKE_STOCK_EDIT,
-			  (GSourceFunc)dialog, GINT_TO_POINTER(EDIT_LABEL));
+			  G_CALLBACK(dialog), GINT_TO_POINTER(EDIT_LABEL));
 
 	// ----------------------------------------
 	if (win_data->show_change_page_name_menu &&
@@ -304,27 +304,27 @@ gboolean create_menu(struct Window *win_data)
 	// Show the tabs bar
 	win_data->menuitem_show_tabs_bar = create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Show the tabs bar"), NULL,
 							     GTK_FAKE_STOCK_GOTO_BOTTOM,
-							     (GSourceFunc)launch_hide_and_show_tabs_bar,
+							     G_CALLBACK(launch_hide_and_show_tabs_bar),
 							     GINT_TO_POINTER(TEMPORARY_ON));
 
 	// Hide the tabs bar
 	win_data->menuitem_hide_tabs_bar = create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Hide the tabs bar"), NULL,
 							     GTK_FAKE_STOCK_GOTO_TOP,
-							     (GSourceFunc)launch_hide_and_show_tabs_bar,
+							     G_CALLBACK(launch_hide_and_show_tabs_bar),
 							     GINT_TO_POINTER(TEMPORARY_OFF));
 
 	// Always shows the tabs bar
 	win_data->menuitem_always_show_tabs_bar = create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu,
 								   _("Always show the tabs bar"),
 								   NULL, GTK_FAKE_STOCK_GOTO_BOTTOM,
-								   (GSourceFunc)launch_hide_and_show_tabs_bar,
+								   G_CALLBACK(launch_hide_and_show_tabs_bar),
 								   GINT_TO_POINTER(FORCE_ON));
 
 	// Always hide the tabs bar
 	win_data->menuitem_always_hide_tabs_bar = create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu,
 								   _("Always hide the tabs bar"),
 								   NULL, GTK_FAKE_STOCK_GOTO_TOP,
-								   (GSourceFunc)launch_hide_and_show_tabs_bar,
+								   G_CALLBACK(launch_hide_and_show_tabs_bar),
 								   GINT_TO_POINTER(FORCE_OFF));
 
 	if (win_data->show_resize_menu)
@@ -333,36 +333,36 @@ gboolean create_menu(struct Window *win_data)
 
 		// Window Size
 		create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Increase window size"), NULL, GTK_FAKE_STOCK_ZOOM_IN,
-				  (GSourceFunc)set_vte_font, GINT_TO_POINTER(FONT_ZOOM_OUT));
+				  G_CALLBACK(set_vte_font), GINT_TO_POINTER(FONT_ZOOM_OUT));
 
 		create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Decrease window size"), NULL, GTK_FAKE_STOCK_ZOOM_OUT,
-				  (GSourceFunc)set_vte_font, GINT_TO_POINTER(FONT_ZOOM_IN));
+				  G_CALLBACK(set_vte_font), GINT_TO_POINTER(FONT_ZOOM_IN));
 
 		// ----------------------------------------
 		add_separator_menu (misc_sub_menu);
 
 		// Reset font and window size
 		create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Reset to user custom font/size"), NULL, GTK_FAKE_STOCK_ZOOM_100,
-				  (GSourceFunc)set_vte_font, GINT_TO_POINTER(FONT_RESET_DEFAULT));
+				  G_CALLBACK(set_vte_font), GINT_TO_POINTER(FONT_RESET_DEFAULT));
 
 		create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Reset to system font/size"), NULL, GTK_FAKE_STOCK_ZOOM_100,
-				  (GSourceFunc)set_vte_font, GINT_TO_POINTER(FONT_RESET_SYSTEM));
+				  G_CALLBACK(set_vte_font), GINT_TO_POINTER(FONT_RESET_SYSTEM));
 	}
 
 	// Reset
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Reset the content"), NULL, GTK_FAKE_STOCK_REFRESH,
-			  (GSourceFunc)reset_vte, win_data);
+			  G_CALLBACK(reset_vte), win_data);
 
 	// ----------------------------------------
 	add_separator_menu (win_data->menu);
 
 	// Usage
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Usage"), NULL, GTK_FAKE_STOCK_HELP,
-				  (GSourceFunc)dialog, GINT_TO_POINTER(USAGE_MESSAGE));
+				  G_CALLBACK(dialog), GINT_TO_POINTER(USAGE_MESSAGE));
 
 	// Get the key value for using in profile
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Set key binding"), NULL, GTK_FAKE_STOCK_PREFERENCES,
-				  (GSourceFunc)dialog, GINT_TO_POINTER(SET_KEY_BINDING));
+				  G_CALLBACK(dialog), GINT_TO_POINTER(SET_KEY_BINDING));
 
 	win_data->menuitem_load_profile_from_list = create_sub_item_subitem (_("User profile"), GTK_FAKE_STOCK_PROPERTIES);
 	gtk_menu_shell_append (GTK_MENU_SHELL (win_data->menu), win_data->menuitem_load_profile_from_list);
@@ -372,7 +372,7 @@ gboolean create_menu(struct Window *win_data)
 		// Exit LilyTerm
 		gchar *exit_str = g_strdup_printf(_("Quit %s"), PACKAGE);
 		create_menu_item (IMAGE_MENU_ITEM, win_data->menu, exit_str, NULL, GTK_FAKE_STOCK_QUIT,
-				  (GSourceFunc)main_quit, win_data);
+				  G_CALLBACK(main_quit), win_data);
 		g_free(exit_str);
 	}
 
@@ -409,7 +409,7 @@ void recreate_theme_menu_items(struct Window *win_data)
 
 	win_data->ansi_theme_menuitem[6] = win_data->menuitem_invert_color = create_menu_item(CHECK_MENU_ITEM, win_data->ansi_color_menuitem,
 											      _("Invert color"), NULL, NULL,
-											      (GSourceFunc)invert_color_theme, win_data);
+											      G_CALLBACK(invert_color_theme), win_data);
 	add_separator_menu (win_data->ansi_color_menuitem);
 
 	gint i;
@@ -459,7 +459,7 @@ GSList *create_theme_menu_items(struct Window *win_data, GtkWidget *sub_menu, GS
 	win_data->menuitem_theme[current_theme + custom_theme*THEME] = add_radio_menuitem_to_sub_menu (theme_group,
 												       sub_menu,
 												       item_label,
-												       (GSourceFunc)select_ansi_theme,
+												       G_CALLBACK(select_ansi_theme),
 												       GINT_TO_POINTER(index));
 #ifdef SAFEMODE
 	if (win_data->menuitem_theme[current_theme]==NULL) return NULL;
@@ -935,7 +935,7 @@ GtkWidget *check_name_in_menuitem(GtkWidget *sub_menu, const gchar *name, gboole
 GtkWidget *add_radio_menuitem_to_sub_menu(GSList *encoding_group,
 					  GtkWidget *sub_menu,
 					  const gchar *name,
-					  GSourceFunc func,
+					  GCallback func,
 					  gpointer func_data)
 {
 #ifdef DETAIL
@@ -1545,7 +1545,7 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 				menu_item = add_radio_menuitem_to_sub_menu (encoding_group,
 									    win_data->encoding_sub_menu,
 									    supported_encodings[i],
-									    (GSourceFunc)set_encoding,
+									    G_CALLBACK(set_encoding),
 									    NULL);
 				encoding_group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (menu_item));
 				if (i==0)
@@ -1649,14 +1649,14 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 				add_separator_menu (win_data->encoding_sub_menu);
 
 			create_menu_item (IMAGE_MENU_ITEM, win_data->encoding_sub_menu, _("Add other locales..."),
-					  NULL, GTK_FAKE_STOCK_ADD,  (GSourceFunc)dialog, GINT_TO_POINTER (ADD_NEW_LOCALES));
+					  NULL, GTK_FAKE_STOCK_ADD,  G_CALLBACK(dialog), GINT_TO_POINTER (ADD_NEW_LOCALES));
 		}
 
 		if (count_locale_menu)
 			add_separator_menu (win_data->locale_sub_menu);
 
 		create_menu_item (IMAGE_MENU_ITEM, win_data->locale_sub_menu, _("Add other locales..."),
-				  NULL, GTK_FAKE_STOCK_ADD,  (GSourceFunc)dialog, GINT_TO_POINTER (ADD_NEW_LOCALES));
+				  NULL, GTK_FAKE_STOCK_ADD,  G_CALLBACK(dialog), GINT_TO_POINTER (ADD_NEW_LOCALES));
 	}
 	for (i=0; i<3; i++)
 #ifdef SAFEMODE
@@ -1730,11 +1730,11 @@ void create_new_window_from_menu_items(GtkWidget *sub_menu, const gchar *stock_i
 	g_debug("! Launch create_new_window_from_menu_items() with sub_menu = %p, stock_id = %s",
 		sub_menu, stock_id);
 #  endif
-	if (create_profile_menu_list(sub_menu, stock_id, (GSourceFunc)apply_profile_from_menu_item,
+	if (create_profile_menu_list(sub_menu, stock_id, G_CALLBACK(apply_profile_from_menu_item),
 				     GINT_TO_POINTER(NEW_WINDOW_FROM_PROFILE)))
 		add_separator_menu (sub_menu);
 	create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Other settings..."), NULL, GTK_FAKE_STOCK_ADD,
-			  (GSourceFunc)apply_profile_from_file_dialog, GINT_TO_POINTER(NEW_WINDOW_FROM_PROFILE));
+			  G_CALLBACK(apply_profile_from_file_dialog), GINT_TO_POINTER(NEW_WINDOW_FROM_PROFILE));
 }
 
 void create_load_profile_from_menu_items(GtkWidget *sub_menu, const gchar *stock_id, struct Window *win_data)
@@ -1748,33 +1748,33 @@ void create_load_profile_from_menu_items(GtkWidget *sub_menu, const gchar *stock
 #  endif
 	// Profile
 	win_data->menuitem_auto_save = create_menu_item(CHECK_MENU_ITEM, sub_menu, _("Save settings automatically"), NULL, NULL,
-							(GSourceFunc)set_auto_save, win_data);
+							G_CALLBACK(set_auto_save), win_data);
 
 	add_separator_menu (sub_menu);
 
 	create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Save settings"), NULL, GTK_FAKE_STOCK_SAVE,
-			  (GSourceFunc)save_user_settings, win_data);
+			  G_CALLBACK(save_user_settings), win_data);
 
 	create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Save settings as..."), NULL, GTK_FAKE_STOCK_SAVE_AS,
-			  (GSourceFunc)save_user_settings_as, win_data);
+			  G_CALLBACK(save_user_settings_as), win_data);
 
 	add_separator_menu (sub_menu);
 
 	// Reload Settings
 	create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Reload settings"), NULL, GTK_FAKE_STOCK_REVERT_TO_SAVED,
-			  (GSourceFunc)reload_settings, win_data);
+			  G_CALLBACK(reload_settings), win_data);
 
 	add_separator_menu(sub_menu);
 
 	if (create_profile_menu_list(sub_menu, GTK_FAKE_STOCK_APPLY,
-				 (GSourceFunc)apply_profile_from_menu_item, GINT_TO_POINTER(LOAD_FROM_PROFILE)))
+				 G_CALLBACK(apply_profile_from_menu_item), GINT_TO_POINTER(LOAD_FROM_PROFILE)))
 		add_separator_menu (sub_menu);
 
 	create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Other settings..."), NULL, GTK_FAKE_STOCK_ADD,
-			  (GSourceFunc)apply_profile_from_file_dialog, GINT_TO_POINTER(LOAD_FROM_PROFILE));
+			  G_CALLBACK(apply_profile_from_file_dialog), GINT_TO_POINTER(LOAD_FROM_PROFILE));
 }
 
-gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GSourceFunc func, gpointer func_data)
+gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GCallback func, gpointer func_data)
 {
 #  ifdef DETAIL
 	g_debug("! Launch create_profile_menu_list() with sub_menu = %p, stock_id = %s", sub_menu, stock_id);
@@ -1790,7 +1790,7 @@ gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GS
 	{
 #  endif
 		create_menu_item (IMAGE_MENU_ITEM, sub_menu, menu_label, "", stock_id,
-				  (GSourceFunc)func, func_data);
+				  G_CALLBACK(func), func_data);
 		create_separator = TRUE;
 #  ifdef SAFEMODE
 	}
@@ -1807,7 +1807,7 @@ gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GS
 	if (g_file_test(SYS_PROFILE, G_FILE_TEST_EXISTS))
 	{
 		create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("System default"),
-				  SYS_PROFILE, stock_id, (GSourceFunc)func, system_func_data);
+				  SYS_PROFILE, stock_id, G_CALLBACK(func), system_func_data);
 		create_separator = TRUE;
 	}
 	if (create_separator) add_separator_menu(sub_menu);
@@ -1830,7 +1830,7 @@ gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GS
 		if (entry[0]=='.') continue;
 		user_profile = g_strdup_printf("%s/%s", profile_dir, entry);
 		create_menu_item (IMAGE_MENU_ITEM, sub_menu, entry, user_profile, stock_id,
-				  (GSourceFunc)func, func_data);
+				  G_CALLBACK(func), func_data);
 		g_free(user_profile);
 		menu_list_created = TRUE;
 	}
@@ -2276,7 +2276,7 @@ GtkWidget *create_load_file_dialog(GtkFileChooserAction action, GtkWidget *windo
 }
 
 GtkWidget *create_menu_item (Menu_Itemn_Type type, GtkWidget *sub_menu, const gchar *label, const gchar *label_name,
-			     const gchar *stock_id, GSourceFunc func, gpointer func_data)
+			     const gchar *stock_id, GCallback func, gpointer func_data)
 {
 #ifdef DETAIL
 	g_debug("! Launch create_menu_item() with sub_menu = %p, label = %s, "

@@ -114,11 +114,11 @@ GtkWidget *create_entry_widget (GtkWidget *box, gchar *contents, gchar *name, gc
 GtkWidget *create_frame_widget( struct Dialog *dialog_data, gchar *label,
 				GtkWidget *label_widget, GtkWidget *child, guint padding);
 GtkWidget *create_button_with_image(gchar *label_text, const gchar *stock_id, gboolean set_tooltip_text,
-				    GSourceFunc func, gpointer func_data);
-void create_color_selection_widget(struct Dialog *dialog_data, GSourceFunc func, gpointer func_data);
+				    GCallback func, gpointer func_data);
+void create_color_selection_widget(struct Dialog *dialog_data, GCallback func, gpointer func_data);
 void set_color_selection_colors(GtkWidget *color_selection, GdkRGBA *color);
 void create_scale_widget(struct Dialog *dialog_data, gdouble min, gdouble max, gdouble step, gdouble value,
-			 GSourceFunc func, gpointer func_data);
+			 GCallback func, gpointer func_data);
 void create_SIGKILL_and_EXIT_widget(struct Dialog *dialog_data, gboolean create_entry_hbox,
 				    gboolean create_force_kill_hbox, gchar *count_str);
 gboolean grab_key_press (GtkWidget *window, GdkEventKey *event, struct Dialog *dialog_data);

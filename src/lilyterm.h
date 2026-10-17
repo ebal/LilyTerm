@@ -304,7 +304,7 @@ gboolean stop_urgency_hint(GtkWidget *window, GdkEvent  *event, struct Window *w
 GtkWidget *add_radio_menuitem_to_sub_menu(GSList *encoding_group,
 					  GtkWidget *sub_menu,
 					  const gchar *name,
-					  GSourceFunc func,
+					  GCallback func,
 					  gpointer func_data);
 void refresh_profile_list (struct Window *win_data);
 long get_profile_dir_modtime(void);
