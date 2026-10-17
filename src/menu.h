@@ -101,7 +101,6 @@ void apply_profile_from_file_dialog(GtkWidget *menu_item, Apply_Profile_Type typ
 void apply_profile_from_menu_item(GtkWidget *menu_item, Apply_Profile_Type type);
 void apply_profile_from_file(const gchar *path, Apply_Profile_Type type);
 void reload_settings(GtkWidget *menu_item, struct Window *win_data);
-void apply_to_every_window(GtkWidget *menu_item, struct Window *win_data);
 void save_user_settings_as(GtkWidget *widget, struct Window *win_data);
 GtkWidget *create_load_file_dialog(GtkFileChooserAction action, GtkWidget *window, gchar *button_text, gchar *filename);
 GtkWidget *create_menu_item (Menu_Itemn_Type type, GtkWidget *sub_menu, const gchar *label, const gchar *label_name,
@@ -110,5 +109,4 @@ GtkWidget *create_sub_item (GtkWidget *menu, gchar *label, const gchar *stock_id
 GtkWidget *create_sub_item_subitem (gchar *label, const gchar *stock_id);
 GtkWidget *create_sub_item_submenu (GtkWidget *menu, GtkWidget *menu_item);
 GtkWidget *add_separator_menu(GtkWidget *sub_menu);
-void set_menuitem_label(GtkWidget *menu_item, gchar *text);
 void enable_disable_theme_menus(struct Window *win_data, gboolean show);

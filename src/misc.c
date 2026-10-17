@@ -320,28 +320,6 @@ gchar *get_VTE_CJK_WIDTH_str(gint VTE_CJK_WIDTH)
 	return NULL;
 }
 
-gint get_default_VTE_CJK_WIDTH(void)
-{
-#ifdef DETAIL
-	g_debug("! Launch get_default_VTE_CJK_WIDTH()");
-#endif
-	const gchar *VTE_CJK_WIDTH = g_getenv("VTE_CJK_WIDTH");
-	if (VTE_CJK_WIDTH==NULL)
-		return 0;
-	else
-	{
-		// VTE_CJK_WIDTH only work under UTF-8
-		if ((compare_strings (VTE_CJK_WIDTH, "wide", FALSE)==FALSE) ||
-		    (compare_strings (VTE_CJK_WIDTH, "1", FALSE)==FALSE))
-			return 2;
-		else if ((compare_strings (VTE_CJK_WIDTH, "narrow", FALSE)==FALSE) ||
-			 (compare_strings (VTE_CJK_WIDTH, "0", FALSE)==FALSE))
-			return 1;
-		else
-			return 0;
-	}
-}
-
 void restore_SYSTEM_VTE_CJK_WIDTH_STR(void)
 {
 #ifdef DETAIL
@@ -352,20 +330,6 @@ void restore_SYSTEM_VTE_CJK_WIDTH_STR(void)
 		g_setenv("VTE_CJK_WIDTH", SYSTEM_VTE_CJK_WIDTH_STR, TRUE);
 	else
 		g_unsetenv("VTE_CJK_WIDTH");
-}
-
-void set_env(const gchar *variable, const gchar *value, gboolean overwrite)
-{
-#ifdef DETAIL
-	g_debug("! Launch set_env() with variable = %s, value = %s, overwrite = %d", variable, value, overwrite);
-#endif
-#ifdef SAFEMODE
-	if ((variable==NULL) || (variable[0]=='\0')) return;
-#endif
-	if (value)
-		g_setenv(variable, value, overwrite);
-	else
-		g_unsetenv(variable);
 }
 
 // get default locale from environ
@@ -797,18 +761,6 @@ GdkRGBA convert_color_to_rgba(GdkColor color)
 	return rgba;
 }
 
-GdkColor convert_rgba_to_color(GdkRGBA rgba)
-{
-	GdkColor color;
-
-	color.pixel = 0;
-	color.red = rgba.red*0xFFFF;
-	color.green = rgba.green*0xFFFF;
-	color.blue = rgba.blue*0xFFFF;
-
-	return color;
-}
-
 // The returned string should be freed when no longer needed.
 gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba)
 {
@@ -1162,21 +1114,6 @@ GtkWidget *lilyterm_image_new_from_stock(const gchar *stock_id, GtkIconSize size
 	g_object_unref(gicon);
 	g_free(symbolic);
 	return image;
-}
-
-// A button with the translated label of a stock id ("_Paste"), like the ones
-// gtk_dialog_add_button() makes for the other buttons of a dialog.
-GtkWidget *lilyterm_button_new_from_stock(const gchar *stock_id)
-{
-#ifdef DETAIL
-	g_debug("! Launch lilyterm_button_new_from_stock() with stock_id = %s", stock_id);
-#endif
-	GtkWidget *button;
-	G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-	// the parentheses keep the macro of the same name from expanding
-	button = (gtk_button_new_from_stock)(stock_id);
-	G_GNUC_END_IGNORE_DEPRECATIONS
-	return button;
 }
 
 // VTE deprecated these without a replacement: other encodings than UTF-8

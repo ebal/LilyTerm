@@ -148,11 +148,9 @@
 	#define gtk_hscale_new_with_range(x,y,z) gtk_scale_new_with_range (GTK_ORIENTATION_HORIZONTAL,x,y,z)
 	// END: gtk+-3.8.0/gtk/gtkwindow.h: GDK_DEPRECATED_IN_3_8_FOR(gtk_widget_set_opacity)
 	#define gtk_window_set_opacity(x,y) gtk_widget_set_opacity(GTK_WIDGET(x),y)
-	// END: gtk+-3.9.8/gtk/gtkbutton.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_button_new_with_label) gtk_button_new_from_stock()
 	// END: gtk+-3.9.8/gtk/gtkimage.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_image_new_from_icon_name) gtk_image_new_from_stock()
 	// A stock id ("gtk-close") is not an icon name, and icon themes do not
 	// carry gtk-* aliases any more: map stock ids to real icon names.
-	#define gtk_button_new_from_stock(x) lilyterm_button_new_from_stock(x)
 	#define gtk_image_new_from_stock lilyterm_image_new_from_stock
 	// END: gtk+-3.9.8/gtk/gtkimagemenuitem.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_menu_item_new_with_label) gtk_image_menu_item_new_with_label()
 	#define gtk_image_menu_item_new_with_label gtk_menu_item_new_with_label

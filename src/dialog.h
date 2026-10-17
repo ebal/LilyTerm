@@ -133,8 +133,6 @@ void adjust_vte_color_sample(GtkColorButton* color_button, gint color_index);
 void adjust_vte_color(GtkColorChooser *colorselection, GdkRGBA *color, GtkWidget *vte);
 void set_new_ansi_color(GtkWidget *vte, GdkRGBA color_orig[COLOR], GdkRGBA color[COLOR], gdouble color_brightness, gboolean invert_color,
 			gboolean default_vte_color, gboolean custom_cursor_color, GdkRGBA cursor_color, gboolean dim_fg_color);
-void hide_combo_box_capital(GtkCellLayout *cell_layout, GtkCellRenderer *cell,
-			    GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data);
 void update_key_info (GtkTreeSelection *treeselection, struct Dialog *dialog_data);
 void clear_key_group(GtkButton *button, struct Dialog *dialog_data);
 void clear_key_group_all(GtkButton *button, struct Dialog *dialog_data);

@@ -2383,21 +2383,6 @@ void reload_settings(GtkWidget *menu_item, struct Window *win_data)
 	g_free(current_profile);
 }
 
-void apply_to_every_window(GtkWidget *menu_item, struct Window *win_data)
-{
-#  ifdef DETAIL
-	g_debug("! Launch apply_to_every_window() with win_data = %p!", win_data);
-#  endif
-	GList *win_list = window_list;
-
-	while (win_list)
-	{
-		// if (win_data != win_list->data)
-		//	apply_new_win_data(win_list->data, win_data);
-		win_list = win_list->next;
-	}
-}
-
 void save_user_settings_as(GtkWidget *widget, struct Window *win_data)
 {
 #  ifdef DETAIL
@@ -2575,17 +2560,6 @@ long get_profile_dir_modtime(void)
 	if (stat(profile_dir, &buffer))
 		return 0;
 	return buffer.st_mtime;
-}
-
-void set_menuitem_label(GtkWidget *menu_item, gchar *text)
-{
-#ifdef DETAIL
-	g_debug("! Launch set_menuitem_label() with menu_item = %p, text = %s!", menu_item, text);
-#endif
-#ifdef SAFEMODE
-	if ((menu_item==NULL) || (text==NULL)) return;
-#endif
-	gtk_menu_item_set_label(GTK_MENU_ITEM(menu_item), text);
 }
 
 #ifdef FATAL

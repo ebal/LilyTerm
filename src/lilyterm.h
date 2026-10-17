@@ -49,11 +49,8 @@ gchar *get_VTE_CJK_WIDTH_str(gint VTE_CJK_WIDTH);
 #define GEOMETRY_Y_NEGATIVE	0x20
 gchar **sanitize_environs(gchar **environs);
 GtkWidget *lilyterm_image_new_from_stock(const gchar *stock_id, GtkIconSize size);
-GtkWidget *lilyterm_button_new_from_stock(const gchar *stock_id);
 gint parse_geometry_str(const gchar *geometry_str, gint *offset_x, gint *offset_y, guint *width, guint *height);
-gint get_default_VTE_CJK_WIDTH(void);
 void restore_SYSTEM_VTE_CJK_WIDTH_STR(void);
-void set_env(const gchar *variable, const gchar *value, gboolean overwrite);
 const gchar *lilyterm_vte_get_encoding(VteTerminal *vte);
 void lilyterm_vte_set_encoding(VteTerminal *vte, const gchar *encoding);
 void lilyterm_vte_set_allow_bold(VteTerminal *vte, gboolean allow_bold);
@@ -68,7 +65,6 @@ gchar *convert_text_to_html(StrAddr **text, gboolean free_text, gchar *color, St
 gchar *join_strings_to_string(const gchar separator, const gint total, const StrLists *string, ...);
 gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line);
 GdkRGBA convert_color_to_rgba(GdkColor color);
-GdkColor convert_rgba_to_color(GdkRGBA rgba);
 gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba);
 gboolean dirty_gdk_color_parse(const gchar *spec, GdkRGBA *color);
 GtkWidget *dirty_gtk_vbox_new(gboolean homogeneous, gint spacing);
@@ -292,8 +288,6 @@ void error_dialog(GtkWidget *window, gchar *title_translation, gchar *title,
 #if defined(FATAL)
 void print_switch_out_of_range_error_dialog(gchar *function, gchar *var, gint value);
 #endif
-GdkRGBA get_inactive_color(GdkRGBA original_fg_color, gdouble new_brightness, gdouble old_brightness);
-gboolean upgrade_dialog(gchar *version_str);
 gchar *get_colorful_profile(struct Window *win_data);
 
 //

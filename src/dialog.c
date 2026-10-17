@@ -2388,24 +2388,6 @@ GtkWidget *create_button_with_image(gchar *label_text, const gchar *stock_id, gb
 	return label;
 }
 
-GtkWidget *create_hbox_with_text_and_image(gchar *text, const gchar *stock_id)
-{
-#ifdef DETAIL
-	g_debug("! Launch create_hbox_with_text_and_image() with label_text = %s, stock_id = %s!",
-		text, stock_id);
-#endif
-	GtkWidget *hbox=dirty_gtk_hbox_new(FALSE, 0);
-	set_widget_thickness(hbox, 0);
-
-	GtkWidget *label = gtk_label_new(text);
-	gtk_box_pack_start(GTK_BOX(hbox), label, TRUE, TRUE, 0);
-	GtkWidget *image = gtk_image_new_from_stock(stock_id, GTK_ICON_SIZE_MENU);
-	gtk_box_pack_start(GTK_BOX(hbox), image, FALSE, FALSE, 0);
-	gtk_widget_show_all(hbox);
-
-	return hbox;
-}
-
 void create_color_selection_widget(struct Dialog *dialog_data, GSourceFunc func, gpointer func_data)
 {
 #ifdef DETAIL
@@ -3049,18 +3031,6 @@ void print_switch_out_of_range_error_dialog(gchar *function, gchar *var, gint va
 }
 #endif
 
-gboolean upgrade_dialog(gchar *version_str)
-{
-#ifdef DETAIL
-	g_debug("! Launch upgrade_dialog() with version_str = %s", version_str);
-#endif
-	gchar *err_msg = g_strdup_printf(_("You should upgrade to %s and recompile %s to support this feature."), version_str, PACKAGE);
-	error_dialog(NULL, _("Not supported feature!"), "Not supported feature!",
-		     GTK_FAKE_STOCK_DIALOG_WARNING, err_msg, NULL);
-	g_free(err_msg);
-	return FALSE;
-}
-
 gboolean set_ansi_color(GtkRange *range, GtkScrollType scroll, gdouble value, GtkWidget *vte)
 {
 #ifdef DETAIL
@@ -3101,26 +3071,6 @@ gboolean set_ansi_color(GtkRange *range, GtkScrollType scroll, gdouble value, Gt
 }
 
 
-GdkRGBA get_inactive_color(GdkRGBA original_fg_color, gdouble new_brightness, gdouble old_brightness)
-{
-#ifdef DETAIL
-	g_debug("! Launch get_inactive_color() with new_brightness = %3f, "
-		"old_brightness = %3f!", new_brightness, old_brightness);
-#endif
-	GdkRGBA inactive_color;
-	if (new_brightness < old_brightness)
-		adjust_ansi_color(&inactive_color,
-					    &(original_fg_color),
-					    (new_brightness - old_brightness) /
-						(1 + old_brightness));
-	else
-		adjust_ansi_color(&inactive_color,
-					    &(original_fg_color),
-					    (new_brightness - old_brightness) /
-						(1 - old_brightness));
-	return inactive_color;
-}
-
 void set_new_ansi_color(GtkWidget *vte, GdkRGBA color[COLOR], GdkRGBA color_orig[COLOR], gdouble color_brightness, gboolean invert_color,
 			gboolean default_vte_color, gboolean custom_cursor_color, GdkRGBA cursor_color, gboolean dim_fg_color)
 {
@@ -3133,19 +3083,6 @@ void set_new_ansi_color(GtkWidget *vte, GdkRGBA color[COLOR], GdkRGBA color_orig
 #endif
 	create_theme_color_data(color, color_orig, color_brightness, invert_color, default_vte_color, dim_fg_color);
 	set_vte_color(vte, default_vte_color, custom_cursor_color, cursor_color, color, FALSE, FALSE);
-}
-
-void hide_combo_box_capital(GtkCellLayout *cell_layout, GtkCellRenderer *cell,
-			    GtkTreeModel *tree_model, GtkTreeIter *iter, gpointer data)
-{
-#ifdef DETAIL
-	g_debug("! Launch hide_combo_box_capital() with cell_layout = %p, cell = %p, tree_model = %p, iter = %p!",
-		cell_layout, cell, tree_model, iter);
-#endif
-#ifdef SAFEMODE
-	if ((tree_model==NULL) || (iter==NULL)) return;
-#endif
-	g_object_set (cell, "sensitive", !gtk_tree_model_iter_has_child(tree_model, iter), NULL);
 }
 
 void update_key_info (GtkTreeSelection *treeselection, struct Dialog *dialog_data)
