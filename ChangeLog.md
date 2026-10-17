@@ -1,6 +1,9 @@
 # ChangeLog
 
-## Unreleased
+## 2026-10-17
+
+Version 0.9.9.7.
+Icons and README for the modern LilyTerm.
 
 ### FIX
 
