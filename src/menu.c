@@ -49,9 +49,6 @@ gboolean create_menu(struct Window *win_data)
 #endif
 	GtkWidget *sub_menu=NULL;
 	gsize i=0;
-	//gboolean enable_vte_cjk_width = win_data->VTE_CJK_WIDTH ? 1 : 0;
-	//g_debug("enable_vte_cjk_width = %d, and VTE_CJK_WIDTH (environ) = %s",
-	//	enable_vte_cjk_width, g_getenv("VTE_CJK_WIDTH"));
 	win_data->menu = gtk_menu_new();
 
 	win_data->encoding_locale_menuitems[0] = create_sub_item_subitem (_("Change text encoding"), GTK_FAKE_STOCK_DND);
@@ -61,14 +58,9 @@ gboolean create_menu(struct Window *win_data)
 	for (i=0; i<3; i++)
 		gtk_menu_shell_append (GTK_MENU_SHELL (win_data->menu), win_data->encoding_locale_menuitems[i]);
 
-	// g_debug("win_data->encoding_locale_menuitems is created for win_data (%p)!", win_data);
-
 	if (refresh_locale_and_encoding_list(win_data)==FALSE) return FALSE;
 	win_data->menuitem_new_window_from_list = create_sub_item_subitem (_("New window with specified profile"), GTK_FAKE_STOCK_NEW);
-	// g_debug("Trying to append win_data->menuitem_new_window_from_list(%p) to win_data->menu(%p) for win_data = %p",
-	//	win_data->menuitem_new_window_from_list, win_data->menu, win_data);
 	gtk_menu_shell_append (GTK_MENU_SHELL (win_data->menu), win_data->menuitem_new_window_from_list);
-	// win_data->subitem_new_window_from_list = create_sub_item_submenu (win_data->menu, win_data->menuitem_new_window_from_list);
 	// ----------------------------------------
 	add_separator_menu (win_data->menu);
 
@@ -193,15 +185,10 @@ gboolean create_menu(struct Window *win_data)
 	}
 
 	// use scrollback lines
-	// g_debug("menuitem_hide_scroll_bar)->active = %d", win_data->scrollback_lines ? 1 : 0);
-	// GTK_CHECK_MENU_ITEM(menuitem_hide_scroll_bar)->active = win_data->scrollback_lines ? 1 : 0;
 	win_data->menuitem_hide_scroll_bar = create_menu_item (CHECK_MENU_ITEM, win_data->menu, _("Scrollback lines"), NULL, NULL,
 							       (GSourceFunc)hide_scrollback_lines, win_data);
-	// GTK_CHECK_MENU_ITEM(win_data->menuitem_hide_scroll_bar)->active = win_data->show_scroll_bar;
 	gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_hide_scroll_bar),
 					check_show_or_hide_scroll_bar(win_data));
-
-	// g_debug("create_menu(): check_show_or_hide_scroll_bar() = %d", check_show_or_hide_scroll_bar(win_data));
 
 	// clean scrollback lines
 	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Clean scrollback lines"), NULL, GTK_FAKE_STOCK_CLEAR,
@@ -233,8 +220,6 @@ gboolean create_menu(struct Window *win_data)
 	add_separator_menu (misc_sub_menu);
 	create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("View page info"), NULL, GTK_FAKE_STOCK_DIALOG_QUESTION,
 							     (GSourceFunc)view_current_page_info, win_data);
-
-
 
 	// ----------------------------------------
 	add_separator_menu (misc_sub_menu);
@@ -381,7 +366,6 @@ gboolean create_menu(struct Window *win_data)
 
 	win_data->menuitem_load_profile_from_list = create_sub_item_subitem (_("User profile"), GTK_FAKE_STOCK_PROPERTIES);
 	gtk_menu_shell_append (GTK_MENU_SHELL (win_data->menu), win_data->menuitem_load_profile_from_list);
-	// win_data->subitem_load_profile_from_list = create_sub_item_submenu (win_data->menu, win_data->menuitem_load_profile_from_list);
 	refresh_profile_list(win_data);
 	if (win_data->show_exit_menu)
 	{
@@ -415,7 +399,6 @@ void recreate_theme_menu_items(struct Window *win_data)
 	if (win_data->ansi_color_menuitem)
 	{
 		gtk_widget_destroy(win_data->ansi_color_menuitem);
-		// g_debug("recreate_theme_menu_items(): set win_data->current_menuitem_theme = NULL");
 		win_data->current_menuitem_theme = NULL;
 	}
 	win_data->ansi_color_menuitem = gtk_menu_new ();
@@ -431,7 +414,6 @@ void recreate_theme_menu_items(struct Window *win_data)
 
 	gint i;
 	GSList *theme_group = NULL;
-	// g_debug("win_data->color_theme_str = %s", win_data->color_theme_str);
 	for (i=0; i<THEME; i++)
 		theme_group = create_theme_menu_items(win_data, win_data->ansi_color_menuitem, theme_group, i, 0);
 	if (win_data->have_custom_color || win_data->use_custom_theme)
@@ -484,21 +466,11 @@ GSList *create_theme_menu_items(struct Window *win_data, GtkWidget *sub_menu, GS
 #endif
 		theme_group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (win_data->menuitem_theme[current_theme]));
 
-	// g_debug("Checking win_data->color_theme_str (%s) and color_theme[current_theme].name (%s)",
-	//	win_data->color_theme_str, color_theme[current_theme].name);
-
 	if (win_data->current_menuitem_theme==NULL)
 	{
-		// g_debug("custom_theme = %d, win_data->use_custom_theme = %d, win_data->color_theme_index = %d, current_theme = %d",
-		//	custom_theme, win_data->use_custom_theme, win_data->color_theme_index, current_theme);
 		if ((custom_theme == win_data->use_custom_theme) && (win_data->color_theme_index == current_theme))
 			win_data->current_menuitem_theme = win_data->menuitem_theme[current_theme + custom_theme*THEME];
 	}
-	// g_debug("Got win_data->current_menuitem_theme = %p (%d), created (%p)",
-	//	win_data->current_menuitem_theme, current_theme, win_data->menuitem_theme[current_theme + custom_theme*THEME]);
-
-	// g_debug("Set the color theme %s (%p) to %p...",
-	//	system_color_theme[current_theme].name, win_data->menuitem_theme[current_theme], system_color_theme[current_theme].color);
 
 	if (current_theme==0)
 		gtk_widget_set_name(win_data->menuitem_theme[current_theme], "");
@@ -555,7 +527,6 @@ void paste_clipboard(GtkWidget *widget, struct Window *win_data)
 #ifdef SAFEMODE
 	if (win_data==NULL) return;
 #endif
-	// vte_terminal_paste_clipboard(VTE_TERMINAL(win_data->current_vte));
 	deal_key_press(win_data->window, KEY_PASTE_CLIPBOARD, win_data);
 }
 
@@ -666,7 +637,6 @@ void set_dim_text(GtkWidget *menuitem_dim_text, struct Window *win_data)
 #ifdef SAFEMODE
 	if ((menuitem_dim_text==NULL) || (win_data==NULL)) return;
 #endif
-	// win_data->dim_text = GTK_CHECK_MENU_ITEM(menuitem_dim_text)->active;
 	win_data->dim_text = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem_dim_text));
 	dim_vte_text(win_data, NULL, 2);
 }
@@ -680,7 +650,6 @@ void set_dim_window(GtkWidget *menuitem_dim_text, struct Window *win_data)
 	if (win_data==NULL) return;
 	if (win_data->menuitem_dim_window==NULL) return;
 #  endif
-	// win_data->dim_window = GTK_CHECK_MENU_ITEM(win_data->menuitem_dim_window)->active;
 	win_data->dim_window = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(win_data->menuitem_dim_window));
 	dim_window(win_data, 2);
 }
@@ -758,7 +727,6 @@ void set_disable_url_when_ctrl_pressed(GtkWidget *menuitem_disable_url_when_ctrl
 #endif
 	win_data->disable_url_when_ctrl_pressed = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM(menuitem_disable_url_when_ctrl_pressed));
 	if (win_data->disable_url_when_ctrl_pressed) win_data->open_url_with_ctrl_pressed = FALSE;
-	// g_debug("set_disable_url_when_ctrl_pressed(): set win_data->disable_url_when_ctrl_pressed = %d", win_data->disable_url_when_ctrl_pressed);
 }
 
 void set_audible_bell(GtkWidget *menuitem_audible_bell, struct Window *win_data)
@@ -769,7 +737,6 @@ void set_audible_bell(GtkWidget *menuitem_audible_bell, struct Window *win_data)
 #ifdef SAFEMODE
 	if ((menuitem_audible_bell==NULL) || (win_data==NULL)) return;
 #endif
-	// win_data->audible_bell = GTK_CHECK_MENU_ITEM(menuitem_audible_bell)->active;
 	win_data->audible_bell = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM(menuitem_audible_bell));
 	gint i;
 	struct Page *page_data = NULL;
@@ -786,7 +753,6 @@ void set_audible_bell(GtkWidget *menuitem_audible_bell, struct Window *win_data)
 	g_ptr_array_unref(all_pages);
 }
 
-
 void set_urgent_bell(GtkWidget *menuitem_urgent_bell, struct Window *win_data)
 {
 #ifdef DETAIL
@@ -795,7 +761,6 @@ void set_urgent_bell(GtkWidget *menuitem_urgent_bell, struct Window *win_data)
 #ifdef SAFEMODE
 	if ((win_data==NULL) || (win_data->notebook==NULL)) return;
 #endif
-	// win_data->urgent_bell = GTK_CHECK_MENU_ITEM(menuitem_urgent_bell)->active;
 	if (menuitem_urgent_bell)
 	{
 		win_data->urgent_bell = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM(menuitem_urgent_bell));
@@ -831,12 +796,9 @@ void set_vte_urgent_bell(struct Window *win_data, struct Page *page_data)
 #endif
 	extern gboolean menu_activated;
 	extern gint dialog_activated;
-	// g_debug("win_data->urgent_bell = %d, win_data->lost_focus = %d, menu_activated = %d, dialog_activated = %d",
-	//	win_data->urgent_bell, win_data->lost_focus, menu_activated, dialog_activated);
 
 	if (win_data->urgent_bell && win_data->lost_focus && (menu_activated == FALSE) && (dialog_activated == FALSE))
 	{
-		// g_debug("set_vte_urgent_bell: get page_data->urgent_bell_handler_id = %ld", page_data->urgent_bell_handler_id);
 		if (page_data->urgent_bell_handler_id==0)
 			page_data->urgent_bell_handler_id = g_signal_connect(G_OBJECT(page_data->vte), VTE_BELL_SIGNAL,
 									     G_CALLBACK(urgent_beep), page_data);
@@ -863,7 +825,6 @@ void urgent_beep(GtkWidget *window, struct Page *page_data)
 #endif
 	if (win_data->urgent_bell_focus_in_event_id==0)
 	{
-		// g_debug("Create win_data->vte focus-in-event event!");
 		win_data->urgent_bell_focus_in_event_id = g_signal_connect(G_OBJECT(win_data->window), "focus-in-event",
 									   G_CALLBACK(stop_urgency_hint), win_data);
 		if (gtk_window_get_urgency_hint(GTK_WINDOW(win_data->window))==FALSE)
@@ -896,7 +857,6 @@ void launch_hide_and_show_tabs_bar(GtkWidget *widget, Switch_Type show_tabs_bar)
 	g_debug("! Launch launch_hide_and_show_tabs_bar() with show_tabs_bar = %d", show_tabs_bar);
 #endif
 #ifdef FATAL
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("launch_hide_and_show_tabs_bar()");
 #endif
@@ -936,7 +896,6 @@ void launch_hide_and_show_tabs_bar(GtkWidget *widget, Switch_Type show_tabs_bar)
 #  endif
 			break;
 	}
-	// g_debug("launch_hide_and_show_tabs_bar(): call hide_and_show_tabs_bar() with show_tabs_bar = %d", show_tabs_bar);
 	hide_and_show_tabs_bar(win_data , show_tabs_bar);
 }
 
@@ -952,7 +911,6 @@ GtkWidget *check_name_in_menuitem(GtkWidget *sub_menu, const gchar *name, gboole
 	// FIXME: if sub_menu == NULL...
 	if ((sub_menu==NULL) || (name==NULL)) return NULL;
 #endif
-	// GList *widget_list = GTK_MENU_SHELL(sub_menu)->children;
 	GList *widget_list = gtk_container_get_children(GTK_CONTAINER(sub_menu));
 	GtkWidget *return_menuitem = NULL;
 	GtkWidget *menu_item = NULL;
@@ -960,15 +918,10 @@ GtkWidget *check_name_in_menuitem(GtkWidget *sub_menu, const gchar *name, gboole
 	while (widget_list!=NULL)
 	{
 		menu_item = widget_list->data;
-		// g_debug("Got the menu_item = %p", menu_item);
 		if (menu_item==NULL) break;
 
-		// g_debug("Checking %s for %s...", gtk_widget_get_name(menu_item), name);
 		if (! compare_strings(gtk_widget_get_name(menu_item), name, case_sensitive))
 			return_menuitem = menu_item;
-
-		// g_debug("Checking %s and %s... (Got %p)",
-		//	gtk_widget_get_name(menu_item), name, return_menuitem);
 
 		if (return_menuitem) return return_menuitem;
 		widget_list = widget_list->next;
@@ -1019,7 +972,6 @@ gint add_menuitem_to_locale_sub_menu(struct Window *win_data,
 	gint item_created = 1;
 
 	// if name = "zh_TW.UTF-8" or just "UTF-8"
-	// g_debug("add_menuitem_to_locale_sub_menu(): Got encoding = %s", encoding);
 
 	if (encoding==NULL && (compare_strings(name, "UTF-8", FALSE)))
 	{
@@ -1031,7 +983,6 @@ gint add_menuitem_to_locale_sub_menu(struct Window *win_data,
 			item_created = -1;
 			goto FINISH;
 		}
-		// g_debug("add_menuitem_to_locale_sub_menu(): win_data (%p) is still alive!!!", win_data);
 		// Check if win_data is still alive
 		return 0;
 	}
@@ -1048,15 +999,12 @@ gint add_menuitem_to_locale_sub_menu(struct Window *win_data,
 		if (item_name==NULL) item_name = name;
 		GtkWidget *menu_item = gtk_image_menu_item_new_with_label(item_name);
 		gtk_widget_set_name(menu_item, name);
-		// g_debug("Set the %d locale to %s", no, item_name);
 		gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item),
 					      gtk_image_new_from_stock(GTK_FAKE_STOCK_DND_MULTIPLE, GTK_ICON_SIZE_MENU));
 #ifdef SAFEMODE
 		if (win_data->locale_sub_menu)
 #endif
 			gtk_menu_shell_append(GTK_MENU_SHELL(win_data->locale_sub_menu), menu_item);
-		// g_debug("win_data->locale_group = %p", win_data->locale_group);
-		// win_data->locale_group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (menu_item));
 		g_signal_connect(menu_item, "activate", G_CALLBACK(new_tab_with_locale), (gsize *)i);
 		if (item_name != name) g_free(item_name);
 	}
@@ -1064,7 +1012,6 @@ gint add_menuitem_to_locale_sub_menu(struct Window *win_data,
 FINISH:
 	g_free(encoding);
 	setlocale(LC_CTYPE, init_LC_CTYPE);
-	// g_debug("init_LC_CTYPE = %s, Recover to %s", init_LC_CTYPE, (char*)g_getenv("LC_CTYPE"));
 	return item_created;
 
 #ifdef OUT_OF_MEMORY
@@ -1072,23 +1019,10 @@ FINISH:
 #endif
 }
 
-
 //gboolean check_locale_in_menuitem(GList *locale_list, const gchar *name)
-//{
 //	//g_debug("Calling check_locale_in_menuitem with locale_list = %p, name =%s, total = %d",
-//	//	locale_list, name, g_list_length(locale_list));
-//	GList *widget_list = NULL;
 //	int i;
 //
-//	for (i=0; i< g_list_length(locale_list); i++)
-//	{
-//		widget_list = g_list_nth(locale_list, i);
-//		// g_debug("Checking the locale %s with %s", (gchar *)widget_list->data, name);
-//		if (g_ascii_strcasecmp (widget_list->data, name)==0)
-//			return TRUE;
-//	}
-//	return FALSE;
-//}
 
 void reset_vte(GtkWidget *widget, struct Window *win_data)
 {
@@ -1113,9 +1047,7 @@ void set_trans_win(GtkWidget *widget, GtkWidget *window)
 #ifdef SAFEMODE
 	if (win_data==NULL) return;
 #endif
-	// g_debug("Get win_data = %d when set_trans_win!", win_data);
 
-	// win_data->transparent_window = GTK_CHECK_MENU_ITEM(win_data->menuitem_trans_win)->active;
 	win_data->transparent_window = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_trans_win));
 	set_window_opacity (NULL, 0, win_data->window_opacity, win_data);
 }
@@ -1132,8 +1064,6 @@ void invert_color_theme(GtkWidget *menuitem, struct Window *win_data)
 
 	win_data->color_brightness = - win_data->color_brightness;
 	win_data->color_brightness_inactive = - win_data->color_brightness_inactive;
-	// g_debug("invert_color_theme(): win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-	//	win_data->color_brightness, win_data->color_brightness_inactive);
 #ifdef SAFEMODE
 	if (menuitem)
 #endif
@@ -1147,7 +1077,6 @@ void select_ansi_theme(GtkWidget *menuitem, gint index)
 	g_debug("! Launch select_ansi_theme() with menuitem = %p, index = %d", menuitem, index);
 #endif
 #ifdef FATAL
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("set_ansi_theme()");
 #endif
@@ -1159,7 +1088,6 @@ void select_ansi_theme(GtkWidget *menuitem, gint index)
 #ifdef SAFEMODE
 	if (win_data==NULL) return;
 #endif
-	// g_debug("select_ansi_theme(): win_data->invert_color = %d", win_data->invert_color);
 	if (index < THEME)
 		set_ansi_theme(menuitem, ANSI_THEME_SET_ANSI_THEME, FALSE, win_data->invert_color, index, win_data);
 	else
@@ -1198,8 +1126,6 @@ void set_ansi_theme(GtkWidget *menuitem, Set_ANSI_Theme_Type type, gboolean use_
 	struct Page *page_data = NULL;
 	gboolean default_vte_theme = use_default_vte_theme(win_data);
 
-	// g_debug("Get default_vte_theme = %d", default_vte_theme);
-
 	if (menuitem)
 	{
 		GPtrArray *all_pages = get_pages_in_window(win_data);
@@ -1216,7 +1142,6 @@ void set_ansi_theme(GtkWidget *menuitem, Set_ANSI_Theme_Type type, gboolean use_
 
 		if (menuitem != win_data->menuitem_invert_color)
 		{
-			// g_debug("Set the color theme to %s!", gtk_menu_item_get_label(GTK_MENU_ITEM(menuitem)));
 			win_data->current_menuitem_theme = menuitem;
 		}
 	}
@@ -1249,7 +1174,6 @@ void set_auto_save(GtkWidget *menuitem, struct Window *win_data)
 	if (win_data->checking_menu_item) return;
 
 	win_data->auto_save = gtk_check_menu_item_get_active (GTK_CHECK_MENU_ITEM(menuitem));
-	// g_debug("Set win_data->auto_save to %d", win_data->auto_save);
 }
 
 void set_erase_binding (GtkWidget *menuitem, gint value)
@@ -1258,7 +1182,6 @@ void set_erase_binding (GtkWidget *menuitem, gint value)
 	g_debug("! Launch set_erase_binding() with menuitem = %p!, value = %d", menuitem, value);
 #endif
 #ifdef FATAL
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("set_erase_binding()");
 #endif
@@ -1293,7 +1216,6 @@ void set_cursor_shape (GtkWidget *menuitem, gint value)
 	g_debug("! Launch set_cursor_shape() with menuitem = %p!, value = %d", menuitem, value);
 #endif
 #ifdef FATAL
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("set_cursor_shape()");
 #endif
@@ -1328,14 +1250,11 @@ void set_encoding(GtkWidget *menuitem, gpointer user_data)
 #ifdef SAFEMODE
 	if (menuitem==NULL) return;
 #endif
-	// g_debug("GTK_CHECK_MENU_ITEM(menuitem)->active = %d", GTK_CHECK_MENU_ITEM(menuitem)->active);
-	// if (!GTK_CHECK_MENU_ITEM(menuitem)->active) return;
 	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem)) == FALSE) return;
 #ifdef DETAIL
 	g_debug("! Launch set_encoding()");
 #endif
 #ifdef FATAL
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("set_encoding()");
 #endif
@@ -1357,7 +1276,6 @@ void set_encoding(GtkWidget *menuitem, gpointer user_data)
 	g_free (page_data->encoding_str);
 	page_data->encoding_str = g_strdup(encoding);
 
-	// g_debug("Trying to set %d page (%p) to encoding %s...", page_data->page_no, vte, encoding);
 	lilyterm_vte_set_encoding(VTE_TERMINAL(win_data->current_vte), encoding);
 
 	// page_data->page_name==NULL: add_page() will call set_encoding() before page_data->label is created.
@@ -1384,23 +1302,18 @@ void new_tab_with_locale(GtkWidget *locale_menuitem, gboolean VTE_CJK_WIDTH)
 		g_debug("! Launch new_tab_with_locale() with VTE_CJK_WIDTH = %d", VTE_CJK_WIDTH);
 #endif
 #ifdef FATAL
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("new_tab_with_locale()");
 #endif
 #ifdef SAFEMODE
 	if (menu_active_window==NULL) return;
 #endif
-	// g_debug("locale_menuitem->name = %s", gtk_widget_get_name(locale_menuitem);
 	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(menu_active_window), "Win_Data");
 #ifdef SAFEMODE
 	if (win_data==NULL) return;
 #endif
-	// g_debug("Got the VTE_CJK_WIDTH = %s", gtk_widget_get_name(locale_menuitem);
 	struct Page *page_data = page_data = get_page_data_from_vte(win_data->current_vte, win_data, -1);
 	// menuitem == NULL: The locales_list in profile is empty. Only VTE_CJK_WIDTH is setted.
-	// if (menuitem)
-	//	g_debug("Add page by %p to locale %s", win_data->current_vte, gtk_widget_get_name(menuitem);
 
 	// locale should not be free()
 	const gchar *locale = gtk_widget_get_name(locale_menuitem);
@@ -1420,7 +1333,6 @@ void new_tab_with_locale(GtkWidget *locale_menuitem, gboolean VTE_CJK_WIDTH)
 		locale = "POSIX";
 		encoding = g_strdup("UTF-8");
 	}
-	// g_debug("Get locale = %s, encoding = %s", locale, encoding);
 
 	// struct Page *add_page(struct Window *win_data,
 	//		      struct Page *page_data_prev,
@@ -1486,7 +1398,6 @@ void select_font(GtkWidget *widget, struct Window *win_data)
 		gtk_font_chooser_set_font(GTK_FONT_CHOOSER(dialog), page_data->font_name);
 	if (gtk_dialog_run(GTK_DIALOG(dialog))==GTK_RESPONSE_OK)
 	{
-		// g_debug("Trying to change font name!");
 		g_free(page_data->font_name);
 		page_data->font_name = gtk_font_chooser_get_font(GTK_FONT_CHOOSER(dialog));
 		g_idle_add((GSourceFunc)idle_set_vte_font_to_selected, win_data);
@@ -1520,34 +1431,22 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 		{
 #endif
 			gtk_widget_hide(win_data->encoding_locale_menuitems[i]);
-			// g_debug("Set not show win_data->encoding_locale_menuitems[%d] (%p)!",
-			//	i, win_data->encoding_locale_menuitems[i]);
 			gtk_widget_set_no_show_all(win_data->encoding_locale_menuitems[i], TRUE);
 #ifdef SAFEMODE
 		}
 #endif
 	}
 
-	// g_debug("Got locales_list = '%s' ( %d bytes)",win_data->locales_list, strlen(win_data->locales_list));
 	gint utf8_in_supported_locales = FALSE;
-	// g_debug("system_locale_list = %s", system_locale_list);
-	// g_debug("win_data->runtime_locale_list = %s", win_data->runtime_locale_list);
-	// g_debug("win_data->default_locale = %s", win_data->default_locale);
-	// g_debug("win_data->locales_list = %s", win_data->locales_list);
 	gchar *full_locales_list = join_strings_to_string(' ', 4,
 							  system_locale_list,
 							  win_data->runtime_locale_list,
 							  win_data->default_locale,
 							  win_data->locales_list);
-	// g_debug("create_menu(): full_locales_list = %s", full_locales_list);
 	GString *encoding_list_from_locale = g_string_new ("");
 
 	gchar **supported_locales = split_string(full_locales_list, " ", -1);
-	// print_array("refresh_locale_and_encoding_list(): supported_locales", supported_locales);
 
-	// g_debug("Get current_encoding = %s", (gchar *)lilyterm_vte_get_encoding(
-	//								VTE_TERMINAL(win_data->current_vte)));
-	// g_debug("lc_all = %s", lc_all);
 #ifdef SAFEMODE
 	if (supported_locales)
 	{
@@ -1557,8 +1456,6 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 		while (supported_locales[i])
 		{
 			encoding = get_encoding_from_locale(supported_locales[i]);
-			// g_debug("Got get_encoding_from_locale for %s = %s",
-			//	supported_locales[i], encoding);
 			if (encoding)
 			{
 #ifdef SAFEMODE
@@ -1582,14 +1479,6 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 #ifdef SAFEMODE
 	}
 #endif
-	// g_debug("init_LC_CTYPE = %s, Recover to %s", init_LC_CTYPE, (char*)g_getenv("LC_CTYPE"));
-	// g_debug("create_menu(): encoding_list_from_locale = %s", encoding_list_from_locale->str);
-	// g_debug("vte_terminal_get_encoding() = %s", (gchar *)lilyterm_vte_get_encoding(
-	//								VTE_TERMINAL(win_data->current_vte)));
-	// g_debug("init_encoding = %s", init_encoding);
-	// g_debug("win_data->runtime_encoding = %s", win_data->runtime_encoding);
-	// g_debug("win_data->default_encoding = %s", win_data->default_encoding);
-	// g_debug("encoding_list_from_locale->str = %s", encoding_list_from_locale->str);
 
 	gchar *full_encodings_list;
 
@@ -1631,10 +1520,8 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 	}
 #endif
 	g_string_free(encoding_list_from_locale, TRUE);
-	// g_debug("create_menu(): full_encodings_list = %s", full_encodings_list);
 	gint count_encoding_menu=0;
 	gchar **supported_encodings = split_string(full_encodings_list, " ", -1);
-	// print_array ("supported_encodings", supported_encodings);
 #ifdef SAFEMODE
 	if (supported_encodings)
 	{
@@ -1650,7 +1537,6 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 		i=0;
 		while (supported_encodings[i]!=NULL)
 		{
-			// g_debug("Checking (%d) %s...", i, supported_encodings[i]);
 			if (supported_encodings[i] &&
 			     !(check_name_in_menuitem(win_data->encoding_sub_menu,
 						      supported_encodings[i],
@@ -1661,12 +1547,9 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 									    supported_encodings[i],
 									    (GSourceFunc)set_encoding,
 									    NULL);
-				// g_debug("Add [ (%ld) %s ] to encoding_sub_menu", i, supported_encodings[i]);
 				encoding_group = gtk_radio_menu_item_get_group (GTK_RADIO_MENU_ITEM (menu_item));
 				if (i==0)
 				{
-					// g_debug("Set [ %s ] as win_data->default_menuitem_encoding",
-					//	supported_encodings[i]);
 					win_data->default_menuitem_encoding = menu_item;
 				}
 				count_encoding_menu ++;
@@ -1675,8 +1558,6 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 		}
 		if (count_encoding_menu>1)
 		{
-			// g_debug("Show win_data->encoding_locale_menuitems[0] (%p)!",
-			//	win_data->encoding_locale_menuitems[0]);
 #ifdef SAFEMODE
 			if (win_data->encoding_locale_menuitems[0])
 #endif
@@ -1684,7 +1565,6 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 		}
 		else
 		{
-			// g_debug("Set win_data->encoding_sub_menu = NULL");
 			gtk_widget_destroy(win_data->encoding_sub_menu);
 			win_data->encoding_sub_menu = NULL;
 		}
@@ -1695,7 +1575,6 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 	g_free(full_encodings_list);
 
 	gint count_locale_menu=0;
-	// print_array("refresh_locale_and_encoding_list(): supported_locales", supported_locales);
 	if (supported_locales)
 	{
 		int j;
@@ -1707,7 +1586,6 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 				sub_menu_item = win_data->encoding_locale_menuitems[1];
 			else
 				sub_menu_item = win_data->encoding_locale_menuitems[2];
-			// g_debug("Set sub_menu_item = %p for win_data (%p)", sub_menu_item, win_data);
 			if (win_data->locale_sub_menu) gtk_widget_destroy(win_data->locale_sub_menu);
 			win_data->locale_sub_menu = gtk_menu_new ();
 #ifdef SAFEMODE
@@ -1717,7 +1595,6 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 			i=0;
 			while (supported_locales[i]!=NULL)
 			{
-				// g_debug("Checking %s...", supported_locales[i]);
 				if ((supported_locales[i][0] == '\0') ||
 				    ((j==0) && utf8_in_supported_locales &&
 				    (compare_strings (supported_locales[i], "UTF-8", TRUE)==0)))
@@ -1747,14 +1624,10 @@ gboolean refresh_locale_and_encoding_list(struct Window *win_data)
 			if ((count_locale_menu>1) || (compare_strings(full_locales_list, "UTF-8", FALSE)))
 			{
 				// if the total of menu item is >1, add it to menu.
-				// gtk_menu_shell_append (GTK_MENU_SHELL (win_data->menu), sub_menu_item);
 				// don't create "New tab" submenu.
-				// g_debug("Show sub_menu_item(%p)!", sub_menu_item);
 #ifdef DEBUG
-				// if ((GTK_IS_WIDGET(sub_menu_item)==FALSE) || (sub_menu_item==NULL))
 				//	g_debug("! refresh_locale_and_encoding_list(): "
 				//		"sub_menu_item = %p for win_data (%p) is not a widget!",
-				//		sub_menu_item, win_data);
 #endif
 #ifdef SAFEMODE
 				if (GTK_IS_WIDGET(sub_menu_item)==FALSE)
@@ -1807,15 +1680,12 @@ void refresh_profile_list (struct Window *win_data)
 	if (win_data==NULL) return;
 #  endif
 	long new_profile_dir_modtime = get_profile_dir_modtime();
-	// g_debug("new_profile_dir_modtime = %ld", new_profile_dir_modtime);
 	if ((new_profile_dir_modtime != win_data->profile_dir_modtime) ||
 	    (new_profile_dir_modtime == -1))
 	{
-		// g_debug("Update the profile list!!!");
 		// g_debug("refresh_profile_list: win_data->subitem_new_window_from_list = %p, "
 		//	"win_data->subitem_load_profile_from_list = %p.",
 		//	win_data->subitem_new_window_from_list,
-		//	win_data->subitem_load_profile_from_list);
 		win_data->subitem_new_window_from_list =
 			recreate_profile_menu_item(win_data->menuitem_new_window_from_list,
 						   win_data->subitem_new_window_from_list,
@@ -1829,7 +1699,6 @@ void refresh_profile_list (struct Window *win_data)
 		// g_debug("refresh_profile_list: win_data->subitem_new_window_from_list = %p, "
 		//	"win_data->subitem_load_profile_from_list = %p.",
 		//	win_data->subitem_new_window_from_list,
-		//	win_data->subitem_load_profile_from_list);
 	}
 }
 
@@ -1843,7 +1712,6 @@ GtkWidget *recreate_profile_menu_item(GtkWidget *menuitem, GtkWidget *subitem,
 #  ifdef SAFEMODE
 	if ((win_data==NULL) || (menuitem==NULL)) return NULL;
 #  endif
-	// g_debug("Trying to destroy subitem (%p)!!", subitem);
 	if (subitem) gtk_widget_destroy(subitem);
 	subitem = gtk_menu_new ();
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (menuitem), subitem);
@@ -1852,7 +1720,6 @@ GtkWidget *recreate_profile_menu_item(GtkWidget *menuitem, GtkWidget *subitem,
 		create_new_window_from_menu_items(subitem, GTK_FAKE_STOCK_NEW);
 	else
 		create_load_profile_from_menu_items(subitem, GTK_FAKE_STOCK_APPLY, win_data);
-	// g_debug("SHOW ALL: %p", subitem);
 	gtk_widget_show_all(subitem);
 	return subitem;
 }
@@ -1880,7 +1747,6 @@ void create_load_profile_from_menu_items(GtkWidget *sub_menu, const gchar *stock
 	if (win_data==NULL) return;
 #  endif
 	// Profile
-	//menu_item = gtk_image_menu_item_new_with_label(_("Profile sample"));
 	win_data->menuitem_auto_save = create_menu_item(CHECK_MENU_ITEM, sub_menu, _("Save settings automatically"), NULL, NULL,
 							(GSourceFunc)set_auto_save, win_data);
 
@@ -1897,18 +1763,6 @@ void create_load_profile_from_menu_items(GtkWidget *sub_menu, const gchar *stock
 	// Reload Settings
 	create_menu_item (IMAGE_MENU_ITEM, sub_menu, _("Reload settings"), NULL, GTK_FAKE_STOCK_REVERT_TO_SAVED,
 			  (GSourceFunc)reload_settings, win_data);
-
-//	gchar *menu_label = g_strdup_printf(_("Apply to every %s window"), PACKAGE);
-//#ifdef SAFEMODE
-//	if (menu_label)
-//	{
-//#endif
-//		create_menu_item (IMAGE_MENU_ITEM, sub_menu, menu_label, NULL, GTK_FAKE_STOCK_REFRESH,
-//				  (GSourceFunc)apply_to_every_window, win_data);
-//#ifdef SAFEMODE
-//	}
-//#endif
-//	g_free(menu_label);
 
 	add_separator_menu(sub_menu);
 
@@ -1963,7 +1817,6 @@ gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GS
 
 	gboolean menu_list_created = FALSE;
 	// User's main profile
-	// g_debug("profile_dir = %s", profile_dir);
 	GDir *dir = g_dir_open(profile_dir, 0, NULL);
 
 	// dir==NULL: the profile dir is not exist.
@@ -1976,7 +1829,6 @@ gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GS
 	{
 		if (entry[0]=='.') continue;
 		user_profile = g_strdup_printf("%s/%s", profile_dir, entry);
-		// g_debug("create_profile_menu_list(): user_profile = %s", user_profile);
 		create_menu_item (IMAGE_MENU_ITEM, sub_menu, entry, user_profile, stock_id,
 				  (GSourceFunc)func, func_data);
 		g_free(user_profile);
@@ -1986,7 +1838,6 @@ gboolean create_profile_menu_list(GtkWidget *sub_menu, const gchar *stock_id, GS
 
 FINISH:
 	g_dir_close(dir);
-	// g_debug("create_profile_menu_list(): menu_list_created = %d", menu_list_created);
 	return menu_list_created;
 }
 
@@ -2003,7 +1854,6 @@ void apply_profile_from_file_dialog(GtkWidget *menu_item, Apply_Profile_Type typ
 	g_debug("! Launch apply_profile_from_file_dialog() with menu_item = %p, type = %d", menu_item, type);
 #  endif
 #  ifdef FATAL
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("apply_profile_from_file_dialog()");
 #  endif
@@ -2040,7 +1890,6 @@ void apply_profile_from_menu_item(GtkWidget *menu_item, Apply_Profile_Type type)
 #  ifdef DETAIL
 	g_debug("! Launch apply_profile_from_menu_item() with menu_item= %p, type = %d", menu_item, type);
 #  endif
-	// g_debug("The path of menu_item is %s", gtk_widget_get_name(menu_item));
 #  ifdef SAFEMODE
 	if (menu_item==NULL) return;
 #  endif
@@ -2057,7 +1906,6 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 #  endif
 
 #  ifdef FATAL
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("apply_profile_from_file()");
 #  endif
@@ -2086,10 +1934,8 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		}
 		else
 			argv_str = g_strdup_printf("--safe-mode%c--specified_profile%c%s", SEPARATE_CHAR, SEPARATE_CHAR, win_data->profile);
-		// g_debug("! apply_profile_from_file(): argv_str = %s", argv_str);
 
 		gchar **argv = split_string(argv_str, SEPARATE_STR, -1);
-		// print_array("! apply_profile_from_file(): argv", argv);
 
 		gchar *socket_str = convert_socket_data_to_string(argv);
 		init_gtk_socket(PACKAGE, socket_str, (GSourceFunc)convert_string_to_socket_data);
@@ -2099,7 +1945,6 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 	}
 	else
 	{
-		// gtk_widget_hide(menu_active_window);
 		struct Window *win_data_backup = g_new0(struct Window, 1);
 #  ifdef SAFEMODE
 		if (win_data_backup==NULL) return;
@@ -2107,7 +1952,6 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		// Switch the data in win_data_backup and win_data.
 		// The win_data will become {0}, and win_data_backup will stores the old datas from win_data
 		memcpy(win_data_backup, win_data, sizeof(* win_data));
-		// g_debug("apply_profile_from_file(): Append win_data(%p) to window_list!", win_data_backup);
 		window_list = g_list_append (window_list, win_data_backup);
 		memset(win_data, 0, sizeof(* win_data));
 
@@ -2123,8 +1967,6 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		if (path[0])
 #  endif
 		{
-			// g_debug("Got win_data->use_custom_profile = %d, path = %s, win_data_backup->profile = %s",
-			//	win_data->use_custom_profile, path, win_data_backup->profile);
 			switch (type)
 			{
 				case LOAD_FROM_SYSTEM_PROFILE:
@@ -2155,8 +1997,6 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		win_data->restore_font_name = NULL;
 		win_data->geometry = NULL;
 
-		// g_debug("before: win_data->use_rgba = %d, win_data_backup->use_rgba = %d",
-		//	win_data->use_rgba, win_data_backup->use_rgba);
 		get_user_settings(win_data, win_data->runtime_encoding);
 		if (((win_data->use_rgba_orig == 0) && (win_data->use_rgba == -1)) ||
 		    ((win_data->use_rgba_orig == 1) && (win_data->use_rgba == -2)))
@@ -2172,12 +2012,7 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		win_data->custom_tab_names_strs = NULL;
 		win_data->window_title_tpgid = win_data_backup->window_title_tpgid;
 		// win_data->hints_type will setted to 1 in apply_font_to_every_vte()
-		// win_data->hints_type = win_data_backup->hints_type;
-		// win_data->resize_type = win_data_backup->resize_type;
 		win_data->resize_type = GEOMETRY_CUSTOM;
-		// win_data->geometry_width = win_data_backup->geometry_width;
-		// win_data->geometry_height = win_data_backup->geometry_height;
-		// win_data->keep_vte_size = win_data_backup->keep_vte_size;
 		if (win_data->page_names && win_data_backup->page_names &&
 		    (! compare_strings (win_data->page_names, win_data_backup->page_names, TRUE)) &&
 		    ((win_data->page_shows_current_cmdline ||
@@ -2185,31 +2020,22 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		      win_data->page_shows_window_title) == FALSE))
 			win_data->page_names_no = win_data_backup->page_names_no;
 		// We need to check the profile version again...
-		// win_data->confirmed_profile_is_invalid = win_data_backup->confirmed_profile_is_invalid;
 
 		if (win_data->tabs_bar_position)
 			gtk_notebook_set_tab_pos(GTK_NOTEBOOK(win_data->notebook), GTK_POS_BOTTOM);
 		win_data->profile_dir_modtime = -1;
 
-		// g_debug("win_data_backup->window_status = %d", win_data_backup->window_status);
 		if (win_data->window_status == WINDOW_NORMAL) win_data->window_status = WINDOW_APPLY_PROFILE_NORMAL;
 		if (win_data->window_status == WINDOW_START_WITH_FULL_SCREEN) win_data->window_status = WINDOW_APPLY_PROFILE_FULL_SCREEN;
 
 		create_menu(win_data);
 
-		// g_debug("apply_profile_from_file(): Got win_data->show_tabs_bar = %d", win_data->show_tabs_bar);
 		hide_and_show_tabs_bar(win_data, win_data->show_tabs_bar);
-		// g_debug("win_data_backup->fullscreen_show_scroll_bar = %d", win_data_backup->fullscreen_show_scroll_bar);
-		// win_data->fullscreen_show_scroll_bar = win_data_backup->fullscreen_show_scroll_bar;
 
 		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_hide_scroll_bar),
 								    check_show_or_hide_scroll_bar(win_data));
 		hide_scrollback_lines(win_data->menuitem_hide_scroll_bar, win_data);
-		// g_debug("apply_profile_from_file(): check_show_or_hide_scroll_bar() = %d",
-		//	check_show_or_hide_scroll_bar(win_data));
 
-		// g_debug("win_data->window_status = %d, win_data_backup->window_status = %d",
-		//	win_data->window_status, win_data_backup->window_status);
 		switch (win_data->window_status)
 		{
 			case WINDOW_APPLY_PROFILE_NORMAL:
@@ -2315,7 +2141,6 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 			apply_new_win_data_to_page (win_data_backup, win_data, page_data);
 			// Don't like drag a vte to another lilyterm window,
 			// It will not call page_added()
-			// get_and_update_page_name(page_data, FALSE);
 
 			if (refresh_match) set_hyperlink(win_data, page_data);
 		}
@@ -2337,15 +2162,11 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		}
 #    endif
 		g_idle_add((GSourceFunc)idle_set_vte_font_to_selected, win_data);
-		// g_debug("apply_profile_from_file(): Remove win_data(%p) from window_list!", win_data);
 		window_list = g_list_remove (window_list, win_data_backup);
 		clear_win_data(win_data_backup);
 #  ifdef SAFEMODE
 		win_data_backup = NULL;
 #  endif
-		// gtk_widget_show_all(win_data->window);
-		// g_debug("win_data->window_status = %d, win_data_backup->window_status = %d",
-		//	win_data->window_status, win_data_backup->window_status);
 		switch (win_data->window_status)
 		{
 			case WINDOW_APPLY_PROFILE_NORMAL:
@@ -2360,8 +2181,6 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 	}
 }
 
-
-
 void reload_settings(GtkWidget *menu_item, struct Window *win_data)
 {
 #  ifdef DETAIL
@@ -2371,7 +2190,6 @@ void reload_settings(GtkWidget *menu_item, struct Window *win_data)
 	if (win_data==NULL) return;
 #  endif
 	// FIXME: NOT CHECKED!!!!
-	// g_debug("win_data->profile = %s", win_data->profile);
 
 	gchar *current_profile = NULL;
 	if (win_data->profile)
@@ -2392,7 +2210,6 @@ void save_user_settings_as(GtkWidget *widget, struct Window *win_data)
 	if (win_data==NULL) return;
 #  endif
 	gchar *profile = get_profile();
-	// g_debug("Get new profile = %s", profile);
 #  ifdef SAFEMODE
 	if (profile==NULL) return;
 #  endif
@@ -2441,7 +2258,6 @@ GtkWidget *create_load_file_dialog(GtkFileChooserAction action, GtkWidget *windo
 
 	if (filename && (filename[0]!='\0'))
 	{
-		// g_debug("Set the filename to %s", filename);
 		gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (dialog), filename);
 
 		if ((action==GTK_FILE_CHOOSER_ACTION_SAVE) &&
@@ -2487,7 +2303,6 @@ GtkWidget *create_menu_item (Menu_Itemn_Type type, GtkWidget *sub_menu, const gc
 #endif
 			return NULL;
 	}
-	// g_debug("set the name of menuitem to : %s", label_name);
 	if (label_name) gtk_widget_set_name(menu_item, label_name);
 	gtk_menu_shell_append(GTK_MENU_SHELL(sub_menu), menu_item);
 	g_signal_connect(menu_item, "activate", G_CALLBACK(func), func_data);
@@ -2578,7 +2393,6 @@ void print_active_window_is_null_error_dialog(gchar *function)
 }
 #endif
 
-
 gboolean check_if_win_data_is_still_alive(struct Window *win_data)
 {
 #ifdef DETAIL
@@ -2595,7 +2409,6 @@ gboolean check_if_win_data_is_still_alive(struct Window *win_data)
 	fprintf(stderr, "\033[1;%dm** check_if_win_data_is_still_alive(): win_data (%p) is NOT alive!\033[0m\n",
 		ANSI_COLOR_RED, win_data);
 #endif
-	// g_debug("check_if_win_data_is_still_alive: win_data (%p) is NOT alive!!!", win_data);
 	return FALSE;
 }
 

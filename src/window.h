@@ -22,23 +22,15 @@
 // for L10n
 #include <locale.h>
 #include <glib/gi18n.h>
-// for exit()
 #include <stdlib.h>
-// for strcmp()
 #include <string.h>
-// for chdir()
 #include <unistd.h>
-// for opendir() readdir() closedir()
 #include <dirent.h>
-// for getpwuid()
 #include <pwd.h>
-// for g_chdir()
 #  include <glib/gstdio.h>
 // for GDK_WINDOW_XID
-// #include <gdk/gdkx.h>
 
 #include "lilyterm.h"
-
 
 gboolean window_option(struct Window *win_data, gchar *encoding, int argc, char *argv[]);
 char **set_process_data (pid_t entry_pid, gint *ppid, StrAddr **cmd);
@@ -55,7 +47,6 @@ void window_size_allocate(GtkWidget *window, GtkAllocation *allocation, struct W
 gboolean window_get_focus(GtkWidget *window, GdkEventFocus *event, struct Window *win_data);
 gboolean window_lost_focus(GtkWidget *window, GdkEventFocus *event, struct Window *win_data);
 void notebook_page_added(GtkNotebook *notebook, GtkWidget *child, guint page_num, struct Window *win_data);
-// void notebook_page_removed (GtkNotebook *notebook, GtkWidget *child, guint page_num, struct Window *win_data);
 void reorder_page_after_added_removed_page(struct Window *win_data, guint page_num);
 void destroy_window(struct Window *win_data);
 GtkNotebook *create_window(GtkNotebook *notebook, GtkWidget *page, gint x, gint y,

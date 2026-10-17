@@ -38,7 +38,6 @@ void command_option(int   argc,
 #ifdef SAFEMODE
 		if (argv[i]==NULL) break;
 #endif
-		// g_debug("%2d (Total %d): %s",i, argc, argv[i]);
 		if ((!strcmp(argv[i], "-v")) || (!strcmp(argv[i], "--version")))
 		{
 			g_print("%s %s\n", PACKAGE, VERSION);
@@ -49,10 +48,6 @@ void command_option(int   argc,
 
 			// LilyTerm will exit immediately, so we don't need to free the get_help_message... XD
 			g_print("\n%s\n", get_help_message(NULL));
-
-			// GString *help_msg = get_help_message();
-			// g_print("\n%s\n", help_msg->str);
-			// g_string_free (help_msg, TRUE);
 
 			exit (0);
 		}
@@ -148,7 +143,6 @@ gchar *get_help_message_usage(gchar *profile, gboolean convert_to_html)
 	g_string_append(help_message,   _("Use -l/-ls/--login to make the shell invoked as a login shell.\n"));
 	g_string_append(help_message,   _("Use -ut to disable recording the session in lastlog, utmp and wtmp.\n"));
 	g_string_append(help_message,   _("Use -H/--hold to hold the terminal window open when -e/-x command terminated.\n"));
-//	g_string_append(help_message,   _("\t\t\tThis option will be ignored when using with -e/-x/--execute option.\n"));
 	g_string_append(help_message,   _("Use -s/--separate to run in separate process.\n"));
 	g_string_append(help_message,   _("Use -j/--join to integrate new created tabs to the last accessed window.\n"));
 	g_string_append(help_message,   _("Use -J to disable integrating new created tabs to the last accessed window.\n"));
@@ -162,7 +156,6 @@ gchar *get_help_message_usage(gchar *profile, gboolean convert_to_html)
 					_("The %s system configure file is: %s\n"), PACKAGE, SYS_PROFILE);
 
 	gchar *current_profile = NULL;
-	// g_debug("get_help_message_usage(): profile = %s", profile);
 	if (profile)
 		current_profile = g_strdup(profile);
 	else
@@ -199,8 +192,6 @@ gchar *get_help_message_usage(gchar *profile, gboolean convert_to_html)
 #endif
 			if (convert_to_html)
 				profile_message =  convert_text_to_html(&profile_message, TRUE, NULL, "tt", NULL);
-
-		// g_debug("FINAL: profile_message = %s", profile_message);
 
 #ifdef SAFEMODE
 		if (profile_message)

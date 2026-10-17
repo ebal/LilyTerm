@@ -330,8 +330,6 @@ void init_user_command(struct Window *win_data)
 	gint i;
 
 	// Keep it in NULL will be a better idea
-	// for (i=0; i<REGEX; i++)
-	//	win_data->user_regex[i] = g_strdup("");
 
 	for (i=0; i<COMMAND; i++)
 	{
@@ -340,7 +338,6 @@ void init_user_command(struct Window *win_data)
 		win_data->user_command[i].VTE_CJK_WIDTH = 0;
 		win_data->user_command[i].locale = g_strdup("");
 		// Keep it in NULL will be a better idea
-		// win_data->user_command[i].match_regex_orig = g_strdup("");
 	}
 }
 
@@ -353,14 +350,12 @@ void init_window_parameters(struct Window *win_data)
 		if (win_data==NULL) return;
 #endif
 	// win_data->environment;
-	// win_data->warned_locale_list = g_string_new(" ");		// inited in init_prime_user_datas()
 	// win_data->runtime_encoding;
 	win_data->default_encoding = g_strdup("");
 	// win_data->runtime_LC_MESSAGES;
 	// win_data->supported_encodings;
 	// win_data->encoding_sub_menu
 	// win_data->default_menuitem_encoding
-	// win_data->default_locale = g_strdup("");			// inited in init_prime_user_datas()
 	// win_data->runtime_locale;
 	win_data->locales_list = g_strdup("UTF-8");
 	// win_data->supported_locales;
@@ -385,14 +380,11 @@ void init_window_parameters(struct Window *win_data)
 	// win_data->profile;
 	// win_data->specified_profile;
 	win_data->profile_dir_modtime = -1;
-	// win_data->menuitem_auto_save = NULL;
-	// win_data->auto_save = FALSE;
 	// win_data->startup_fullscreen;
 	// win_data->fullscreen;
 	// win_data->true_fullscreen;
 	win_data->show_tabs_bar = AUTOMATIC;
 	win_data->new_tab_next_to_current = TRUE;
-	// win_data->fullscreen_show_scroll_bar = 1;
 	// win_data->window_status;
 	// win_data->window;
 	// win_data->notebook;
@@ -406,7 +398,6 @@ void init_window_parameters(struct Window *win_data)
 	// 0: do NOT use rgba
 	// 1: force to use rgba
 	// 2: decide by gdk_screen_is_composited()
-	// if (! win_data->use_rgba) win_data->use_rgba = 2;
 	// win_data->custom_tab_names_str;
 	// win_data->custom_tab_names_strs;
 	// win_data->custom_tab_names_current;
@@ -419,7 +410,6 @@ void init_window_parameters(struct Window *win_data)
 	win_data->dim_window = FALSE;
 	win_data->window_opacity_inactive = 0.2;
 	win_data->enable_key_binding = TRUE;
-	// win_data->User_KeyValue user_keys[KEYS];
 	// win_data->hints_type;
 	// win_data->resize_type;
 	win_data->geometry_width = SYSTEM_COLUMN;
@@ -438,7 +428,6 @@ void init_window_parameters(struct Window *win_data)
 	win_data->show_change_page_name_menu = TRUE;
 	win_data->show_exit_menu = TRUE;
 	win_data->enable_hyperlink = TRUE;
-	// win_data->User_Command user_command[COMMAND];
 	// win_data->menuitem_copy_url;
 	// win_data->menuitem_dim_text;
 	// win_data->menuitem_cursor_blinks;
@@ -461,11 +450,9 @@ void init_window_parameters(struct Window *win_data)
 	// win_data->fg_color_inactive;
 	// win_data->cursor_color;
 	dirty_gdk_color_parse (DEFAULT_CURSOR_COLOR, &(win_data->cursor_color));
-	// win_data->custom_cursor_color = FALSE;
 	// win_data->bg_color;
 	// win_data->color_theme_str;
 	// win_data->color_theme;
-	// win_data->color_value[COLOR];
 	// win_data->invert_color;
 	// win_data->menuitem_invert_color;
 	// win_data->menuitem_theme;
@@ -474,9 +461,6 @@ void init_window_parameters(struct Window *win_data)
 	// win_data->use_custom_theme;
 	// win_data->ansi_color_sub_menu;
 	// win_data->ansi_color_menuitem;
-	// win_data->color[COLOR];
-	// win_data->color_inactive[COLOR];
-	// win_data->color_orig[COLOR];
 	win_data->color_brightness = 0.2;
 	win_data->color_brightness_inactive = -2;
 	win_data->page_width = 16;
@@ -509,7 +493,6 @@ void init_window_parameters(struct Window *win_data)
 	// default_font_name is got from profile
 	win_data->default_font_name = g_strdup("Monospace 12");
 	// system_font_name is a fixed value
-	// win_data->system_font_name = g_strdup("Monospace 12");
 	// win_data->restore_font_name;
 	win_data->default_column = SYSTEM_COLUMN;
 	win_data->default_row = SYSTEM_ROW;
@@ -520,27 +503,18 @@ void init_window_parameters(struct Window *win_data)
 	win_data->scroll_bar_position = 1;
 	win_data->scrollback_lines = SCROLL_HISTORY;
 	win_data->dim_text = TRUE;
-	// win_data->cursor_blinks = 0;
 	win_data->allow_bold_text = TRUE;
 	win_data->open_url_with_ctrl_pressed = FALSE;
 	win_data->disable_url_when_ctrl_pressed = TRUE;
 	win_data->audible_bell = TRUE;
 	win_data->urgent_bell = TRUE;
-	// win_data->urgent_bell_status = FALSE;
-	// win_data->urgent_bell_focus_in_event_id = 0;
 	win_data->erase_binding = erase_binding[DEFAULT_ERASE_BINDING].value;
-	// win_data->menuitem_erase_binding[ERASE_BINDING];
 	// win_data->current_menuitem_erase_binding;
 	win_data->cursor_shape = cursor_shape[DEFAULT_CURSOR_SHAPE].value;
-	// win_data->menuitem_cursor_shape[CURSOR_SHAPE];
 	// win_data->current_menuitem_cursor_shape;
-	// win_data->confirm_to_close_multi_tabs = FALSE;
 	win_data->confirm_to_kill_running_command = TRUE;
-	// win_data->confirm_to_execute_command = TRUE;			// inited in init_prime_user_datas()
 	// Don't forget to edit windows.c if you change the default volue here.
-	// win_data->executable_command_whitelist = g_strdup("");		// inited in init_prime_user_datas()
 	// win_data->executable_command_whitelists
-	// win_data->execute_command_in_new_tab = TRUE;			// inited in init_prime_user_datas()
 	win_data->running_process_whitelist = g_strdup("bash\tdash\tcsh\tksh\ttcsh\tzsh\tsu\tscreen\ttmux");
 	// win_data->running_process_whitelists
 	win_data->confirm_to_paste = TRUE;
@@ -558,7 +532,6 @@ void init_window_parameters(struct Window *win_data)
 	// win_data->confirmed_profile_is_invalid;
 	// win_data->err_str;
 
-	// g_debug ("init_window_parameters(): call init_prime_user_datas() for win_data %p!", win_data);
 	init_prime_user_datas(win_data);
 }
 
@@ -570,55 +543,20 @@ void init_page_parameters(struct Window *win_data, struct Page *page_data)
 #ifdef SAFEMODE
 	if ((win_data==NULL) || (page_data==NULL)) return;
 #endif
-	// g_debug("Set page_data->window = win_data->window in init_page_parameters()");
 	page_data->window = win_data->window;
 	page_data->notebook = win_data->notebook;
 
-//	page_data->page_no = 0;
-//	page_data->label = NULL;
-//	page_data->hbox = NULL;
-//	page_data->vte = NULL;
-//	page_data->scroll_bar = NULL;
-
 	page_data->encoding_str = g_strdup(win_data->runtime_encoding);
-	// page_data->locale = g_strdup(win_data->runtime_locale);
 	page_data->environ = g_strdup("");
-	// g_debug("g_strdupv(page_data_prev->environments)!");
-	// page_data->environments = g_strdupv(win_data->environments);
 	page_data->VTE_CJK_WIDTH_STR = g_strdup(win_data->VTE_CJK_WIDTH_STR);
 
-//	page_data->page_name = NULL;
-//	page_data->_t pid = 0;
-//	page_data->_t current_tpgid = 0;
-//	page_data->_t displayed_tpgid = 0;
-//	page_data->custom_page_name = NULL;
-//	page_data->tab_color = NULL;
-//	page_data->pwd = g_strdup(win_data->init_dir);
-//	page_data->is_root = 0;
-//	page_data->is_bold = 0;
-//	page_data->window_title_updated = 0;
-//	page_data->page_update_method = PAGE_METHOD_AUTOMATIC;
-//	page_data->window_title_signal = 0;
-
-//	page_data->timeout_id = 0;
-//	page_data->urgent_bell_handler_id = 0;
-//	page_data->child_exited_handler_id = 0;
-
 	page_data->font_name = g_strdup(win_data->default_font_name);
-//	page_data->font_size = 0;
 
 	// some data came from window. for the performance of monitor_cmdline
 	init_monitor_cmdline_datas(win_data, page_data);
 
-//	page_data->use_scrollback_lines = win_data->use_scrollback_lines;
-
-//	page_data->window_title = NULL;
-
-//	page_data->tag[COMMAND] = {{0}};
-//	page_data->match_regex_setted = FALSE;
 //
 }
-
 
 void init_user_keys(struct Window *win_data)
 {
@@ -633,9 +571,7 @@ void init_user_keys(struct Window *win_data)
 	// New Page
 	win_data->user_keys[KEY_NEW_TAB].value = g_strdup("Ctrl T");
 	// ### Close Page, disabled
-	// win_data->user_keys[KEY_CLOSE_TAB].value = g_strdup("Ctrl Q");
 	// ### Edit Page Name, disabled
-	// win_data->user_keys[KEY_EDIT_LABEL].value = g_strdup("Ctrl E");
 	// Find String
 	win_data->user_keys[KEY_FIND].value = g_strdup("Ctrl F");
 	win_data->user_keys[KEY_FIND_NEXT].value = g_strdup("F3");
@@ -670,7 +606,6 @@ void init_user_keys(struct Window *win_data)
 	win_data->user_keys[KEY_SWITCH_TO_TAB_11].value = g_strdup("Ctrl F11");
 	win_data->user_keys[KEY_SWITCH_TO_TAB_12].value = g_strdup("Ctrl F12");
 	// #### open new window, disabled
-	// win_data->user_keys[KEY_NEW_WINDOW].value = g_strdup("Ctrl N");
 	// select all
 	win_data->user_keys[KEY_SELECT_ALL].value = g_strdup("Ctrl O");
 	// copy the text to clipboard
@@ -816,7 +751,6 @@ void init_key_bindings(void)
 	key_groups[KEY_GROUP_FONT] = _("Font");
 	key_groups[KEY_GROUP_PANE] = _("Split panes");
 	key_groups[KEY_GROUP_NONE] = "None";
-
 
 	// for disable/enable the function keys
 	system_keys[KEY_DISABLE_FUNCTION].topic = _("Disable/Enable functions");
@@ -1014,8 +948,6 @@ void init_locale_restrict_data(gchar *lc_messages)
 	g_debug("! Launch init_locale_restrict_data() with lc_messages = %s!", lc_messages);
 #endif
 
-	// g_debug("lc_messages = %s", lc_messages);
-	// g_debug("restricted_locale_message = %s", restricted_locale_message);
 	if ((restricted_locale_message == NULL) ||
 	    compare_strings(restricted_locale_message, lc_messages, TRUE))
 	{
@@ -1041,40 +973,14 @@ void init_mod_keys(void)
 #endif
 	modkeys[0].name = _("Shift");
 	modkeys[0].mod = GDK_SHIFT_MASK;
-	// modkeys[1].name = "NumLock";
-	// modkeys[1].mod = GDK_LOCK_MASK ;
 	modkeys[1].name = _("Ctrl");
 	modkeys[1].mod = GDK_CONTROL_MASK;
 	modkeys[2].name = _("Alt");
 	modkeys[2].mod = GDK_MOD1_MASK ;
 	// Mod2 = Alt
-	// modkeys[2].name = "Mod1";
-	// modkeys[2].mod = GDK_MOD1_MASK;
 	// Mod2 = NumLock. We won't check it.
-	// modkeys[3].name = "Mod2";
-	// modkeys[3].mod = GDK_MOD2_MASK ;
-	//// modkeys[3].name = "Mod3";
-	//// modkeys[3].mod = GDK_MOD3_MASK;
 	modkeys[3].name = _("Win");
 	modkeys[3].mod = GDK_MOD4_MASK | GDK_SUPER_MASK;
-	//// modkeys[5].name = "Mod5";
-	//// modkeys[5].mod = GDK_MOD5_MASK ;
-	// modkeys[6].name = "Button1";
-	// modkeys[6].mod = GDK_BUTTON1_MASK;
-	// modkeys[7].name = "Button2";
-	// modkeys[7].mod = GDK_BUTTON2_MASK;
-	// modkeys[8].name = "Button3";
-	// modkeys[8].mod = GDK_BUTTON3_MASK;
-	// modkeys[9].name = "Button4";
-	// modkeys[9].mod = GDK_BUTTON4_MASK;
-	// modkeys[10].name = "Button5";
-	// modkeys[10].mod = GDK_BUTTON5_MASK;
-	// modkeys[11].name = "Super";
-	// modkeys[11].mod = GDK_SUPER_MASK;
-	// modkeys[12].name = "Hyper";
-	// modkeys[12].mod = GDK_HYPER_MASK;
-	// modkeys[13].name = "Meta";
-	// modkeys[13].mod = GDK_META_MASK ;
 }
 
 void init_colors(void)
@@ -1134,7 +1040,6 @@ void init_user_color(struct Window *win_data, gchar *theme_name)
 	// copy colors from system_color_theme to custom_color_theme
 	for (i=0; i<THEME; i++)
 	{
-		// g_debug("(%p) Set win_data->custom_color_theme[%d]->name = %s", win_data, i, system_color_theme[i].name);
 		win_data->custom_color_theme[i].index = system_color_theme[i].index + THEME;
 		win_data->custom_color_theme[i].name = system_color_theme[i].name;
 		for (j=0; j<COLOR; j++)
@@ -1146,7 +1051,6 @@ void init_user_color(struct Window *win_data, gchar *theme_name)
 	{
 		if (!compare_strings(theme_name, system_color_theme[i].name, FALSE))
 		{
-			// g_debug("Get win_data->color_theme_str = %s", win_data->color_theme_str);
 			win_data->color_theme_index = i;
 			break;
 		}
@@ -1157,7 +1061,6 @@ gchar *get_user_profile_path(struct Window *win_data, int argc, char *argv[])
 {
 #ifdef DETAIL
 	g_debug("! Launch get_user_profile_path() with win_data = %p, argc = %d", win_data, argc);
-	// print_array("\targv", argv);
 #endif
 	gint i;
 	gchar *profile=NULL;
@@ -1181,7 +1084,6 @@ gchar *get_user_profile_path(struct Window *win_data, int argc, char *argv[])
 					if (win_data)
 						win_data->use_custom_profile = TRUE;
 				}
-				// g_debug ("Using Profile = %s", profile);
 			}
 			else if ((!strcmp(argv[i], "--specified_profile")))
 			{
@@ -1192,7 +1094,6 @@ gchar *get_user_profile_path(struct Window *win_data, int argc, char *argv[])
 					if (win_data)
 						win_data->specified_profile = g_strdup(argv[i]);
 				}
-				// g_debug ("Using Profile = %s", profile);
 			}
 			else if ((!strcmp(argv[i], "-e")) ||
 				 (!strcmp(argv[i], "-x")) ||
@@ -1211,8 +1112,6 @@ gchar *get_user_profile_path(struct Window *win_data, int argc, char *argv[])
 		if (profile==NULL)
 			profile = load_profile_from_dir(ETCDIR, PROFILE);
 	}
-	// if (profile==NULL)
-	//	g_message("Sorry, Can not find any profile. Using program defaults.");
 	return profile;
 }
 
@@ -1257,8 +1156,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 #    undef g_strsplit_set
 #  endif
 
-	// g_debug("Get win_data = %d when get user settings!", win_data);
-
 	init_window_parameters(win_data);
 	init_user_keys(win_data);
 	init_user_command(win_data);
@@ -1279,9 +1176,7 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 	gchar *fg_color_str = NULL, *bg_color_str = NULL, *color_theme_str = NULL, *cursor_color_str = NULL;
 	// got the rc file
 	GKeyFile *keyfile = g_key_file_new();
-	// g_debug ("Using the profile: %s ", profile);
 	GError *error = NULL;
-	// g_debug("safe_mode = %d", safe_mode);
 	if (win_data->profile != NULL && (! safe_mode))
 	{
 		if (g_key_file_load_from_file(keyfile, win_data->profile, G_KEY_FILE_NONE, &error))
@@ -1322,7 +1217,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 									win_data->window_opacity_inactive,
 									ENABLE_EMPTY_STR, -2,
 									CHECK_MIN, 0, CHECK_MAX, 1);
-			// g_debug("Got win_data->window_opacity_inactive = %1.3f", win_data->window_opacity_inactive);
 			gboolean fullscreen = check_boolean_value(keyfile, "main", "fullscreen", win_data->window_status);
 			if (fullscreen) win_data->window_status = WINDOW_START_WITH_FULL_SCREEN;
 			win_data->running_process_whitelist = check_string_value(keyfile, "main",
@@ -1409,8 +1303,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 					win_data->show_scroll_bar = AUTOMATIC;
 					break;
 			}
-			// g_debug("Got show_scroll_bar = %d, win_data->show_scroll_bar = %d",
-			//	show_scroll_bar, win_data->show_scroll_bar);
 
 			win_data->scroll_bar_position = check_boolean_value(keyfile, "main",
 						       "scroll_bar_position", win_data->scroll_bar_position);
@@ -1464,7 +1356,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 			// g_debug("VTE_ERASE_AUTO = %d, VTE_ERASE_ASCII_BACKSPACE = %d, "
 			//	"VTE_ERASE_ASCII_DELETE = %d, VTE_ERASE_DELETE_SEQUENCE %d",
 			//	VTE_ERASE_AUTO, VTE_ERASE_ASCII_BACKSPACE,
-			//	VTE_ERASE_ASCII_DELETE, VTE_ERASE_DELETE_SEQUENCE);
 			win_data->erase_binding = check_integer_value(keyfile, "main",
 								      "erase_binding",
 								      win_data->erase_binding,
@@ -1481,7 +1372,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 								     CHECK_MAX, CURSOR_SHAPE);
 			win_data->locales_list = check_string_value( keyfile, "main", "locales_list",
 								     win_data->locales_list, TRUE, ENABLE_EMPTY_STR);
-			// g_debug("Got locales_list = %s from user's profile!", value);
 
 			win_data->default_shell = check_string_value( keyfile, "main", "default_shell",
 								      win_data->default_shell, TRUE, DISABLE_EMPTY_STR);
@@ -1524,8 +1414,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 					win_data->show_tabs_bar = AUTOMATIC;
 					break;
 			}
-			// g_debug("Get show_tabs_bar = %d, win_data->show_tabs_bar = %d",
-			//	show_tabs_bar, win_data->show_tabs_bar);
 
 			win_data->new_tab_next_to_current = check_boolean_value(keyfile, "page", "new_tab_next_to_current",
 									 win_data->new_tab_next_to_current),
@@ -1535,7 +1423,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 
 			win_data->fill_tabs_bar = check_boolean_value(keyfile, "page", "fill_tabs_bar",
 								     win_data->fill_tabs_bar);
-
 
 			win_data->page_name = check_string_value(keyfile, "page", "page_name", win_data->page_name, TRUE, DISABLE_EMPTY_STR);
 
@@ -1595,16 +1482,10 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 			// g_debug("Key Value: Shift=%x, NumLock=%x, Control=%x, Mod1=%x,"
 			//		"Mod2=%x, Mod3=%x, Mod4=%x, Mod5=%x\n",
 			//		GDK_SHIFT_MASK, GDK_LOCK_MASK, GDK_CONTROL_MASK, GDK_MOD1_MASK,
-			//		GDK_MOD2_MASK, GDK_MOD3_MASK, GDK_MOD4_MASK, GDK_MOD5_MASK);
 			gchar *value = NULL;
 			for (i=0; i<KEYS-FIXED_KEYS; i++)
 			{
-				// g_debug("Checking %s key, default value = %s (%p)...",
-				//	system_keys[i].name, win_data->user_keys[i].value, win_data->user_keys[i].value);
 				value = g_key_file_get_value(keyfile, "key", system_keys[i].name, NULL);
-				// value = check_string_value(keyfile, "key", system_keys[i].name,
-				//			   g_strdup(win_data->user_keys[i].value), ENABLE_EMPTY_STR);
-				// g_debug("Get %s (%p) from g_key_file_get_value()...", value, value);
 				convert_string_to_user_key(i, value, win_data);
 			}
 
@@ -1612,9 +1493,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 			{
 				win_data->user_regex[i] = check_string_value(keyfile, "command",
 									     regex_name[i], NULL, TRUE, DISABLE_EMPTY_STR);
-				// gchar *regex_str = convert_escape_sequence_to_string(win_data->user_regex[i]);
-				// g_debug("get_user_settings: Got win_data->user_regex[%d] = %s", i, regex_str);
-				// g_free(regex_str);
 			}
 
 			if (win_data->user_regex[REGEX_USERNAME] || win_data->user_regex[REGEX_PASSWORD] || win_data->user_regex[REGEX_HOSTNAME] ||
@@ -1654,12 +1532,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 					g_free(regex_str);
 				}
 			}
-			// for (i=0; i<COMMAND; i++)
-			// {
-			//	gchar *regex_str = convert_escape_sequence_to_string(win_data->user_command[i].match_regex);
-			//	g_debug("get_user_settings: Got win_data->user_command[%d].match_regex = %s", i, regex_str);
-			//	g_free(regex_str);
-			// }
 
 			for (i=0; i<COMMAND; i++)
 			{
@@ -1683,8 +1555,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 						CHECK_MAX, 2);
 				win_data->user_command[i].locale = check_string_value(keyfile, "command",
 						command[i].locale_name, win_data->user_command[i].locale, TRUE, DISABLE_EMPTY_STR);
-				// g_debug("command[i].name = %s (%d)",
-				//	win_data->user_command[i].command, win_data->user_command[i].method);
 
 				gchar *match_regex = check_string_value(keyfile, "command",
 									command[i].match_regex_name,
@@ -1694,11 +1564,9 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 				win_data->user_command[i].match_regex_orig = convert_escape_sequence_from_string(match_regex);
 				g_free(match_regex);
 
-				// g_debug("command[%d].match_regex_orig = %s", i, win_data->user_command[i].match_regex_orig);
 			}
 
 			color_theme_str = check_string_value(keyfile, "color", "theme", NULL, FALSE, ENABLE_EMPTY_STR);
-			// g_debug("get_user_settings: Got color_theme_str = %s", color_theme_str);
 			init_user_color(win_data, color_theme_str);
 
 			win_data->invert_color = check_boolean_value(keyfile, "color", "invert_color", win_data->invert_color);
@@ -1708,8 +1576,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 			for (i=1; i<COLOR-1; i++)
 			{
 				color_value = check_string_value(keyfile, "color", color[i].name, NULL, FALSE, DISABLE_EMPTY_STR);
-				// g_debug("color[%d].name = %s, color_value = %s",
-				//	i, color[i].name, color_value);
 				if (color_value)
 				{
 					GdkRGBA tmp_color;
@@ -1725,7 +1591,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 						//	"win_data->color[%d] = %x, %x, %x, %x",
 						//	i, win_data->color_value[i], i,
 						//	win_data->color[i].pixel, win_data->color[i].red,
-						//	win_data->color[i].green, win_data->color[i].blue );
 					}
 
 				}
@@ -1763,7 +1628,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 	}
 
 	// Set the LC_MESSAGES
-	// g_debug("get_user_settings(): win_data->runtime_LC_MESSAGES = %s", win_data->runtime_LC_MESSAGES);
 	setlocale(LC_MESSAGES, win_data->runtime_LC_MESSAGES);
 	init_locale_restrict_data(win_data->runtime_LC_MESSAGES);
 
@@ -1773,17 +1637,11 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 		{
 			accelerator_parse(system_keys[i].name, win_data->user_keys[i].value,
 					  &(win_data->user_keys[i].key), &(win_data->user_keys[i].mods));
-			// g_debug("Use default key %s, %x(%s), mods = %x.", pagekeys[i].name,
-			//		pagekeys[i].key, gdk_keyval_name(pagekeys[i].key), pagekeys[i].mods);
 		}
-		// g_debug("* We'll use the key for %s: %x(%s), mods = %x.", pagekeys[i].name,
-		//		pagekeys[i].key, gdk_keyval_name(pagekeys[i].key), pagekeys[i].mods);
 	}
-	// win_data->fullscreen_show_scroll_bar = win_data->show_scroll_bar;
 
 	for (i=0; i<COMMAND; i++)
 	{
-		// g_debug("Got the environ = %s", win_data->user_command[i].environ);
 		win_data->user_command[i].environments = split_string(win_data->user_command[i].environ, " ", -1);
 	}
 
@@ -1810,10 +1668,7 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 		win_data->dim_text = FALSE;
 		win_data->color_brightness_inactive = -win_data->color_brightness;
 	}
-	// g_debug("win_data->dim_text = %d, win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-	//	win_data->dim_text, win_data->color_brightness, win_data->color_brightness_inactive);
 
-	// g_debug("Got win_data->window_opacity_inactive = %1.3f", win_data->window_opacity_inactive);
 	if (win_data->window_opacity_inactive<-1)
 		win_data->window_opacity_inactive = win_data->window_opacity;
 	else
@@ -1821,24 +1676,17 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 
 	if ((win_data->scrollback_lines == 0) && (win_data->show_scroll_bar == AUTOMATIC))
 		win_data->show_scroll_bar = OFF;
-	// g_debug("FINAL: win_data->show_scroll_bar = %d", win_data->show_scroll_bar);
 	if (win_data->show_close_button_on_tab == 0) win_data->show_close_button_on_all_tabs = 0;
 	if (win_data->window_title_shows_current_page == 0) win_data->window_title_append_package_name = 0;
 
 	GdkRGBA fg_color, bg_color;
 	GdkRGBA cursor_color;
 
-	// g_debug("win_data->foreground_color = %s, win_data->background_color = %s, win_data->cursor_color_str = %s",
-	//	win_data->foreground_color, win_data->background_color, win_data->cursor_color_str);
-
 	// Get the color data from profile...
 	check_color_value ("foreground_color", fg_color_str, &(fg_color), &(system_color_theme[win_data->color_theme_index].color[COLOR-1]));
-	// print_color(COLOR-1, "Get fg_color from profile:", fg_color);
 	check_color_value ("foreground_color", bg_color_str, &(bg_color), &(system_color_theme[win_data->color_theme_index].color[0]));
-	// print_color(0, "Get bg_color from profile:", bg_color);
 	dirty_gdk_color_parse (DEFAULT_CURSOR_COLOR, &(cursor_color));
 	check_color_value ("cursor_color", cursor_color_str, &(win_data->cursor_color), &(cursor_color));
-	// print_color(-1, "Get cursor_color from profile:", win_data->cursor_color);
 
 	g_free(fg_color_str);
 	g_free(bg_color_str);
@@ -1848,8 +1696,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 	// if the fg_color == bg_color, revert to the default color.
 	if (! compare_color(&(fg_color), &(bg_color)))
 	{
-		// print_color (-1, "invild fg_color = color; fg_color", fg_color);
-		// print_color (-1. "invild bg_color = color; bg_color", fg_color);
 		dirty_gdk_color_parse (DEFAULT_FOREGROUND_COLOR, &(fg_color));
 		dirty_gdk_color_parse (DEFAULT_BACKGROUND_COLOR, &(bg_color));
 	}
@@ -1857,9 +1703,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 	// check if using custom fg_color
 	if (compare_color(&(fg_color), &(system_color_theme[win_data->color_theme_index].color[COLOR-1])))
 	{
-		// print_color(-1, "get_user_settings(): fg_color", fg_color);
-		// print_color(-1, "get_user_settings(): win_data->color_orig[COLOR-1]",
-		//	    win_data->color_orig[COLOR-1]);
 		win_data->have_custom_color = TRUE;
 		for (i=0; i<THEME; i++)
 			win_data->custom_color_theme[i].color[COLOR-1] = fg_color;
@@ -1868,23 +1711,17 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 	// check if using custom bg_color
 	if (compare_color(&(bg_color), &(system_color_theme[win_data->color_theme_index].color[0])))
 	{
-		// print_color(-1, "get_user_settings(): bg_color", bg_color);
-		// print_color(-1, "get_user_settings(): win_data->color_orig[0]",
-		//	    win_data->color_orig[0]);
 		win_data->have_custom_color = TRUE;
 		for (i=0; i<THEME; i++)
 			win_data->custom_color_theme[i].color[0] = bg_color;
 	}
 
-	// print_color(-1, "get_user_settings(): win_data->fg_color : ", win_data->fg_color);
-	// print_color(-1, "get_user_settings(): win_data->bg_color", win_data->bg_color);
 	// check if win_data->cursor_color == win_data->bg_color
 	if ((win_data->invert_color && (compare_color(&(fg_color), &(win_data->cursor_color)) == FALSE)) ||
 	    ((win_data->invert_color == FALSE) && (compare_color(&(bg_color), &(win_data->cursor_color)) == FALSE)))
 		win_data->custom_cursor_color = FALSE;
 	generate_all_color_datas(win_data);
 
-	// g_debug("get_user_settings(): win_data->VTE_CJK_WIDTH_STR = %s", win_data->VTE_CJK_WIDTH_STR);
 	if ((win_data->VTE_CJK_WIDTH_STR == NULL) || (win_data->VTE_CJK_WIDTH_STR[0] == '\0'))
 	{
 		g_free(win_data->VTE_CJK_WIDTH_STR);
@@ -1892,11 +1729,9 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 	}
 
 	// If the system supports rgba, enable transparent background by default
-	// g_debug ("get win_data->use_rgba = %d", win_data->use_rgba);
 	if (win_data->use_rgba > -1)
 	{
 		win_data->use_rgba = win_data->use_rgba_orig;
-		// g_debug("use_rgba_orig = %d", win_data->use_rgba_orig);
 		init_rgba(win_data);
 	}
 	if (win_data->transparent_window==2)
@@ -1906,13 +1741,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 	// win_data->default_encoding_str will be init in add_menuitem_to_encoding_sub_menu() when creating window
 
 	// get the default locale from environment
-	// win_data->default_locale = get_default_locale();
-
-//	// g_debug("win_data->default_VTE_CJK_WIDTH = %d in get_user_settings()", win_data->default_VTE_CJK_WIDTH);
-//	if (win_data->default_VTE_CJK_WIDTH)
-//		win_data->system_VTE_CJK_WIDTH = win_data->default_VTE_CJK_WIDTH;
-//	else
-//		win_data->system_VTE_CJK_WIDTH = get_default_VTE_CJK_WIDTH();
 
 	if (win_data->executable_command_whitelists==NULL)
 	{
@@ -1925,7 +1753,6 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 	if (win_data->window_resize_ratio <= 1) win_data->window_resize_ratio = 0;
 	g_key_file_free(keyfile);
 	// the win_data->profile will be free when close window
-	// g_free(win_data->profile);
 	if (win_data->specified_profile)
 	{
 		g_free(win_data->profile);
@@ -1950,7 +1777,6 @@ void init_prime_user_datas(struct Window *win_data)
 #ifdef SAFEMODE
 	if (win_data==NULL) return;
 #endif
-	// g_debug("init_prime_user_datas(): win_data->prime_user_datas_inited = %d", win_data->prime_user_datas_inited);
 	if (win_data->prime_user_datas_inited) return;
 
 	win_data->prime_user_datas_inited = TRUE;
@@ -1958,8 +1784,6 @@ void init_prime_user_datas(struct Window *win_data)
 	win_data->warned_locale_list = g_string_new(" ");
 	win_data->confirm_to_execute_command = TRUE;
 	win_data->execute_command_in_new_tab = TRUE;
-	// g_debug("init win_data->executable_command_whitelist (%s) for for win_data (%p)!",
-	//	win_data->executable_command_whitelist, win_data);
 	win_data->executable_command_whitelist = g_strdup("");
 	win_data->default_locale = g_strdup("");
 }
@@ -1988,15 +1812,12 @@ void get_prime_user_settings(GKeyFile *keyfile, struct Window *win_data, gchar *
 								    win_data->executable_command_whitelist,
 								    TRUE,
 								    ENABLE_EMPTY_STR);
-	// g_debug("win_data->executable_command_whitelist for win_data (%p) updated!", win_data);
 
 	win_data->execute_command_in_new_tab = check_boolean_value(keyfile, "main", "execute_command_in_new_tab",
 								   win_data->execute_command_in_new_tab);
 
-	// g_debug("ReGet new win_data->default_locale with original value: %s...", win_data->default_locale);
 	win_data->default_locale = check_string_value(keyfile, "main", "default_locale",
 						      win_data->default_locale, TRUE, DISABLE_EMPTY_STR);
-	// g_debug("win_data->default_locale = %s", win_data->default_locale);
 #  ifdef SAFEMODE
 	if ( win_data->default_locale && (win_data->default_locale[0]!='\0'))
 #  else
@@ -2010,8 +1831,6 @@ void get_prime_user_settings(GKeyFile *keyfile, struct Window *win_data, gchar *
 			win_data->default_encoding = encoding;
 			g_free(win_data->runtime_LC_MESSAGES);
 			win_data->runtime_LC_MESSAGES = g_strdup(win_data->default_locale);
-			// g_debug("get_prime_user_settings(): set win_data->runtime_LC_MESSAGES = %s",
-			//	win_data->runtime_LC_MESSAGES);
 		}
 		else
 			if (check_and_add_locale_to_warned_locale_list(win_data, win_data->default_locale))
@@ -2044,7 +1863,6 @@ gboolean check_boolean_value(GKeyFile *keyfile, const gchar *group_name, const g
 	else
 		setting = default_value;
 
-	// g_debug("Got key value \"%s = %d\"", key, setting);
 	return setting;
 }
 
@@ -2069,8 +1887,6 @@ gdouble check_double_value(GKeyFile *keyfile, const gchar *group_name, const gch
 			setting = g_key_file_get_double(keyfile, group_name, key, NULL);
 		else
 		{
-			// g_debug("enable_empty = %d, empty_value = %1.3f, default_value = %1.3f",
-			//	enable_empty, empty_value, default_value);
 			if (enable_empty)
 			{
 				setting = empty_value;
@@ -2093,7 +1909,6 @@ gdouble check_double_value(GKeyFile *keyfile, const gchar *group_name, const gch
 
 FINISH:
 	g_free(value);
-	// g_debug("Got key value \"%s = %1.3f\"", key, setting);
 	return setting;
 }
 
@@ -2147,7 +1962,6 @@ glong check_integer_value(GKeyFile *keyfile, const gchar *group_name, const gcha
 
 FINISH:
 	g_free(value);
-	// g_debug("Got key value \"%s = %d\"", key, setting);
 	return setting;
 }
 
@@ -2165,7 +1979,6 @@ gchar *check_string_value(GKeyFile *keyfile, const gchar *group_name, const gcha
 	if ((keyfile==NULL) || (group_name==NULL) || (key==NULL)) return NULL;
 #  endif
 	gchar *setting = g_key_file_get_value(keyfile, group_name, key, NULL);
-	// g_debug("check_string_value() with setting = %s (%p)", setting, setting);
 	if (setting && (setting[0] == '\0') && (enable_empty==DISABLE_EMPTY_STR))
 	{
 		g_free(setting);
@@ -2177,7 +1990,6 @@ gchar *check_string_value(GKeyFile *keyfile, const gchar *group_name, const gcha
 
 	if (free_original_value) g_free(original_value);
 
-	// g_debug("Got key value \"%s = %s\"", key, setting);
 	return setting;
 }
 
@@ -2194,7 +2006,6 @@ gboolean check_color_value(const gchar *key_name, const gchar *color_name, GdkRG
 	{
 		if (dirty_gdk_color_parse(color_name, color))
 		{
-			// print_color(-1, "1. check_color_value():", *color);
 			return TRUE;
 		}
 	}
@@ -2202,7 +2013,6 @@ gboolean check_color_value(const gchar *key_name, const gchar *color_name, GdkRG
 	if (color && default_color)
 	{
 		*color = *default_color;
-		// print_color(-1, "2. check_color_value():", *color);
 		return TRUE;
 	}
 
@@ -2233,14 +2043,9 @@ gboolean accelerator_parse (const gchar *key_name, const gchar *key_value, guint
 	gint tempkey=0;
 	gboolean response = FALSE;
 
-	// g_debug ("Ken Value = %s",key_value);
-	// g_debug ("Checking '%s' is \"\" or NULL...%d, %d, %d",
-	//	    key_value, key_value!=NULL, strlen(key_value)>0, g_ascii_strcasecmp(key_value, "NULL"));
 	// got the Function key first
-	// if ( key_value && (key_value[0]!='\0') && ( compare_strings(key_value, "NULL", FALSE)))
 	if (key_value && (key_value[0]!='\0'))
 	{
-		// g_debug ("Start to checking '%s' in accelerator_parse()...", key_value);
 		values = split_string(key_value, " ", -1);
 		// split in to "Ctrl+Shift" and "Home" now...
 		if (values)
@@ -2255,7 +2060,6 @@ gboolean accelerator_parse (const gchar *key_name, const gchar *key_value, guint
 				{
 					for (j=0; j<MOD; j++)
 					{
-						// g_debug("dealing %s...", functions[i]);
 						if ( ! compare_strings(functions[i], modkeys[j].name, FALSE))
 							tempmods |= modkeys[j].mod;
 					}
@@ -2264,21 +2068,15 @@ gboolean accelerator_parse (const gchar *key_name, const gchar *key_value, guint
 #ifdef SAFEMODE
 			}
 #endif
-			// g_debug("masks = %x", tempmods);
 
-			// if (! tempmods )
-			// {
 			//
-			//	g_warning("no Function Key found in [%s] (%s)!", key_name, key_value);
 			//	goto FINISH;
-			// }
 			gchar *check_value = (tempmods && values[1])? values[1]: values[0];
 
 			if (check_value)
 			{
 				// got the key ("Home" for example)
 				tempkey = gdk_keyval_from_name(check_value);
-				// g_debug("key = %d", tempkey);
 				if ((tempkey == GDK_KEY_VoidSymbol) || (tempkey == 0) ||
 				    ((! tempmods) && (tempkey <= GDK_KEY_asciitilde)))
 				{
@@ -2289,33 +2087,24 @@ gboolean accelerator_parse (const gchar *key_name, const gchar *key_value, guint
 				}
 				else
 				{
-					// g_debug("%s (%s, value %x) is a valid key!",
-					//		 check_value, gdk_keyval_name(tempkey), tempkey);
 					// suppose that the key is always upper case
 					if ((tempkey>=GDK_KEY_a) && (tempkey<=GDK_KEY_z))
 						tempkey=tempkey-GDK_KEY_a+GDK_KEY_A;
 					*key=tempkey;
 					// suppose that CapsLock & NumLock always on
-					// *mods=(tempmods|GDK_LOCK_MASK|GDK_MOD2_MASK)&GDK_MODIFIER_MASK;
 					*mods = tempmods | DUD_MASK;
 					response = TRUE;
 					goto FINISH;
 				}
 			}
-			// else
-			// {
 			//	// not a valid key, no space in key_name
-			//	g_warning("%s for [%s] is not a valid key. There is no SPACE in it.",
-			//		  key_value, key_name);
 			//	goto FINISH;
-			// }
 		}
 		goto FINISH;
 	}
 	else
 	{
 		// NULL
-		// g_message("We Got a NULL Key (%s)!\n", key_value);
 #ifdef SAFEMODE
 		if ((key==NULL) || (mods==NULL)) goto FINISH;
 #endif
@@ -2360,12 +2149,10 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 #  ifdef SAFEMODE
 		if (page_data==NULL)
 		{
-			// g_debug("save_user_settings(): Trying to free win_data (%p)", win_data);
 			g_free(win_data);
 			return NULL;
 		}
 #  endif
-		// g_debug("Got win_data = %p, page_data = %p", win_data, page_data);
 		init_window_parameters(win_data);
 		init_user_keys(win_data);
 		init_page_color_data();
@@ -2604,7 +2391,6 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 	{
 		gint xoffset = 0, yoffset = 0;
 		gtk_window_get_position (GTK_WINDOW(win_data->window), &xoffset, &yoffset);
-		// g_debug("Geto window position = %+d, %+d", xoffset, yoffset);
 		g_string_append_printf(contents,"geometry = %ldx%ld%+d%+d\n\n",
 				       column, row, xoffset, yoffset);
 	}
@@ -2786,7 +2572,6 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 						command[i].match_regex_name);
 	}
 
-	// g_debug("menu_active_window = %p", menu_active_window);
 	if (menu_active_window==NULL)
 		// For -p command line option
 		// LilyTerm will exit immediately, so we don't need to free the datas used by LilyTerm. XD
@@ -2805,9 +2590,7 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 		win_data->profile = g_strdup(profile);
 	}
 	if (profile==NULL) goto FINISH;
-	// g_debug("save_user_settings(): profile = %s", profile);
 
-	// g_debug("\n%s", contents->str);
 #  ifdef BSD
 	gchar resolved_patch[PATH_MAX+1];
 	gchar *real_file_name = g_strdup(realpath((const gchar *)profile, resolved_patch));
@@ -2817,7 +2600,6 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 #  endif
 	if (real_file_name==NULL)
 	{
-		//if (access(profile, F_OK))
 		if (g_file_test(profile, G_FILE_TEST_IS_SYMLINK))
 		{
 			create_save_failed_dialog(win_data, _("The target file does NOT exist"));
@@ -2827,15 +2609,12 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 			real_file_name = g_strdup(profile);
 	}
 
-	// g_debug("real_file_name = %s", real_file_name);
 	if (g_file_test(real_file_name, G_FILE_TEST_IS_DIR))
 	{
-		// g_debug("The target file is a directory!!");
 		create_save_failed_dialog(win_data, _("The target file is a directory"));
 	}
 	else
 	{
-		// g_debug("G_FILE_TEST_IS_REGULAR = TRUE");
 #  ifdef SAFEMODE
 		if ( contents &&
 		     (! g_file_set_contents(real_file_name, contents->str, -1, &error)))
@@ -2843,14 +2622,11 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 		if ( ! g_file_set_contents(real_file_name, contents->str, -1, &error))
 #  endif
 		{
-			// g_debug("Error while writing profile '%s': %s", real_file_name, error->message);
 #  ifdef SAFEMODE
 			if (error)
 #  endif
 				create_save_failed_dialog(win_data, error->message);
 		}
-		// else
-		//	g_debug("The settings has been saved to %s!", real_file_name);
 	}
 	g_free(real_file_name);
 
@@ -2914,7 +2690,6 @@ gchar *get_profile(void)
 		g_free(profile);
 		profile = NULL;
 	}
-	// g_debug("get_profile: got the final profile = %s", profile);
 	return profile;
 }
 
@@ -2933,8 +2708,6 @@ void init_rgba(struct Window *win_data)
 #endif
 	if (win_data->use_rgba < 0) return;
 
-	// g_debug("Get win_data = %d when initing rgba!", win_data);
-
 	GdkScreen *screen = gtk_widget_get_screen(win_data->window);
 
 	if (win_data->use_rgba==2)
@@ -2944,11 +2717,6 @@ void init_rgba(struct Window *win_data)
 		else
 			goto FINISH;
 	}
-
-	// if (win_data->use_rgba)
-	//	g_debug("Yes, This screen supports rgba!");
-	// else
-	//	g_debug("No, This screen don't supports rgba!");
 
 	if (win_data->use_rgba)
 	{
@@ -2967,7 +2735,6 @@ void init_rgba(struct Window *win_data)
 FINISH:
 	win_data->use_rgba = -2;
 	win_data->dim_window = FALSE;
-//	g_debug("init_rgba() finished!");
 }
 
 void check_profile_version (GKeyFile *keyfile, struct Window *win_data)
@@ -2981,13 +2748,9 @@ void check_profile_version (GKeyFile *keyfile, struct Window *win_data)
 	GtkWidget *window = NULL;
 	if (win_data) window = win_data->window;
 
-	// if (win_data->checked_profile_version)
 	if (checked_profile_version) return;
 	// Check the profile version
 	gchar *profile_version = check_string_value(keyfile, "main", "version", "", FALSE, DISABLE_EMPTY_STR);
-	// g_debug("PROFILE_FORMAT_VERSION = %s, and profile_version = %s",
-	//	PROFILE_FORMAT_VERSION,
-	//	profile_version);
 
 #  ifdef SAFEMODE
 	if (profile_version && (profile_version[0] != '\0') &&
@@ -3040,11 +2803,7 @@ void profile_is_invalid_dialog(GError *error, struct Window *win_data)
 	else
 		err_msg = g_strdup_printf(_("The profile \"%s\" is invalid:\n\n\t%s"),
 					    win_data->profile, error->message);
-	// g_warning("the profile \"%s\" is invalid: %s", win_data->profile, error->message);
 
-	// gchar *markup_message = g_markup_escape_text(err_msg, -1);
-
-	// error_dialog(win_data, err_msg, NULL, ERROR_MESSAGES);
 	error_dialog(win_data->window,
 		     _("The profile is invalid!"),
 		     "The profile is invalid!",
@@ -3054,7 +2813,6 @@ void profile_is_invalid_dialog(GError *error, struct Window *win_data)
 	g_clear_error (&error);
 	g_free(local_profile);
 	g_free(err_msg);
-	// g_free(markup_message);
 	win_data->confirmed_profile_is_invalid = TRUE;
 }
 
@@ -3070,9 +2828,6 @@ void convert_string_to_user_key(gint i, gchar *value, struct Window *win_data)
 
 	if (value)
 	{
-		// g_debug("Got %s key = %s form profile.", pagekeys[i].name, value);
-		// g_debug("Call accelerator_parse() with system_keys[i].name = %s, value = %s (%p)",
-		//	system_keys[i].name, value, value);
 		if (accelerator_parse(system_keys[i].name, value,
 				      &(win_data->user_keys[i].key), &(win_data->user_keys[i].mods)))
 		{
@@ -3085,13 +2840,7 @@ void convert_string_to_user_key(gint i, gchar *value, struct Window *win_data)
 				   system_keys[i].name, value);
 			g_free(value);
 		}
-		// if (pagekeys[i].key)
-		//	g_debug("Got %s = key %x(%s), mods = %x.", pagekeys[i].name,
-		//			pagekeys[i].key, gdk_keyval_name(pagekeys[i].key),
-		//			pagekeys[i].mods);
 	}
-	// else
-	//	g_debug("We can not find %s key in profile...", pagekeys[i].name);
 }
 
 void get_row_and_column_from_geometry_str(glong *column, glong *row, glong *default_column, glong *default_row, gchar *geometry_str)

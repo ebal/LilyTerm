@@ -42,9 +42,7 @@
 #ifdef OUT_OF_MEMORY
 // GString *g_string_append()
 // GString *g_string_prepend()
-//	#define g_dir_read_name(x) NULL
 	#define g_get_tmp_dir() NULL
-//	#define g_get_user_config_dir() NULL
 	#define g_get_user_name() NULL
 	#define g_getenv(x) NULL
 /*	#define g_new0(x,y) NULL */
@@ -228,10 +226,8 @@
 	#define PCRE2_CODE_UNIT_WIDTH 0
 	#include <pcre2.h>
 
-
 #define ALL_ACCELS_MASK (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK | GDK_SUPER_MASK)
 #define SHIFT_ONLY_MASK (GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK | GDK_SUPER_MASK)
-// mods = (event->state | GDK_LOCK_MASK | GDK_MOD2_MASK) & GDK_MODIFIER_MASK;
 #define DUD_MASK (GDK_LOCK_MASK | GDK_MOD2_MASK | ( ~GDK_MODIFIER_MASK))
 
 #define KEY_GROUP 10
@@ -390,7 +386,6 @@ typedef enum {
 	ANSI_THEME_SET_ANSI_THEME,
 } Set_ANSI_Theme_Type;
 
-
 typedef enum {
 	HINTS_FONT_BASE,
 	HINTS_NONE,
@@ -486,7 +481,6 @@ struct User_Command
 	gchar *match_regex;
 };
 
-
 #define COLOR 16
 
 struct Color
@@ -545,7 +539,6 @@ struct Page_Color
 	gchar *comment_eng;
 };
 
-
 // see /usr/include/linux/threads.h for more details.
 #define PID_MAX_DEFAULT 0x8000
 struct Process_Data
@@ -555,7 +548,6 @@ struct Process_Data
 	gint ppid;
 	gchar* cmd;
 };
-
 
 struct Window
 {
@@ -933,7 +925,6 @@ struct Window
 	gint temp_index;
 };
 
-
 struct Page
 {
 
@@ -960,7 +951,6 @@ struct Page
 
 // ---- environ and encoding ---- //
 
-	// for drag&drop, or it will shows unnecessary "(UTF-8)" on the tab
 	gchar *encoding_str;
 	// locale: a string like "zh_TW.Big5". The locale of new tab.
 	gchar *locale;
@@ -1100,11 +1090,9 @@ struct Page
 	gboolean match_regex_setted;
 };
 
-
 //
 // **************************** profile.c ****************************
 //
-
 
 #define MOD 4
 struct ModKey
@@ -1112,7 +1100,6 @@ struct ModKey
 	gchar *name;
 	guint mod;
 };
-
 
 //
 // **************************** dialog.c ****************************

@@ -18,14 +18,11 @@
  */
 
 #include <gtk/gtk.h>
-// for g_get_tmp_dir()
 #include <glib.h>
 // for L10n
 #include <locale.h>
 #include <glib/gi18n.h>
-// for exit()
 #include <stdlib.h>
-// for socket()
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <fcntl.h>
@@ -36,7 +33,6 @@
 
 // the max size of saddr.sun_path in Linux is 108!
 #define UNIX_PATH_MAX 108
-
 
 gboolean set_fd_non_block(gint *fd);
 gboolean init_socket_server(GSourceFunc read_function);

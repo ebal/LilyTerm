@@ -19,13 +19,9 @@
 
 #include <gtk/gtk.h>
 #include <vte/vte.h>
-// for aoti()
 #include <stdlib.h>
-// for strlen()
 #include <string.h>
-// for usleep()
 #include <unistd.h>
-// for stat()
 #include <sys/stat.h>
 #include "lilyterm.h"
 

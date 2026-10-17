@@ -71,17 +71,13 @@
 //							  g_io_channel_shutdown
 //							  (g_io_channel_unref)
 
-
-// for struct ucred (SO_PEERCRED)
 #ifndef _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif
 
 #include <gtk/gtk.h>
 
-// for exit()
 #include <stdlib.h>
-// for socket()
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <fcntl.h>
@@ -140,7 +136,6 @@ Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSour
 #ifdef DETAIL
 	g_debug("! Launch init_gtk_socket() with package_name = %s, socket_str = %s", package_name, socket_str);
 #endif
-	// if Socket Server call init_gtk_socket() again...
 	if (address_len > 0)
 	{
 		if (init_socket_fd() && query_socket() && (send_socket(socket_str)))
@@ -215,7 +210,6 @@ gboolean init_socket_data(gchar *package_name)
 		return socket_fault(GTK_SOCKET_ERROR_TMP_DIR, error, NULL, FALSE);
 
 	address.sun_path[UNIX_PATH_MAX-1] = address.sun_path[UNIX_PATH_MAX-2] = '\0';
-	// g_debug("The socket file is %s", address.sun_path);
 	address_len = sizeof(address);
 
 	if (! init_socket_fd()) return FALSE;
@@ -223,7 +217,6 @@ gboolean init_socket_data(gchar *package_name)
 	// set this socket is non-block
 	return set_fd_non_block(&socket_fd);
 }
-
 
 // it will return TRUE if scucceed
 gboolean set_fd_non_block(gint *fd)
@@ -245,7 +238,6 @@ gboolean set_fd_non_block(gint *fd)
 	return TRUE;
 }
 
-
 // it will return TRUE if scucceed
 gboolean query_socket(void)
 {
@@ -259,7 +251,6 @@ gboolean query_socket(void)
 		return socket_fault(GTK_SOCKET_ERROR_CONNECT_SOCKET, error, NULL, FALSE);
 	return TRUE;
 }
-
 
 // it will return TRUE if scucceed
 gboolean send_socket(gchar *socket_str)
@@ -310,7 +301,6 @@ gboolean send_socket(gchar *socket_str)
 	return TRUE;
 }
 
-
 // it will return TRUE if scucceed
 gboolean clear_channel(GIOChannel *channel, gboolean unref)
 {
@@ -333,7 +323,6 @@ gboolean clear_channel(GIOChannel *channel, gboolean unref)
 
 	return return_value;
 }
-
 
 // it will return TRUE if succeed
 gboolean init_socket_server(GSourceFunc read_function)
@@ -365,14 +354,12 @@ gboolean init_socket_server(GSourceFunc read_function)
 	if (g_io_channel_set_encoding(main_channel, NULL, &error) == G_IO_STATUS_ERROR)
 		return socket_fault(GTK_SOCKET_ERROR_CHANNEL_ENCODING, error, main_channel, TRUE);
 
-	// if any request from client, call accept_socket().
 	// the channel will be clean when shutdown_socket_server()
 	if ( ! g_io_add_watch(main_channel, G_IO_IN|G_IO_HUP, (GIOFunc)accept_socket, (GSourceFunc)read_function))
 		return socket_fault(GTK_SOCKET_ERROR_WATCH_SOCKET, error, NULL, TRUE);
 
 	return TRUE;
 }
-
 
 // it will return TRUE if succeed
 gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc read_function)
@@ -456,7 +443,6 @@ gboolean read_socket(GIOChannel *channel, GIOCondition condition, GSourceFunc re
 	return FALSE;
 }
 
-
 // g_atexit() is gone, and atexit() wants a real void (*)(void).
 static void shutdown_socket_server_at_exit(void)
 {
@@ -473,7 +459,6 @@ gint shutdown_socket_server(gpointer data)
 	if (address.sun_path[0]) unlink(address.sun_path);
 	return 0;
 }
-
 
 // it will always return FALSE
 gboolean socket_fault(Unix_Socket_Error type, GError *error, GIOChannel *channel, gboolean unref)
@@ -559,4 +544,3 @@ gboolean socket_fault(Unix_Socket_Error type, GError *error, GIOChannel *channel
 
 	return FALSE;
 }
-

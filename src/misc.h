@@ -18,11 +18,8 @@
  */
 
 #include <gtk/gtk.h>
-// for setenv() and unsetenv()
 #include <stdlib.h>
-// for usleep()
 #include <unistd.h>
-// for strcmp()
 #include <string.h>
 // for L10n
 #include <locale.h>

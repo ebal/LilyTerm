@@ -78,7 +78,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 	g_debug("! Launch dialog() with style = %ld", (long)style);
 #endif
 	dialog_activated++;
-	// g_debug("Set dialog_activated = %d", dialog_activated);
 
 	real_menu_active_window = menu_active_window;
 
@@ -91,7 +90,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 	gboolean selectable = FALSE;
 	// Backup the datas in clipboard.
 	// extern GtkClipboard *selection_clipboard;
-	// gchar *selection_clipboard_str = g_strdup(gtk_clipboard_wait_for_text(selection_clipboard));
 	extern GtkClipboard *selection_primary;
 	gchar *selection_primary_str = NULL;
 #ifdef SAFEMODE
@@ -135,7 +133,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 
 	gboolean enable_key_binding = win_data->enable_key_binding;
 
-	// g_debug("dialog(): win_data->runtime_LC_MESSAGES = %s", win_data->runtime_LC_MESSAGES);
 	setlocale(LC_MESSAGES, win_data->runtime_LC_MESSAGES);
 
 	struct Page *page_data = NULL;
@@ -145,8 +142,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 #ifdef SAFEMODE
 		if (page_data==NULL) goto FINISH;
 #endif
-		// g_debug("Get win_data = %p, page_data = %p, current_vte = %p when creating dialog!",
-		//	win_data, page_data, win_data->current_vte);
 
 		// For changing the text color of tab
 		dialog_data->total_page = gtk_notebook_get_n_pages(GTK_NOTEBOOK(
@@ -158,8 +153,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 	gboolean tabs_bar_is_shown = TRUE;
 	gint create_entry_hbox = 0;
 	gint i;
-
-	// g_debug("Running dialog() with mod %d", style);
 
 	/*
 		/--------------main_hbox--------------\
@@ -237,14 +230,9 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			g_signal_connect(G_OBJECT(dialog_data->operate[0]), "changed",
 						  G_CALLBACK(refresh_regex_settings), win_data);
 			GtkStyleContext *rc_style = gtk_widget_get_style_context (dialog_data->operate[0]);
-			// gtk_style_context_add_class(rc_style, GTK_STYLE_CLASS_ENTRY);
 			gtk_style_context_get(rc_style, 0, "background-color", &(win_data->find_entry_bg_color), NULL);
 
 			win_data->find_entry_current_bg_color = win_data->find_entry_bg_color;
-			// print_color("win_data->find_entry_bg_color", win_data->find_entry_bg_color);
-
-			// gtk_entry_set_icon_from_stock (GTK_ENTRY (dialog_data->operate[0]),
-			//			       GTK_ENTRY_ICON_SECONDARY, GTK_FAKE_STOCK_CLEAR);
 
 			gtk_box_pack_start (GTK_BOX(hbox), dialog_data->operate[0], TRUE, TRUE, 0);
 
@@ -266,7 +254,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			gtk_box_pack_start (GTK_BOX(dialog_data->box), hbox, FALSE, FALSE, 0);
 
 			dialog_data->operate[1] = gtk_check_button_new_with_label(_("Case sensitive"));
-			// GTK_TOGGLE_BUTTON(dialog_data->operate[1])->active = win_data->find_case_sensitive;
 			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(dialog_data->operate[1]),
 						      win_data->find_case_sensitive);
 			gtk_box_pack_start (GTK_BOX(hbox), dialog_data->operate[1], FALSE, FALSE, 0);
@@ -274,7 +261,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 						  G_CALLBACK(refresh_regex_settings), win_data);
 
 			dialog_data->operate[2] = gtk_check_button_new_with_label(_("Use Perl compatible regular expressions"));
-			// GTK_TOGGLE_BUTTON(dialog_data->operate[2])->active = win_data->find_use_perl_regular_expressions;
 			gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON(dialog_data->operate[2]),
 						      win_data->find_use_perl_regular_expressions);
 			gtk_box_pack_start (GTK_BOX(hbox), dialog_data->operate[2], FALSE, FALSE, 0);
@@ -287,8 +273,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			gtk_widget_set_no_show_all (dialog_data->operate[3], TRUE);
 			gtk_box_pack_end (GTK_BOX(hbox), dialog_data->operate[3], FALSE, FALSE, 0);
 			gtk_box_pack_start (GTK_BOX(dialog_data->box), hbox, FALSE, FALSE, 0);
-
-			// refresh_regex(win_data, dialog_data);
 
 			// Dirty Hack
 			gchar *clipboard_str = NULL;
@@ -386,7 +370,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				      dialog_data);
 			// The Key Value frame
 			dialog_data->operate[0] = gtk_label_new(NULL);
-			// set_markup_key_value(TRUE, "blue", "", dialog_data->operate[0]);
 			gtk_label_set_selectable(GTK_LABEL(dialog_data->operate[0]), TRUE);
 			create_frame_widget(dialog_data, _("Key Value:"), NULL, dialog_data->operate[0], 0);
 
@@ -462,8 +445,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				dialog_data->original_color = win_data->custom_color_theme[win_data->color_theme_index].color[color_index];
 			else
 				dialog_data->original_color = system_color_theme[win_data->color_theme_index].color[color_index];
-			// g_debug("win_data->use_custom_theme = %d", win_data->use_custom_theme);
-			// print_color(-1, "ORIG: dialog_data->original_color", dialog_data->original_color);
 			create_color_selection_widget(dialog_data, (GSourceFunc)adjust_vte_color, win_data->current_vte);
 			break;
 		}
@@ -639,7 +620,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			// save the dialog data first
 
 			dialog_data->original_page_color = win_data->user_page_color[page_color_type];
-			// g_debug("dialog_data->original_page_color = %s", dialog_data->original_page_color);
 #ifdef SAFEMODE
 			if (dialog_data->original_page_color)
 #endif
@@ -654,7 +634,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				create_color_selection_widget(dialog_data, (GSourceFunc)adjust_vte_color, page_data->vte);
 				// store the is_bold data of 1st page...
 				dialog_data->tab_1_is_bold = page_data->is_bold;
-				// win_data->lost_focus = FALSE;
 #ifdef SAFEMODE
 			}
 #endif
@@ -666,8 +645,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			gchar *display_text = NULL;
 
 			// add new pages to PAGE_COLOR+1.
-			// g_debug("dialog_data->total_page = %d, current_page = %d",
-			//	dialog_data->total_page, gtk_notebook_get_current_page(GTK_NOTEBOOK(win_data->notebook)));
 			// The new pages will added next to 1st page!
 			for (i=dialog_data->total_page; i<=PAGE_COLOR; i++)
 				add_page(win_data,
@@ -692,8 +669,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				{
 #endif
 					dialog_data->original_update_method[i] = tmp_page->page_update_method;
-					// g_debug ("??? Save: (%d) tmp_page->page_update_method = %d",
-					//	i+1, tmp_page->page_update_method);
 					if (i)
 					{
 						display_text = _(page_color[i-1].comment);
@@ -712,7 +687,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 						dialog_data->demo_vte = tmp_page->vte;
 						dialog_data->demo_text = display_text;
 					}
-					// g_debug("!!! updating %d page name!", i+1);
 					update_page_name(tmp_page->window,
 							 tmp_page->vte,
 							 NULL,
@@ -732,7 +706,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				}
 #endif
 			}
-			// g_debug("Got tabs_bar_is_shown = %d", tabs_bar_is_shown);
 			if (! tabs_bar_is_shown)
 				hide_and_show_tabs_bar(win_data, ON);
 			win_data->show_tabs_bar = show_tabs_bar;
@@ -804,9 +777,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 						    1, win_data->user_keys[i].value,
 						    -1);
 				dialog_data->KeyTree[system_keys[i].group][key_index[system_keys[i].group]] = i;
-				// g_debug("Set KeyTree[%d][%d] = %d", system_keys[i].group,
-				//				    key_index[system_keys[i].group],
-				//				    i);
 				key_index[system_keys[i].group]++;
 			}
 
@@ -835,7 +805,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			set_markup_key_value(TRUE, NULL, "", dialog_data->operate[0]);
 			gtk_box_pack_start (GTK_BOX(hbox), dialog_data->operate[0], FALSE, FALSE, 0);
 
-			//// GtkWidget *vbox = create_frame_widget(dialog_data, NULL, hbox, combo, 0);
 			GtkWidget *vbox = create_frame_widget(dialog_data, NULL, hbox, dialog_data->treeview, 0);
 			hbox = dirty_gtk_hbox_new (FALSE, 0);
 			GtkWidget *label_vbox = dirty_gtk_vbox_new (FALSE, 0);
@@ -1089,7 +1058,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 					    (GSourceFunc)set_window_opacity,
 					    win_data);
 			dialog_data->original_window_opacity = window_opacity;
-			// g_debug("window_opacity = %1.3f", window_opacity);
 			set_window_opacity(NULL, 0, window_opacity, win_data);
 			break;
 		}
@@ -1139,8 +1107,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				      BOX_VERTICALITY,
 				      0,
 				      dialog_data);
-			// g_debug("value = %0.3f, win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-			//	value, win_data->color_brightness, win_data->color_brightness_inactive);
 			create_scale_widget(dialog_data, -1, 1, 0.001,
 					    value,
 					    (GSourceFunc)set_ansi_color,
@@ -1149,8 +1115,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			break;
 		}
 		case CONFIRM_TO_EXECUTE_COMMAND:				// 22
-			// g_debug("error_data.string = %s", error_data.string);
-			// g_debug("error_data.encoding = %s", error_data.encoding);
 			temp_str[0] = g_markup_escape_text(win_data->temp_data, -1);
 			temp_str[1] = g_strconcat(PACKAGE,
 						  _(" is trying to execute the following command:"),
@@ -1350,14 +1314,9 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 	}
 
 	// We'll use gtk_dialog_run() to show the whole dialog
-	// g_debug("Finish creating dialog!");
 	gtk_widget_show_all (dialog_data->window);
 
 	// GtkRequisition requisition;
-	// gtk_window_get_size(GTK_WINDOW(dialog_data->window),
-	//		    &requisition.width, &requisition.height);
-	// g_debug("! The final window size is %d x %d",
-	//	requisition.width, requisition.height);
 
 	// FIXME: Due to a bug in the GTK+2(?), we should set the ellipsize after the dialog is shown.
 	// Or, the vertical size of title label may be cut, and some text may not shown.
@@ -1373,7 +1332,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			{
 				// style 1: change the tab's name
 				case EDIT_LABEL:
-					// g_debug("Got label name: %s",gtk_entry_get_text(GTK_ENTRY(entry)));
 					g_free(page_data->custom_page_name);
 
 					const gchar *text = gtk_entry_get_text(GTK_ENTRY(dialog_data->operate[0]));
@@ -1387,8 +1345,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 					else
 						page_data->custom_page_name = NULL;
 
-					// g_debug("Get the page name = %s, color = %s",
-					//	page_data->custom_page_name, page_data->tab_color);
 					if (page_data->page_update_method == PAGE_METHOD_WINDOW_TITLE)
 						page_data->window_title_updated = 1;
 					get_and_update_page_name(page_data, FALSE);
@@ -1429,7 +1385,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				// style 16: change the text color of normal text
 				case CHANGE_THE_TEXT_COLOR_OF_NORMAL_TEXT:
 				{
-					// g_debug("Setting the colors. Type = %d", style);
 					GdkRGBA new_color;
 					switch (style)
 					{
@@ -1521,10 +1476,8 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 					if ((create_entry_hbox) && gtk_toggle_button_get_active(
 									GTK_TOGGLE_BUTTON(dialog_data->operate[0])))
 					{
-						// g_debug ("CONFIRM_TO_CLOSE_MULTI_PAGES: call gtk_main_quit()");
 						quit_gtk();
 						force_to_quit = TRUE;
-						// g_debug("Set force_to_quit to %d", force_to_quit);
 					}
 
 					gtk_widget_destroy(dialog_data->window);
@@ -1556,7 +1509,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 					if ((create_entry_hbox) && (gtk_toggle_button_get_active(
 									GTK_TOGGLE_BUTTON(dialog_data->operate[0]))))
 					{
-						// g_debug ("CONFIRM_TO_CLOSE_RUNNING_APPLICATION(): call gtk_main_quit()");
 						quit_gtk();
 						force_to_quit = TRUE;
 					}
@@ -1578,8 +1530,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				{
 					if (style==CHANGE_THE_ANSI_COLORS)
 					{
-						// g_debug("win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-						//	win_data->color_brightness, win_data->color_brightness_inactive);
 						gint i;
 						for (i=0; i<COLOR; i++)
 						{
@@ -1587,7 +1537,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 							if (compare_color(&(system_color_theme[win_data->color_theme_index].color[i]),
 									  &(dialog_data->ansi_colors_orig[i])))
 							{
-								// print_color(i, "Color had been changed", dialog_data->ansi_colors_orig[i]);
 
 								for (j=0; j<THEME; j++)
 									win_data->custom_color_theme[j].color[i] = dialog_data->ansi_colors_orig[i];
@@ -1606,7 +1555,6 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 						// g_debug("dialog_data->original_have_custom_color = %d, win_data->have_custom_color = %d,"
 						//	" dialog_data->original_use_custom_theme = %d, win_data->use_custom_theme = %d",
 						//	dialog_data->original_have_custom_color, win_data->have_custom_color,
-						//	dialog_data->original_use_custom_theme, win_data->use_custom_theme);
 						if ((dialog_data->original_have_custom_color != win_data->have_custom_color) ||
 						    (dialog_data->original_use_custom_theme != win_data->use_custom_theme))
 							recreate_theme_menu_items(win_data);
@@ -1627,15 +1575,11 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 							      win_data->cursor_color, win_data->color, FALSE, FALSE);
 					}
 					g_ptr_array_unref(all_pages);
-					// g_debug("win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-					//	win_data->color_brightness, win_data->color_brightness_inactive);
 					break;
 				}
 				case ADJUST_THE_BRIGHTNESS_OF_ANSI_COLORS_WHEN_INACTIVE:
 					win_data->color_brightness_inactive = win_data->color_brightness;
 					win_data->color_brightness = dialog_data->original_color_brightness;
-					// g_debug("win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-					//	win_data->color_brightness, win_data->color_brightness_inactive);
 					win_data->dim_text = TRUE;
 					generate_all_color_datas(win_data);
 					set_vte_color(win_data->current_vte, use_default_vte_theme(win_data),
@@ -1655,15 +1599,12 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				// FIXME: vte_terminal_search_set_gregex(VTE_TERMINAL(win_data->current_vte), NULL) don't work.
 				// case FIND_STRING:
 				//	vte_terminal_search_set_gregex(VTE_TERMINAL(win_data->current_vte), NULL);
-				//	vte_terminal_search_find_previous(VTE_TERMINAL(win_data->current_vte));
-				//	break;
 				// style  9: change the foreground color
 				case CHANGE_THE_FOREGROUND_COLOR:
 				// style 10: change the background color
 				case CHANGE_THE_BACKGROUND_COLOR:
 				// style  9: change the cursor color
 				case CHANGE_THE_CURSOR_COLOR:
-					// print_color(-1, "RECOVER: dialog_data->original_color", dialog_data->original_color);
 					if (style==CHANGE_THE_CURSOR_COLOR)
 						win_data->custom_cursor_color = dialog_data->original_custom_cursor_color;
 					break;
@@ -1708,12 +1649,9 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 					if (style==CHANGE_THE_ANSI_COLORS)
 						win_data->invert_color = dialog_data->original_invert_color;
 
-					// g_debug("dialog_data->original_color_brightness = %0.3f", dialog_data->original_color_brightness);
 					win_data->color_brightness = dialog_data->original_color_brightness;
 					win_data->color_brightness_inactive = dialog_data->original_color_brightness_inactive;
 					win_data->dim_text = dialog_data->original_dim_text;
-					// g_debug("win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-					//	win_data->color_brightness, win_data->color_brightness_inactive);
 
 					// recover the color of current vte
 					if (win_data->use_custom_theme)
@@ -1752,13 +1690,11 @@ DESTROY_WINDOW:
 	}
 
 	// destroy dialog.
-	// g_debug("destroy dialog: dialog_data->window = %p", dialog_data->window);
 	if ((dialog_response != GTK_RESPONSE_NONE) && (dialog_data->window))
 		gtk_widget_destroy(dialog_data->window);
 
 	if ((style >= CHANGE_THE_TEXT_COLOR_OF_WINDOW_TITLE) && (style <= CHANGE_THE_TEXT_COLOR_OF_NORMAL_TEXT))
 	{
-		// g_debug("tabs_bar_is_shown = %d", tabs_bar_is_shown);
 		if (tabs_bar_is_shown != gtk_notebook_get_show_tabs GTK_NOTEBOOK(win_data->notebook))
 			hide_and_show_tabs_bar(win_data, OFF);
 	}
@@ -1775,7 +1711,6 @@ DESTROY_WINDOW:
 
 FINISH:
 	dialog_activated--;
-	// g_debug("Set dialog_activated = %d, gtk_widget_get_mapped(win_data->window) = %d", dialog_activated, gtk_widget_get_mapped(win_data->window));
 	g_free(dialog_data);
 	g_free(selection_primary_str);
 	for (i=0; i<TEMPSTR; i++) g_free(temp_str[i]);
@@ -1790,7 +1725,6 @@ FINISH:
 
 	return dialog_response;
 }
-
 
 void init_dialog_ansi_colors_from_win_data(struct Window *win_data, struct Dialog *dialog_data)
 {
@@ -1808,9 +1742,7 @@ void init_dialog_ansi_colors_from_win_data(struct Window *win_data, struct Dialo
 		else
 			dialog_data->ansi_colors_orig[i] = system_color_theme[win_data->color_theme_index].color[i];
 	}
-	// print_color(i, "dialog_data->ansi_colors", dialog_data->ansi_colors_orig[i]);
 }
-
 
 void dialog_invert_color_theme(GtkWidget *menuitem, struct Window *win_data)
 {
@@ -1824,20 +1756,14 @@ void dialog_invert_color_theme(GtkWidget *menuitem, struct Window *win_data)
 #ifdef SAFEMODE
 	if (dialog_data==NULL) return;
 #endif
-	// g_debug("dialog_invert_color_theme(): (before) win_data->temp_index = %d, win_data->invert_color = %d",
-	//	win_data->temp_index, win_data->invert_color);
 
 	// win_data->temp_index will point to the color index in color_orig
 
 	// invert the color of current vte
 	win_data->invert_color = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(menuitem));
 	win_data->temp_index = get_color_index(TRUE, win_data->temp_index);
-	// g_debug("dialog_invert_color_theme(): (after) win_data->temp_index = %d, win_data->invert_color = %d",
-	//	win_data->temp_index, win_data->invert_color);
 	win_data->color_brightness = - win_data->color_brightness;
 	win_data->color_brightness_inactive = -win_data->color_brightness_inactive;
-	// g_debug("dialog_invert_color_theme(): win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-	//	win_data->color_brightness, win_data->color_brightness_inactive);
 
 	set_new_ansi_color(win_data->current_vte, dialog_data->ansi_colors, dialog_data->ansi_colors_orig, win_data->color_brightness,
 			   win_data->invert_color, FALSE, win_data->custom_cursor_color, win_data->cursor_color, FALSE);
@@ -1846,7 +1772,6 @@ void dialog_invert_color_theme(GtkWidget *menuitem, struct Window *win_data)
 	gtk_range_set_value(GTK_RANGE(dialog_data->operate[1]), win_data->color_brightness);
 
 	// update the color selection info
-	// g_debug("dialog_invert_color_theme(): call update_ansi_color_info() with win_data->temp_index to %d", win_data->temp_index);
 	gint converted_index = get_color_index(win_data->invert_color, win_data->temp_index);
 	update_ansi_color_info(NULL, converted_index);
 
@@ -1960,24 +1885,13 @@ void update_fg_bg_color(struct Window *win_data, GdkRGBA color, gboolean update_
 		// FIXME: GtkColorSelection have no ALPHA-CHANGED signal.
 		//	  so that the following code should be
 		//	  marked for temporary.
-		// background_saturation =
-		//	gtk_color_selection_get_current_alpha(
-		//		GTK_COLOR_CHOOSER(adjustment))/65535;
 	}
 
 	gint i, index = get_color_index(win_data->invert_color, color_index);
-	// g_debug("update_fg_bg_color(): index = %d,  win_data->invert_color = %d", index, win_data->invert_color);
-	// print_color(-1, "SAVE: color", color);
 	for (i=0; i<THEME; i++)
 	{
 		win_data->custom_color_theme[i].color[index] = color;
 
-		// gchar *temp_str = g_strdup_printf("%d (%02d): fg_color", i, index);
-		// print_color (temp_str, win_data->custom_color_theme[i].color[index]);
-		// g_free(temp_str);
-		// temp_str = g_strdup_printf("%d (%02d): bg_color", i, get_color_index(win_data->invert_color, index));
-		// print_color (temp_str, win_data->custom_color_theme[i].color[get_color_index(win_data->invert_color, index)]);
-		// g_free(temp_str);
 	}
 
 	win_data->have_custom_color = TRUE;
@@ -2011,13 +1925,11 @@ void update_ansi_color_info(GtkWidget *button, gint color_index)
 	gtk_window_set_title(GTK_WINDOW(dialog_data->window), tmp_topic);
 
 	// avoid to call adjust_vte_color()
-	// g_debug("update_ansi_color_info(): set win_data->temp_index to -1");
 	win_data->temp_index = -1;
 	gtk_color_chooser_set_rgba(GTK_COLOR_CHOOSER(dialog_data->color_button[color_index]), &(dialog_data->ansi_colors_orig[convert_index]));
 	g_free(tmp_topic);
 	// win_data->temp_index will point to the color index in color_orig
 	win_data->temp_index = convert_index;
-	// g_debug("Launch update_ansi_color_info(): win_data->temp_index = %d", win_data->temp_index);
 }
 
 GtkWidget *create_label_with_text(GtkWidget *box, gboolean set_markup, gboolean selectable, gint max_width_chars, const gchar *text)
@@ -2074,20 +1986,14 @@ void refresh_regex_settings(GtkWidget *widget, struct Window *win_data)
 	if (dialog_data->operate[0]!=NULL)
 #endif
 		win_data->find_string = g_strdup(gtk_entry_get_text(GTK_ENTRY(dialog_data->operate[0])));
-	// win_data->find_case_sensitive = GTK_TOGGLE_BUTTON(dialog_data->operate[1])->active;
 #ifdef SAFEMODE
 	if (dialog_data->operate[1]!=NULL)
 #endif
 		win_data->find_case_sensitive = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(dialog_data->operate[1]));
-	// win_data->find_use_perl_regular_expressions = GTK_TOGGLE_BUTTON(dialog_data->operate[2])->active;
 #ifdef SAFEMODE
 	if (dialog_data->operate[2]!=NULL)
 #endif
 		win_data->find_use_perl_regular_expressions = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(dialog_data->operate[2]));
-
-	// g_debug("Got win_data->find_string = %s", win_data->find_string);
-	// g_debug("Got win_data->find_case_sensitive = %d", win_data->find_case_sensitive);
-	// g_debug("win_data->find_use_perl_regular_expressions = %d", win_data->find_use_perl_regular_expressions);
 
 	refresh_regex(win_data, dialog_data);
 }
@@ -2183,7 +2089,6 @@ void find_str(GtkWidget *widget, Dialog_Find_Type type)
 #endif
 
 #ifdef FATAL
-	// g_debug("real_menu_active_window = %p", real_menu_active_window);
 	if (real_menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("find_str_in_vte()");
 #endif
@@ -2251,7 +2156,6 @@ gboolean find_str_in_vte(GtkWidget *vte, Dialog_Find_Type type)
 	return response;
 }
 
-
 void paste_text_to_vte_terminal(GtkWidget *widget, struct Dialog *dialog_data)
 {
 #ifdef DETAIL
@@ -2259,12 +2163,10 @@ void paste_text_to_vte_terminal(GtkWidget *widget, struct Dialog *dialog_data)
 #endif
 #ifdef SAFEMODE
 	if ((dialog_data==NULL) || (dialog_data->operate[0]==NULL)) return;
-	// g_debug("paste_text_to_vte_terminal() Got dialog_data->operate[0] = %p", dialog_data->operate[0]);
 #endif
 	const gchar *text = gtk_entry_get_text(GTK_ENTRY(dialog_data->operate[0]));
 	if ((text == NULL) || (text[0] == '\0')) return;
 #ifdef FATAL
-	// g_debug("real_menu_active_window = %p", real_menu_active_window);
 	if (real_menu_active_window==NULL)
 		return print_active_window_is_null_error_dialog("paste_text_to_vte_terminal()");
 #endif
@@ -2404,11 +2306,6 @@ void create_color_selection_widget(struct Dialog *dialog_data, GSourceFunc func,
 	set_color_selection_colors(dialog_data->operate[0], &(dialog_data->original_color));
 
 	// FIXME: The "color-changed" signal don't work in GTK3+ anymore.
-#  ifdef SAFEMODE
-	// if (func)
-#  endif
-	//	g_signal_connect_after(dialog_data->operate[0], "color-activated",
-	//			       G_CALLBACK(func), func_data);
 }
 
 void set_color_selection_colors(GtkWidget *color_selection, GdkRGBA *color)
@@ -2517,12 +2414,9 @@ gchar *get_colorful_profile(struct Window *win_data)
 	else
 		profile = g_strdup_printf("%s/%s", profile_dir, USER_PROFILE);
 
-	// g_debug("win_data->runtime_encoding = %s", win_data->runtime_encoding);
-	// g_debug("profile = %s", profile);
 	gchar *utf8_profile = convert_str_to_utf8(profile, win_data->runtime_encoding);
 	g_free(profile);
 
-	// g_debug("utf8_profile = %s", utf8_profile);
 	return convert_text_to_html(&utf8_profile, TRUE, "blue", "b", NULL);
 }
 
@@ -2556,8 +2450,6 @@ gboolean grab_key_press (GtkWidget *window, GdkEventKey *event, struct Dialog *d
 #ifdef SAFEMODE
 		if (page_data==NULL) continue;
 #endif
-		// g_debug("Send key %s to vte %p!!", key_value, page_data->vte);
-		// gtk_test_widget_send_key (page_data->vte, event->keyval, event->state);
 		gtk_widget_event(page_data->vte, (GdkEvent *)event);
 	}
 	g_ptr_array_unref(all_pages);
@@ -2627,9 +2519,6 @@ gboolean deal_dialog_key_press(GtkWidget *window, GdkEventKey *event, struct Dia
 		dialog_data->user_key_value[dialog_data->current_key_index] = key_value;
 		key_value = _("(Disabled)");
 	}
-
-	// g_debug("Got function key = %s, and event->keyval = %X (%s)",
-	//	key_value, event->keyval, gdk_keyval_name(event->keyval));
 
 	set_markup_key_value(TRUE, "blue", key_value, dialog_data->operate[2]);
 
@@ -2704,7 +2593,6 @@ void adjust_vte_color_sample(GtkColorButton* color_button, gint color_index)
 	win_data->temp_index = get_color_index(win_data->invert_color, color_index);
 
 	GdkRGBA color;
-	// gtk_color_button_get_rgba(GTK_COLOR_BUTTON(color_button), &color);
 	gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(color_button), &color);
 
 	adjust_vte_color(NULL, &color, win_data->current_vte);
@@ -2724,9 +2612,7 @@ void adjust_vte_color(GtkColorChooser *color_selection, GdkRGBA *color, GtkWidge
 		gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(color_selection), &final_color);
 	else
 		final_color=*color;
-	// g_debug("Changing the color for vte %p", vte);
 	struct Dialog *dialog_data = (struct Dialog *)g_object_get_data(G_OBJECT(real_menu_active_window), "Dialog");
-	// g_debug("Get dialog_data = %p", dialog_data);
 #ifdef SAFEMODE
 	if (dialog_data==NULL) return;
 #endif
@@ -2749,16 +2635,13 @@ void adjust_vte_color(GtkColorChooser *color_selection, GdkRGBA *color, GtkWidge
 			if (win_data==NULL) return;
 #endif
 			gint converted_index = get_color_index(win_data->invert_color, win_data->temp_index);
-			// g_debug("adjust_vte_color(): win_data->temp_index = %d, converted_index = %d", win_data->temp_index, converted_index);
 
 			if ((dialog_data->type==CHANGE_THE_FOREGROUND_COLOR) ||
 			    ((dialog_data->type==CHANGE_THE_ANSI_COLORS) && (converted_index==(COLOR-1))))
 			{
-				// print_color(-1, "RECONVER 1: final_color", final_color);
 				if (dialog_data->recover)
 					final_color = dialog_data->original_color;
 
-				// print_color(-1, "RECONVER 2: final_color", final_color);
 				vte_terminal_set_color_foreground_rgba(VTE_TERMINAL(vte), &(final_color));
 				vte_terminal_set_color_bold_rgba(VTE_TERMINAL(vte), &(final_color));
 
@@ -2776,16 +2659,7 @@ void adjust_vte_color(GtkColorChooser *color_selection, GdkRGBA *color, GtkWidge
 					final_color = dialog_data->original_color;
 					// FIXME: GtkColorSelection have no ALPHA CHANGED signal.
 					//	  so that the following code should be marked for temporary
-					//if (use_rgba)
-					//{
-					//	gint alpha = gtk_color_selection_get_current_alpha(colorselection);
-					//	g_debug("Current alpha = %d", alpha);
-					//	vte_terminal_set_opacity(VTE_TERMINAL(vte), alpha);
-					//	vte_terminal_set_background_saturation( VTE_TERMINAL(vte), 1-alpha/65535);
-					//}
 				}
-				//else if (use_rgba)
-				//	set_background_saturation(NULL, 0, background_saturation, vte);
 
 				vte_terminal_set_color_background_rgba(VTE_TERMINAL(vte), &(final_color));
 				if (dialog_data->type==CHANGE_THE_ANSI_COLORS)
@@ -2802,15 +2676,12 @@ void adjust_vte_color(GtkColorChooser *color_selection, GdkRGBA *color, GtkWidge
 				{
 					GdkRGBA tmp_color;
 					tmp_color = final_color;
-					// g_debug("adjust_vte_color(): update the %d color of colors_orig", win_data->temp_index);
 					dialog_data->ansi_colors_orig[win_data->temp_index] = tmp_color;
 					adjust_ansi_color(&dialog_data->ansi_colors[get_color_index(win_data->invert_color, win_data->temp_index)],
 							  &dialog_data->ansi_colors_orig[win_data->temp_index],
 							  win_data->color_brightness);
 					set_vte_color(win_data->current_vte, FALSE, win_data->custom_cursor_color,
 						      win_data->cursor_color, dialog_data->ansi_colors, FALSE, FALSE);
-					// set_new_ansi_color(win_data->current_vte, dialog_data->ansi_colors, dialog_data->ansi_colors_orig,
-					//		   win_data->color_brightness, win_data->invert_color, FALSE, win_data->cursor_color);
 				}
 			}
 			break;
@@ -2888,12 +2759,6 @@ void recover_page_colors(GtkWidget *dialog_window, GtkWidget *window, GtkWidget 
 	gint i;
 	struct Page *page_data = NULL;
 
-	// g_debug("page_cmdline_color = %s", win_data->page_cmdline_color);
-	// g_debug("page_dir_color = %s", win_data->page_dir_color);
-	// g_debug("page_custom_color = %s", win_data->page_custom_color);
-	// g_debug("page_root_color = %s", win_data->page_root_color);
-	// g_debug("page_normal_color = %s", win_data->page_normal_color);
-
 	// delete the tab that we add when demo
 	win_data->kill_color_demo_vte = TRUE;
 	for (i=PAGE_COLOR; i>=dialog_data->total_page; i--)
@@ -2918,12 +2783,9 @@ void recover_page_colors(GtkWidget *dialog_window, GtkWidget *window, GtkWidget 
 		page_data = get_page_data_from_nth_page(win_data, i);
 
 		// restore the is_bold of 1st page
-		// g_debug("i = %d", i);
 		if (i==0)
 			page_data->is_bold = dialog_data->tab_1_is_bold;
 
-		// g_debug("Launch get_and_update_page_name() in recover_page_colors() for %d page!", i);
-		// g_debug("page_data->page_update_method = %d", page_data->page_update_method);
 		if (i <= PAGE_COLOR) page_data->page_update_method = dialog_data->original_update_method[i];
 		if (page_data->page_update_method == PAGE_METHOD_WINDOW_TITLE) page_data->window_title_updated = 1;
 		get_and_update_page_name(page_data, FALSE);
@@ -2947,10 +2809,6 @@ gboolean check_and_add_locale_to_warned_locale_list(struct Window *win_data, gch
 #endif
 	gboolean response = TRUE;
 
-	// g_debug("check_and_add_locale_to_warned_locale_list(): win_data->warned_locale_list = %p",
-	//	win_data->warned_locale_list);
-	// g_debug("check_and_add_locale_to_warned_locale_list(): Checking '%s' in '%s'...",
-	//	check_locale, win_data->warned_locale_list->str);
 	if (strstr(win_data->warned_locale_list->str, check_locale))
 		response = FALSE;
 	else
@@ -2994,7 +2852,6 @@ void error_dialog(GtkWidget *window, gchar *title_translation, gchar *title,
 #endif
 
 	dialog_activated++;
-	// g_debug("Set dialog_activated = %d", dialog_activated);
 
 	gchar *utf8_message = convert_str_to_utf8(message, encoding);
 	struct Dialog *dialog_data = g_new0(struct Dialog, 1);
@@ -3012,7 +2869,6 @@ void error_dialog(GtkWidget *window, gchar *title_translation, gchar *title,
 	g_free(dialog_data);
 	g_free(utf8_message);
 	dialog_activated--;
-	// g_debug("Set dialog_activated = %d", dialog_activated);
 }
 
 #ifdef FATAL
@@ -3053,8 +2909,6 @@ gboolean set_ansi_color(GtkRange *range, GtkScrollType scroll, gdouble value, Gt
 
 	value = CLAMP(value, -1, 1);
 	win_data->color_brightness = value;
-	// g_debug("set_ansi_color(): win_data->color_brightness = %0.3f, win_data->color_brightness_inactive = %0.3f",
-	//	win_data->color_brightness, win_data->color_brightness_inactive);
 
 	struct Dialog *dialog_data = (struct Dialog *)g_object_get_data(G_OBJECT(real_menu_active_window), "Dialog");
 #ifdef SAFEMODE
@@ -3063,13 +2917,11 @@ gboolean set_ansi_color(GtkRange *range, GtkScrollType scroll, gdouble value, Gt
 	// We will not adject the value of fg_color
 	// win_data->fg_color = get_inactive_color(dialog_data->original_fg_color,
 	//					win_data->color_brightness,
-	//					dialog_data->original_color_brightness);
 	gboolean dim_fg_color = (dialog_data->type==ADJUST_THE_BRIGHTNESS_OF_ANSI_COLORS_WHEN_INACTIVE) ? TRUE : FALSE;
 	set_new_ansi_color(win_data->current_vte, dialog_data->ansi_colors, dialog_data->ansi_colors_orig, win_data->color_brightness,
 			   win_data->invert_color, FALSE, win_data->custom_cursor_color, win_data->cursor_color, dim_fg_color);
 	return FALSE;
 }
-
 
 void set_new_ansi_color(GtkWidget *vte, GdkRGBA color[COLOR], GdkRGBA color_orig[COLOR], gdouble color_brightness, gboolean invert_color,
 			gboolean default_vte_color, gboolean custom_cursor_color, GdkRGBA cursor_color, gboolean dim_fg_color)
@@ -3105,7 +2957,6 @@ void update_key_info (GtkTreeSelection *treeselection, struct Dialog *dialog_dat
 
 		path = gtk_tree_model_get_path(model, &iter);
 		string = gtk_tree_path_to_string (path);
-		// g_debug ("update_key_info(): got string = %s", string);
 		indices = split_string(string, ":", -1);
 #ifdef SAFEMODE
 		if (indices)
@@ -3121,15 +2972,12 @@ void update_key_info (GtkTreeSelection *treeselection, struct Dialog *dialog_dat
 		else
 		{
 			dialog_data->current_key_index = dialog_data->KeyTree[atoi(indices[0])][atoi(indices[1])];
-			// g_debug("KeyTree[%d][%d] = %d",
-			//	atoi(indices[0]), atoi(indices[1]), dialog_data->current_key_index);
 			set_markup_key_value(TRUE, "dark green",
 					     system_keys[dialog_data->current_key_index].translation,
 					     dialog_data->operate[1]);
 			// g_debug("dialog_data->current_key_index = %d, "
 			//	   "dialog_data->user_key_value[dialog_data->current_key_index] = %s",
 			//	   dialog_data->current_key_index,
-			//	   dialog_data->user_key_value[dialog_data->current_key_index]);
 			gchar *user_key_value = dialog_data->user_key_value[dialog_data->current_key_index];
 			if ((user_key_value==NULL) || (user_key_value[0]=='\0'))
 				user_key_value = _("(Disabled)");
@@ -3187,7 +3035,6 @@ void clear_key_groups(struct Dialog *dialog_data, gboolean clear_all)
 	else
 		set_markup_key_value(TRUE, "blue", "", dialog_data->operate[2]);
 
-
 	if (clear_all)
 		// call clean_model_foreach for each entry
 		gtk_tree_model_foreach(model, clean_model_foreach, NULL);
@@ -3201,7 +3048,6 @@ void clear_key_groups(struct Dialog *dialog_data, gboolean clear_all)
 			// Trying to find out 'dialog_data->current_key_index'
 			GtkTreePath *path = gtk_tree_model_get_path(model, &iter_child);
 			gchar *string = gtk_tree_path_to_string (path);
-			// g_debug ("update_key_info(): got string = %s", string);
 			current_key_group = atoi(string);
 			gtk_tree_path_free(path);
 			g_free(string);
@@ -3248,7 +3094,6 @@ gboolean clean_model_foreach(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter
 		gtk_tree_store_set (GTK_TREE_STORE (model), iter, 1, "", -1);
 	return FALSE;
 }
-
 
 void clear_key_group(GtkButton *button, struct Dialog *dialog_data)
 {
@@ -3327,18 +3172,9 @@ void show_usage_text(GtkWidget *notebook, gpointer page, guint page_num, struct 
 		gtk_widget_show_all(dialog_data->window);
 }
 
-//void err_page_data_is_null(gchar *function_name)
-//{
 //	gchar *err_msg = g_strdup_printf("%s: page_data = NULL\n\n"
 //					 "Please report bug to %s, Thanks!",
 //					 function_name,
-//					 BUGREPORT);
-//	error_dialog(NULL, err_msg, NULL, ERROR_MESSAGES);
-//#ifdef DETAIL
-//	g_debug("* free err_msg %p (%s) in set_encoding()", err_msg, err_msg);
-//#endif
-//	g_free(err_msg);
-//}
 
 void create_dialog(gchar *dialog_title_translation, gchar *dialog_title,  Dialog_Button_Type type,
 		   GtkWidget *window, gboolean center, gboolean resizable, gint border_width,
@@ -3372,14 +3208,12 @@ void create_dialog(gchar *dialog_title_translation, gchar *dialog_title,  Dialog
 			return;
 	}
 	gboolean BOTTON_ORDER = gtk_alternative_dialog_button_order(NULL);
-	// g_debug("gtk_alternative_dialog_button_order = %d" ,gtk_alternative_dialog_button_order (NULL));
 
 	// Strange behavior, If the locale is empty, or setted to 'C' or 'POSIX',
 	// And 'default_locale' is setted in the profile,
 	// All the UI will be translated to default_locale,
 	// But the window title will be empty.
 	// So, set it to un-translated string here.
-	// g_debug("init_LC_CTYPE = %s", init_LC_CTYPE);
 	if ((init_LC_CTYPE==NULL) || (init_LC_CTYPE[0]=='\0') ||
 	    (! compare_strings(init_LC_CTYPE, "C", TRUE)) ||
 	    (! compare_strings(init_LC_CTYPE, "\"C\"", TRUE)) ||
@@ -3387,7 +3221,6 @@ void create_dialog(gchar *dialog_title_translation, gchar *dialog_title,  Dialog
 	    (! compare_strings(init_LC_CTYPE, "\"POSIX\"", TRUE)))
 		dialog_title_translation = dialog_title;
 
-	// g_debug("dialog_title_translation = %s", dialog_title_translation);
 	switch (type)
 	{
 		case DIALOG_OK:
@@ -3457,7 +3290,6 @@ void create_dialog(gchar *dialog_title_translation, gchar *dialog_title,  Dialog
 	gtk_container_add (GTK_CONTAINER (gtk_dialog_get_content_area(GTK_DIALOG(dialog_data->window))), main_hbox);
 	GtkWidget *main_right_vbox = dirty_gtk_vbox_new (FALSE, 0);
 	gtk_box_pack_end (GTK_BOX(main_hbox), main_right_vbox, FALSE, FALSE, 0);
-
 
 	if (icon)
 	{

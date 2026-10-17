@@ -86,14 +86,12 @@ gchar *convert_array_to_string(gchar **array, gchar separator)
 
 	while (array[i]!=NULL)
 	{
-		// g_debug("%d: %s", i, array[i]);
 		if (array_str->len && (separator!='\0'))
 			g_string_append_printf(array_str, "%c%s", separator, array[i]);
 		else
 			g_string_append_printf(array_str, "%s", array[i]);
 		i++;
 	}
-	// g_debug ("Got array_str = %s", array_str->str);
 	return g_string_free(array_str, FALSE);
 }
 
@@ -231,8 +229,6 @@ gchar *convert_str_to_utf8(gchar *string, gchar *encoding_str)
 	gchar *local_string = NULL;
 	if (encoding_str)
 	{
-		//g_debug("string = %s", string);
-		//g_debug("encoding_str = %s", encoding_str);
 		local_string = g_convert_with_fallback (string,
 							-1,
 							"UTF-8",
@@ -241,7 +237,6 @@ gchar *convert_str_to_utf8(gchar *string, gchar *encoding_str)
 							NULL,
 							NULL,
 							NULL);
-		// g_debug("Get local_string = %s", local_string);
 
 		if ((local_string == NULL ) || (local_string[0]=='\0'))
 		{
@@ -256,7 +251,6 @@ gchar *convert_str_to_utf8(gchar *string, gchar *encoding_str)
 			}
 		}
 
-		// g_debug("FINAL: local_string = %s", local_string);
 		return local_string;
 	}
 	else
@@ -276,8 +270,6 @@ void set_VTE_CJK_WIDTH_environ(gint VTE_CJK_WIDTH)
 			break;
 		//case 1:
 		//	// The VTE_CJK_WIDTH will be setted depend on the LC environ in newer libvte version.
-		//	unsetenv("VTE_CJK_WIDTH");
-		//	break;
 		case 1:
 			// VTE_CJK_WIDTH=narrow only work for vte >= 0.16.14
 			setenv("VTE_CJK_WIDTH", "narrow", TRUE);
@@ -365,7 +357,6 @@ const gchar *get_default_lc_data(gint lc_type)
 	if (lc_all)
 		lc_data = lc_all;
 
-//	g_debug("Get lc_data = %s", lc_data);
 	if (lc_data)
 		return lc_data;
 	else
@@ -404,48 +395,27 @@ gboolean check_string_in_array(gchar *str, gchar **lists)
 
 	while (lists[++i])
 	{
-		// g_debug("Checking %s and %s...", str, lists[i]);
 		if (strcmp(str, lists[i])==0) return TRUE;
 	}
-	// g_debug("No, Can not find '%s' in the array!!", str);
 	return FALSE;
 }
 
 //gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
-//{
-//#ifdef FULL
-//	g_debug("! Launch get_proc_data() with pid = %d, file = %s", pid, file);
-//#endif
 //
-//	if (! proc_exist) return NULL;
-//	if (pid<1) return NULL;
 //
-//	*length=0;
-//	gchar *contents=NULL;
-//	gchar *file_path = g_strdup_printf("%s/%d/%s", proc_file_system_path, (gint)pid, file);
-//	// g_debug("file_path = %s", file_path);
 //
-//	if (file_path && (g_file_test(file_path, G_FILE_TEST_EXISTS)))
-//		g_file_get_contents (file_path, &contents, length, NULL);
-//	g_free(file_path);
-//	// g_debug("contents = %s", contents);
-//	return contents;
-//}
 
 gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
 {
 #ifdef FULL
 	g_debug("! Launch get_proc_data() with pid = %d, file = %s", pid, file);
 #endif
-	// g_debug("proc_exist = %d", proc_exist);
 	if (! proc_exist) return NULL;
 	if (pid<1) return NULL;
 	gchar *contents=NULL;
 	gint timeout=0;
 	gchar *proc_path = g_strdup_printf("%s/%d", proc_file_system_path, (gint)pid);
-	// g_debug("proc_path = %s", proc_path);
 	gchar *file_path = g_strdup_printf("%s/%s", proc_path, file);
-	// g_debug("file_path = %s", file_path);
 
 #if defined(OUT_OF_MEMORY)
 	if (proc_path && file_path)
@@ -454,33 +424,9 @@ gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
 		while (g_file_test(proc_path, G_FILE_TEST_EXISTS) &&
 		       g_file_get_contents (file_path, &contents, length, NULL))
 		{
-			// g_debug("Got the contents length is %d for %s", *length, file_path);
 			if (*length==0)
 			{
-				// gsize len = 0;
-				// gchar *stat = NULL;
-				// gchar *stat_path = g_strdup_printf("%s/%d/stat", proc_file_system_path, (gint)pid);
-				// if (g_file_get_contents (stat_path, &contents, &len, NULL))
-				// {
-				//	g_debug("Got len = %d, stat = %s", len, stat);
-				//	if (len && stat)
-				//	{
-				//		gchar **stats = split_string(stat, " ()", 6);
-				//		if (stats && stats[4][0]=='Z')
-				//		{
-				//			g_warning("The child process \"(%s) %s\" has died. Abort.",
-				//				  stats[0], stats[2]);
-				//			g_free(stat);
-				//			g_strfreev(stats);
 				//
-				//			g_free(contents);
-				//			contents = NULL;
-				//			break;
-				//		}
-				//		g_strfreev(stats);
-				//	}
-				// }
-				// g_free(stat);
 				g_message("Waiting for %s/%d/%s...", proc_file_system_path, (gint)pid, file);
 				// we should wait until "/proc/%d/file" is not empty
 				usleep(100000);
@@ -508,7 +454,6 @@ gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
 #endif
 	g_free(file_path);
 	g_free(proc_path);
-	// g_debug("contents = %s", contents);
 	return contents;
 }
 
@@ -521,14 +466,9 @@ gchar **split_string(const gchar *str, const gchar *split, gint max_tokens)
 #ifdef SAFEMODE
 	if ((str==NULL) || (split==NULL) || (split[0]=='\0')) return NULL;
 #endif
-	// g_debug("contents = %s", contents);
 	gchar **datas = g_strsplit_set(str, split, max_tokens);
 	gint i = -1;
 
-	// while (datas[++i])
-	//	g_debug("Got data[%d] = %s", i, datas[i]);
-	// g_debug("Got i = %d in split_string()", i);
-	// i = -1;
 #ifdef SAFEMODE
 	if (datas && (max_tokens>0))
 #else
@@ -644,11 +584,9 @@ gchar *join_strings_to_string(const gchar separator, const gint total, const Str
 			else
 				g_string_append_printf(strings, "%s", string);
 		}
-		// g_debug("[%2d] convert_strings_to_string(): strings = %s", i, strings->str);
 		string = va_arg(arg_ptr, char *);
 	}
 	va_end(arg_ptr);
-	// g_debug("convert_strings_to_string(): strings = %s", strings->str);
 
 	return g_string_free(strings, FALSE);
 }
@@ -721,7 +659,6 @@ gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line)
 				string[i] = separate;
 				star_start = i+1;
 
-				// g_debug("colorful_max_new_lines(): color_str = %s", color_str);
 			}
 		}
 		if (total>=output_line)
@@ -736,8 +673,6 @@ gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line)
 		}
 		i++;
 	}
-	// g_debug("colorful_max_new_lines(FINAL): color_str = %s", color_str);
-	// g_debug("colorful_max_new_lines(): total = %d", total);
 	if (total > max)
 	{
 		gchar *output_str = g_strdup_printf("<tt>%s</tt>", color_str);
@@ -754,9 +689,6 @@ GdkRGBA convert_color_to_rgba(GdkColor color)
 	rgba.red = (gdouble)(color.red>>8)/0xFF;
 	rgba.green = (gdouble)(color.green>>8)/0xFF;
 	rgba.blue = (gdouble)(color.blue>>8)/0xFF;
-
-	// g_debug("convert_color_to_rgba: convert color (%4X %4X %4X) to rgba (%0.4f %0.4f %0.4f)",
-	//	color.red, color.green, color.blue, rgba.red, rgba.green, rgba.blue);
 
 	return rgba;
 }
@@ -825,7 +757,6 @@ GtkWidget *dirty_gtk_hbox_new(gboolean homogeneous, gint spacing)
 	return box;
 }
 
-
 #if defined(OUT_OF_MEMORY)
 gchar *fake_g_strdup(const gchar *str)
 {
@@ -846,7 +777,6 @@ gchar *fake_g_strdup(const gchar *str)
 		    (! compare_strings(strs[0], "Ctrl", FALSE)))
 		{
 			return_str = g_strdup(str);
-			// g_debug("fake_g_strdup(): strdup(%s) succeed!!", str);
 		}
 	}
 	g_strfreev (strs);
@@ -862,7 +792,6 @@ gchar *fake_g_strdup_printf(const StrLists *format, ...)
 #  endif
 	return NULL;
 }
-
 
 gchar** fake_g_strsplit(const gchar *string, const gchar *delimiter, gint max_tokens)
 {
@@ -884,8 +813,6 @@ gchar** fake_g_strsplit(const gchar *string, const gchar *delimiter, gint max_to
 		    (! compare_strings(strs[0], "Ctrl", FALSE)))
 		{
 			return_array = g_strsplit (string, delimiter, max_tokens);
-			// g_debug("fake_g_strsplit(): strsplit('%s', '%s', %d) succeed!!",
-			//	string, delimiter, max_tokens);
 		}
 	}
 	g_strfreev (strs);
@@ -895,8 +822,6 @@ gchar** fake_g_strsplit(const gchar *string, const gchar *delimiter, gint max_to
 		if (! compare_strings(delimiter, "+", TRUE))
 		{
 			return_array = g_strsplit (string, delimiter, max_tokens);
-			// g_debug("fake_g_strsplit(): strsplit('%s', '%s', %d) succeed!!",
-			//	string, delimiter, max_tokens);
 		}
 	}
 

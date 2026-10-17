@@ -35,16 +35,12 @@ void create_theme_color_data(GdkRGBA color[COLOR], GdkRGBA color_orig[COLOR], gd
 #endif
 	if (! default_vte_theme)
 	{
-		// g_debug("Get win_data = %d when set background saturation!", win_data);
 		color_brightness = CLAMP(color_brightness, -1, 1);
 
 		gint i;
 		for (i=1; i<COLOR-1; i++)
 		{
-			// g_debug("adjuset the color of %d", get_color_index(invert_color, i));
 			adjust_ansi_color(&color[i], &color_orig[get_color_index(invert_color, i)], color_brightness);
-			// print_color(get_color_index(invert_color, i), "create_theme_color_data(): color_orig ", color_orig[i]);
-			// print_color(i, "create_theme_color_data(): new: color ", color[i]);
 		}
 	}
 
@@ -53,11 +49,7 @@ void create_theme_color_data(GdkRGBA color[COLOR], GdkRGBA color_orig[COLOR], gd
 		adjust_ansi_color(&color[COLOR-1], &color_orig[get_color_index(invert_color, COLOR-1)], color_brightness);
 	else
 		color[COLOR-1] = color_orig[get_color_index(invert_color, COLOR-1)];
-	// print_color(get_color_index(invert_color, COLOR-1), "create_theme_color_data(): fg color_orig ", color_orig[COLOR-1]);
-	// print_color(COLOR-1, "create_theme_color_data(): new: fg color ", color[COLOR-1]);
 	color[0] = color_orig[get_color_index(invert_color, 0)];
-	// print_color(get_color_index(invert_color, 0), "create_theme_color_data(): bg color_orig ", color_orig[0]);
-	// print_color(0, "create_theme_color_data(): new: bg color ", color[0]);
 }
 
 void adjust_ansi_color(GdkRGBA *color, GdkRGBA *color_orig, gdouble color_brightness)
@@ -106,13 +98,11 @@ GdkRGBA *get_current_color_theme(struct Window *win_data)
 #ifdef SAFEMODE
 	if (win_data==NULL) return NULL;
 #endif
-	// g_debug("win_data->use_custom_theme = %d", win_data->use_custom_theme);
 	if (win_data->use_custom_theme)
 		return win_data->custom_color_theme[win_data->color_theme_index].color;
 	else
 		return system_color_theme[win_data->color_theme_index].color;
 }
-
 
 // to init a new page
 void init_new_page(struct Window *win_data,
@@ -127,25 +117,20 @@ void init_new_page(struct Window *win_data,
 #ifdef SAFEMODE
 	if ((win_data==NULL) || (page_data==NULL) || (page_data->vte==NULL)) return;
 #endif
-	// g_debug("Get win_data = %d when initing new page!", win_data);
 
 #ifdef SAFEMODE
 	if (page_data->font_name)
 	{
 #endif
 		// set font
-		// g_debug("Set Font AA = %d", win_data->font_anti_alias);
 		fake_vte_terminal_set_font_from_string (page_data->vte,
 							page_data->font_name,
 							win_data->font_anti_alias);
 #ifdef SAFEMODE
 	}
 #endif
-	//g_debug("Got font size from %s: %d", font_name, pango_font_description_get_size (
-	//	  pango_font_description_from_string(font_name))/PANGO_SCALE);
 
 	// set terminal size
-	// g_debug("Set the vte size to: %dx%d", column, row);
 #ifdef SAFEMODE
 	if (page_data->vte)
 #endif
@@ -165,9 +150,6 @@ void init_new_page(struct Window *win_data,
 	// some fixed parameter
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(page_data->vte), FALSE);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(page_data->vte), TRUE);
-	// vte_terminal_set_backspace_binding (VTE_TERMINAL(page_data->vte), VTE_ERASE_ASCII_DELETE);
-	// vte_terminal_set_delete_binding (VTE_TERMINAL(page_data->vte), VTE_ERASE_ASCII_DELETE);
-	// vte_terminal_set_emulation (VTE_TERMINAL(page_data->vte), "xterm");
 	vte_terminal_search_set_wrap_around (VTE_TERMINAL(page_data->vte), TRUE);
 
 	set_hyperlink(win_data, page_data);
@@ -176,12 +158,10 @@ void init_new_page(struct Window *win_data,
 	lilyterm_vte_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
 
 	vte_terminal_set_audible_bell (VTE_TERMINAL(page_data->vte), win_data->audible_bell);
-	// g_debug("init_new_page(): call set_vte_urgent_bell()");
 	set_vte_urgent_bell(win_data, page_data);
 	vte_terminal_set_backspace_binding (VTE_TERMINAL(page_data->vte), win_data->erase_binding);
 	vte_terminal_set_cursor_shape(VTE_TERMINAL(page_data->vte), win_data->cursor_shape);
 }
-
 
 void set_cursor_blink(struct Window *win_data, struct Page *page_data)
 {
@@ -191,8 +171,6 @@ void set_cursor_blink(struct Window *win_data, struct Page *page_data)
 #ifdef SAFEMODE
 	if ((win_data==NULL) || (page_data==NULL) || (page_data->vte==NULL)) return;
 #endif
-	// g_debug("set_cursor_blink(): win_data->cursor_blinks = %d", win_data->cursor_blinks);
-
 
 	vte_terminal_set_cursor_blink_mode (VTE_TERMINAL(page_data->vte), win_data->cursor_blinks);
 }
@@ -242,7 +220,6 @@ void set_vte_word_chars(GtkWidget *vte, const gchar *word_chars)
 				g_string_append_unichar(exceptions, c);
 		str = next;
 	}
-	// g_debug("set_vte_word_chars(): word_chars = %s, exceptions = %s", word_chars, exceptions->str);
 	vte_terminal_set_word_char_exceptions(VTE_TERMINAL(vte), exceptions->str);
 	g_string_free(exceptions, TRUE);
 }
@@ -266,10 +243,6 @@ void set_hyperlink(struct Window *win_data, struct Page *page_data)
 			if ((match == NULL) || (match[0] == '\0'))
 				match = command[i].match;
 
-			// gchar *regex_str = convert_escape_sequence_to_string(match);
-			// g_debug("set_hyperlink(): match = %s", regex_str);
-			// g_free(regex_str);
-
 			VteRegex *regex = vte_regex_new_for_match (match, -1,
 								   PCRE2_UTF | PCRE2_NO_UTF_CHECK | PCRE2_MULTILINE | PCRE2_CASELESS, NULL);
 			page_data->tag[i] = vte_terminal_match_add_regex (VTE_TERMINAL(page_data->vte), regex, 0);
@@ -280,7 +253,6 @@ void set_hyperlink(struct Window *win_data, struct Page *page_data)
 							   "pointer");
 		}
 		page_data->match_regex_setted = TRUE;
-		// g_debug("clean_hyperlink(): set page_data->match_regex_setted = %d", page_data->match_regex_setted);
 	}
 	else
 		clean_hyperlink(win_data, page_data);
@@ -297,7 +269,6 @@ void clean_hyperlink(struct Window *win_data, struct Page *page_data)
 	if (! page_data->match_regex_setted) return;
 
 	page_data->match_regex_setted = FALSE;
-	// g_debug("clean_hyperlink(): set page_data->match_regex_setted = %d", page_data->match_regex_setted);
 	vte_terminal_match_remove_all(VTE_TERMINAL(page_data->vte));
 }
 
@@ -335,8 +306,6 @@ void set_vte_color(GtkWidget *vte, gboolean default_vte_color, gboolean custom_c
 	// set font/background colors
 
 	// gint i;
-	// for (i=0; i< COLOR; i++)
-	//	print_color(i, "set_vte_color():", color[i]);
 
 	if (! update_fg_only)
 	{
@@ -353,7 +322,6 @@ void set_vte_color(GtkWidget *vte, gboolean default_vte_color, gboolean custom_c
 
 	vte_terminal_set_colors_rgba(VTE_TERMINAL(vte), &(color[COLOR-1]), &(color[0]), color, 16);
 
-	// print_color(-1, "set_vte_color(): cursor_color", cursor_color);
 	enable_custom_cursor_color(vte, custom_cursor_color, &(cursor_color));
 }
 
@@ -410,7 +378,6 @@ gboolean check_show_or_hide_scroll_bar(struct Window *win_data)
 	if (win_data==NULL) return FALSE;
 #endif
 	gboolean show = FALSE;
-	// g_debug("check_show_or_hide_scroll_bar(): win_data->show_scroll_bar = %d", win_data->show_scroll_bar);
 	switch (win_data->show_scroll_bar)
 	{
 		case AUTOMATIC:
@@ -433,8 +400,6 @@ gboolean check_show_or_hide_scroll_bar(struct Window *win_data)
 		default:
 			break;
 	}
-	// g_debug("check_show_or_hide_scroll_bar(): Got win_data->show_scroll_bar = %d, show = %d",
-	//	win_data->show_scroll_bar, show);
 	return show;
 }
 
@@ -463,15 +428,10 @@ void add_remove_page_timeout_id(struct Window *win_data, struct Page *page_data)
 	if (page_data->timeout_id)
 	{
 		g_source_remove (page_data->timeout_id);
-		// get_and_update_page_name(page_data);
 		// win_data->page_names_no++;
-		//if ((page_data->custom_page_name == NULL) && (page_data->label_text != NULL))
-		//	 page_data->custom_page_name = g_strdup(page_data->page_name);
 		page_data->timeout_id = 0;
 	}
 	else
-		// monitor_cmdline(page_data->monitor, page_data->pid);
-		// monitor_cmdline(page_data->channel, page_data->pid);
 		page_data->timeout_id = g_timeout_add_seconds (1,
 							       (GSourceFunc)monitor_cmdline,
 							       page_data);
@@ -496,7 +456,6 @@ void add_remove_window_title_changed_signal(struct Page *page_data)
 
 }
 
-
 gboolean set_window_opacity(GtkRange *range, GtkScrollType scroll, gdouble value, struct Window *win_data)
 {
 #ifdef DETAIL
@@ -505,7 +464,6 @@ gboolean set_window_opacity(GtkRange *range, GtkScrollType scroll, gdouble value
 #ifdef SAFEMODE
 	if (win_data==NULL) return FALSE;
 #endif
-	// g_debug("Get win_data = %d when set window opacity!", win_data);
 
 	value = CLAMP(value, 0, 1);
 	if (win_data->use_rgba == -1)
@@ -541,12 +499,9 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
 	}
 
 	// vte=NULL when creating a new root window with drag & drop.
-	// if (vte==NULL) return;
 
 	GdkGeometry hints = {0};
-	// g_debug("Trying to get padding...");
 	vte_terminal_get_padding (VTE_TERMINAL(vte), &(hints.base_width), &(hints.base_height));
-	// g_debug("hints.base_width = %d, hints.base_height = %d", hints.base_width, hints.base_height);
 
 	switch (hints_type)
 	{
@@ -562,17 +517,7 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
 			return;
 	}
 
-	// g_debug("hints.width_inc = %d, hints.height_inc = %d",
-	//	hints.width_inc, hints.height_inc);
-
 	// // minsize = -1: the size of vte can NOT be changed.
-	// if (minsize == -1)
-	// {
-	//	hints.min_width = minsize;
-	//	hints.min_height = minsize;
-	// }
-	// else
-	// {
 		gint min_width = 0, min_height = 0;
 		struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(window), "Win_Data");
 		struct Page *page_data = get_page_data_from_vte(vte, win_data, -1);
@@ -583,21 +528,15 @@ void window_resizable(GtkWidget *window, GtkWidget *vte, Hints_Type hints_type)
 		fprintf(stderr, "\033[1;37m** window_resizable(win_data %p): window = %p, vte = %p, hints_type = %d\033[0m\n",
 			win_data, window, vte, hints_type);
 #  endif
-	// }
 #ifdef GEOMETRY
 	g_debug("@ hint data: hints.width_inc = %d, hints.height_inc = %d, hints.base_width = %d, "
 		"@ hints.base_height = %d, hints.min_width = %d, hints.min_height = %d",
 		hints.width_inc, hints.height_inc, hints.base_width, hints.base_height, hints.min_width, hints.min_height);
 #endif
 
-	// g_debug("Tring to set geometry on %p, and hints_type = %d", vte, hints_type);
 	gtk_window_set_geometry_hints (GTK_WINDOW (window), GTK_WIDGET (vte), &hints,
 				       GDK_HINT_RESIZE_INC | GDK_HINT_MIN_SIZE | GDK_HINT_BASE_SIZE);
 
-	//g_debug("current the size of vte %p whith hinting = %ld x %ld",
-	//			vte,
-	//			vte_terminal_get_column_count(VTE_TERMINAL(vte)),
-	//			vte_terminal_get_row_count(VTE_TERMINAL(vte)));
 }
 
 void get_hint_min_size(GtkWidget *notebook, GtkWidget *scrollbar, gint *min_width, gint *min_height)
@@ -651,8 +590,6 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 #ifdef SAFEMODE
 	if ((win_data_orig==NULL) || (win_data==NULL) || (page_data==NULL) || (page_data->vte==NULL)) return;
 #endif
-	// if (win_data_orig->use_rgba != win_data->use_rgba)
-	//	init_rgba(win_data);
 	set_window_opacity (NULL, 0, win_data->window_opacity, win_data);
 
 	init_monitor_cmdline_datas(win_data, page_data);
@@ -692,18 +629,11 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 	}
 
 	// the fill_tabs_bar may not always work, so we should call set_fill_tabs_bar() every time.
-	// if (win_data_orig->fill_tabs_bar != win_data->fill_tabs_bar)
 		set_fill_tabs_bar(GTK_NOTEBOOK(win_data->notebook), win_data->fill_tabs_bar, page_data);
 
 	if (win_data_orig->page_width != win_data->page_width)
 		set_page_width(win_data, page_data);
 
-	// g_debug("ORI: %d", win_data_orig->page_shows_current_cmdline ||
-	//		   win_data_orig->page_shows_current_dir ||
-	//		   win_data_orig->page_shows_window_title);
-	// g_debug("NEW: %d", win_data->page_shows_current_cmdline ||
-	//		   win_data->page_shows_current_dir ||
-	//		   win_data->page_shows_window_title);
 	if ((proc_exist) &&
 	    ((page_data->page_update_method != PAGE_METHOD_NORMAL) ||
 	    (win_data->page_shows_current_cmdline ||
@@ -714,7 +644,6 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 		if (page_data->page_update_method == PAGE_METHOD_WINDOW_TITLE) page_data->window_title_updated = 1;
 		page_data->page_update_method = PAGE_METHOD_REFRESH;
 	}
-	// g_debug("page_data->page_update_method = %d", page_data->page_update_method);
 
 	if (win_data->page_shows_window_title != win_data_orig->page_shows_window_title)
 		add_remove_window_title_changed_signal(page_data);
@@ -725,7 +654,6 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 			page_data->is_root = check_is_root(page_data->displayed_tpgid);
 		else
 			page_data->is_root = FALSE;
-		// g_debug("apply_new_win_data_to_page(): page_data->is_root = %d", page_data->is_root);
 	}
 
 	if (page_data->is_bold)
@@ -759,7 +687,6 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 		check_and_update_window_title(win_data, page_data->custom_window_title,
 					      page_data->page_no+1, page_data->custom_page_name,
 					      page_data->page_name);
-		// g_debug("FINAL: New window title = %s", gtk_window_get_title(GTK_WINDOW(win_data->window)));
 	}
 
 	get_and_update_page_name(page_data, FALSE);
@@ -778,7 +705,6 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 	if (compare_strings(win_data_orig->word_chars, win_data->word_chars, TRUE))
 		set_vte_word_chars(page_data->vte, win_data->word_chars);
 	if (win_data_orig->show_scroll_bar != win_data->show_scroll_bar)
-		// hide_scroll_bar(win_data, page_data);
 		show_and_hide_scroll_bar(page_data, check_show_or_hide_scroll_bar(win_data));
 
 	if (win_data_orig->scroll_bar_position != win_data->scroll_bar_position)
@@ -823,10 +749,6 @@ gboolean compare_color(GdkRGBA *a, GdkRGBA *b)
 	if ((a==NULL) && (b==NULL)) return FALSE;
 	if ((a==NULL) || (b==NULL)) return TRUE;
 #endif
-	// g_debug("compare_color(): Comparing %04X %04X %04X %04X and %04X %04X %04X %04X",
-	//	a->pixel, a->red, a->green, a->blue, b->pixel, b->red, b->green, b->blue);
-	// g_debug("compare_color(): Comparing %0.4f %0.4f %0.4f and %0.4f %0.4f %0.4f",
-	//	a->red, a->green, a->blue, b->red, b->green, b->blue);
 	if ((a->red != b->red) ||
 	    (a->green != b->green ) ||
 	    (a->blue != b->blue))

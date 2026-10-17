@@ -24,11 +24,8 @@
 // for L10n
 #include <locale.h>
 #include <glib/gi18n.h>
-// for aoti() aotf() canonicalize_file_name()
 #include <stdlib.h>
-// for access()
 #include <unistd.h>
-// for strcmp()
 #include <string.h>
 
 #include "lilyterm.h"
@@ -40,7 +37,6 @@
 #ifdef BSD
 // chars in a path name including nul
 // which is already defined in /usr/include/sys/syslimits.h
-// #define PATH_MAX 4096
 #endif
 
 typedef enum {

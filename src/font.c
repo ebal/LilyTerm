@@ -31,7 +31,6 @@ void set_vte_font(GtkWidget *widget, Font_Set_Type type)
 	if (menu_active_window==NULL) return;
 #endif
 
-	// GtkWidget *vte = current_vte;
 	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(menu_active_window), "Win_Data");
 #ifdef SAFEMODE
 	if (win_data==NULL) return;
@@ -117,7 +116,6 @@ gchar *get_resize_font(GtkWidget *vte, Font_Name_Type type)
 #ifdef SAFEMODE
 	if (win_data==NULL) return NULL;
 #endif
-	// g_debug("Get win_data = %d when get resize font!", win_data);
 	// type 0, FONT_NAME_DEFAULT: restore font to default_font_name
 	// type 1, FONT_NAME_SYSTEM: restore font to system_font_name
 	// type 2, FONT_NAME_RESTORE: restore font to restore_font_name
@@ -129,9 +127,7 @@ gchar *get_resize_font(GtkWidget *vte, Font_Name_Type type)
 
 	if (win_data->restore_font_name == NULL)
 	{
-		// win_data->restore_font_name = g_strdup(page_data->font_name);
 		win_data->restore_font_name = g_strdup(win_data->default_font_name);
-		// g_debug("Restore the font to %s!", win_data->restore_font_name);
 		if (type==FONT_NAME_RESTORE)
 			return g_strdup(page_data->font_name);
 	}
@@ -180,7 +176,6 @@ gchar *get_resize_font(GtkWidget *vte, Font_Name_Type type)
 #endif
 			gint oldfontsize=0, fontsize=0;
 
-			// g_debug("old font name: %s", page_data->font_name);
 			PangoFontDescription *font_desc = pango_font_description_from_string(
 								page_data->font_name);
 			// increase/decrease font
@@ -190,7 +185,6 @@ gchar *get_resize_font(GtkWidget *vte, Font_Name_Type type)
 
 			switch (type)
 			{
-				// g_debug("window_resize_ratio = %f",  win_data->window_resize_ratio);
 				case FONT_NAME_ZOOM_OUT:
 					if (win_data->window_resize_ratio)
 						page_data->font_size = page_data->font_size *
@@ -226,7 +220,6 @@ gchar *get_resize_font(GtkWidget *vte, Font_Name_Type type)
 				default:
 					break;
 			}
-			// g_debug("font_size = %d", page_data->font_size);
 			fontsize = (page_data->font_size)/PANGO_SCALE;
 
 			// to avoid the fontsize is unchanged or = 0
@@ -248,7 +241,6 @@ gchar *get_resize_font(GtkWidget *vte, Font_Name_Type type)
 					break;
 			}
 
-			// g_debug("Trying to change the font size to %d.", fontsize);
 			pango_font_description_set_size(font_desc, fontsize*PANGO_SCALE);
 			g_free(page_data->font_name);
 			page_data->font_name = pango_font_description_to_string(font_desc);
@@ -261,8 +253,6 @@ gchar *get_resize_font(GtkWidget *vte, Font_Name_Type type)
 			return NULL;
 		}
 	}
-
-	// g_debug("new font name: %s", page_data->font_name);
 
 	switch (type)
 	{
@@ -281,7 +271,6 @@ gchar *get_resize_font(GtkWidget *vte, Font_Name_Type type)
 			if ( ! compare_strings(page_data->font_name, win_data->restore_font_name, TRUE))
 			{
 				page_data->font_size = 0;
-				// g_debug("The font is restored to win_data->restore_font_name");
 			}
 			break;
 		default:
@@ -313,19 +302,15 @@ void reset_vte_size(GtkWidget *vte, gchar *new_font_name, Font_Reset_Type type)
 #ifdef SAFEMODE
 	if (win_data==NULL) return;
 #endif
-	// g_debug("Get win_data = %d when reset vte size!", win_data);
 
 	switch (type)
 	{
 		case RESET_CURRENT_TAB_FONT:
 			// We need to apply a new font to a single vte.
 			// so that we should insure that this won't change the size of window.
-			// g_debug("Trying to apply font %s to vte", current_font_name);
 			fake_vte_terminal_set_font_from_string( vte,
 								new_font_name,
 								win_data->font_anti_alias);
-			// g_debug("reset_vte_size(): call window_resizable() with run_once = %d", win_data->hints_type);
-			// g_debug("reset_vte_size(): launch update_window_hint()!");
 #  ifdef GEOMETRY
 			fprintf(stderr, "\033[1;37m!! reset_vte_size(): call update_window_hint()\033[0m\n");
 #  endif
@@ -333,19 +318,15 @@ void reset_vte_size(GtkWidget *vte, gchar *new_font_name, Font_Reset_Type type)
 			break;
 		case RESET_ALL_TO_CURRENT_TAB:
 			// increase/decrease window size & font size for every vte
-			// g_debug("Trying to apply font %s to every vte", current_font_name);
-			// struct Page *page_data = (struct Page *)g_object_get_data(G_OBJECT(current_vte), "Page_Data");
 			apply_font_to_every_vte( page_data->window, new_font_name, win_data->geometry_width, win_data->geometry_height);
 			break;
 		case RESET_ALL_TO_DEFAULT:
 			// reset window size & font size for every vte
-			// g_debug("Trying to apply font %s to every vte", current_font_name);
 			apply_font_to_every_vte(page_data->window, new_font_name,
 						win_data->default_column, win_data->default_row);
 			break;
 		case RESET_ALL_TO_SYSTEM:
 			// reset window size & font size for every vte
-			// g_debug("Trying to apply font %s to every vte", current_font_name);
 			apply_font_to_every_vte(page_data->window, new_font_name,
 						SYSTEM_COLUMN, SYSTEM_ROW);
 			break;
@@ -367,16 +348,12 @@ void apply_font_to_every_vte(GtkWidget *window, gchar *new_font_name, glong colu
 	if ((window==NULL) || (new_font_name==NULL) || (column<1) || (row<1)) return;
 #endif
 	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(window), "Win_Data");
-	// g_debug("Get win_data = %d when apply font to every vte!", win_data);
 #ifdef SAFEMODE
 	if (win_data==NULL) return;
 #endif
 
 	struct Page *page_data = NULL;
 	gint i;
-
-	// g_debug("Trying to apply every vte to %dx%d!", column, row);
-	// g_debug("Trying to apply font %s to every vte!", new_font_name);
 
 	GPtrArray *all_pages = get_pages_in_window(win_data);
 	for (i=0; i<all_pages->len; i++)
@@ -385,24 +362,16 @@ void apply_font_to_every_vte(GtkWidget *window, gchar *new_font_name, glong colu
 #ifdef SAFEMODE
 		if (page_data==NULL) continue;
 #endif
-		// g_debug("The default font for %d page is: %s (%s)", i, page_data->font_name, new_font_name);
 		fake_vte_terminal_set_font_from_string( page_data->vte,
 							new_font_name,
 							win_data->font_anti_alias);
 		vte_terminal_set_size(VTE_TERMINAL(page_data->vte), column, row);
 		g_free(page_data->font_name);
 		page_data->font_name = g_strdup(new_font_name);
-		// g_debug("The new font for %d page is: %s (%s)", i, page_data->font_name, new_font_name);
 	}
 	g_ptr_array_unref(all_pages);
 
-	// g_debug("* Set hints to HINTS_FONT_BASE!, win_data->window_status = %d", win_data->window_status);
 	win_data->hints_type = HINTS_FONT_BASE;
-
-	// win_data->keep_vte_size |= 0x30;
-	// g_debug("window_resizable in apply_font_to_every_vte!");
-	// window_resizable(window, page_data->vte, 2, 1);
-	// g_debug("apply_font_to_every_vte(): launch keep_window_size()!");
 
 	// Don't need to call keep_gtk2_window_size() when fullscreen
 	switch (win_data->window_status)
@@ -436,7 +405,6 @@ gboolean check_if_every_vte_is_using_restore_font_name(struct Window *win_data)
 	if ((win_data==NULL) || (win_data->notebook==NULL)) return FALSE;
 #endif
 	if (win_data->restore_font_name == NULL)
-	//	win_data->restore_font_name = g_strdup(page_data->font_name);
 		win_data->restore_font_name = g_strdup(win_data->default_font_name);
 
 	gint i;

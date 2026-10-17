@@ -23,7 +23,6 @@ extern gint dialog_activated;
 extern gboolean proc_exist;
 extern gchar *proc_file_system_path;
 
-// cmdline always = "" under *Ubuntu ONLY* if argv = split_string("", " ", -1);
 // Don't ask me why...
 gboolean vte_fork_cmdline_returned_empty = FALSE;
 
@@ -41,7 +40,6 @@ void reorder_page_number(GtkNotebook *notebook, GtkWidget *child, guint page_num
 	if (win_data==NULL) return;
 #endif
 	gint total_page = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
-	// g_debug("total_page = %d", total_page);
 	struct Page *page_data;
 	gint i;
 
@@ -51,7 +49,6 @@ void reorder_page_number(GtkNotebook *notebook, GtkWidget *child, guint page_num
 #ifdef SAFEMODE
 		if (page_data==NULL) continue;
 #endif
-		// g_debug("Got page_data = %p", page_data);
 		// we store current_page_no in "struct Page" for performance.
 		// Every pane of the tab carries it: they share the tab.
 		GPtrArray *panes = get_pages_in_tab(page_data);
@@ -60,8 +57,6 @@ void reorder_page_number(GtkNotebook *notebook, GtkWidget *child, guint page_num
 			((struct Page *)g_ptr_array_index(panes, j))->page_no = i;
 		g_ptr_array_unref(panes);
 		page_data->page_no = i;
-
-		// g_debug("Launch get_and_update_page_name() in reorder_page_number()");
 
 		// g_debug("page_data->label_text = %p "
 		//	"page_data->page_name = %s "
@@ -74,7 +69,6 @@ void reorder_page_number(GtkNotebook *notebook, GtkWidget *child, guint page_num
 		//	page_data->custom_page_name,
 		//	page_data->tab_color,
 		//	win_data->default_menuitem_encoding,
-		//	page_data->encoding_str);
 
 		// Don't update page name when win_data->kill_color_demo_vte.
 		// Or LilyTerm will got warning: "Failed to set text from markup due to error parsing markup"
@@ -99,7 +93,6 @@ void reorder_page_number(GtkNotebook *notebook, GtkWidget *child, guint page_num
 	}
 }
 
-
 void init_monitor_cmdline_datas(struct Window *win_data, struct Page *page_data)
 {
 #ifdef DETAIL
@@ -120,10 +113,8 @@ void init_monitor_cmdline_datas(struct Window *win_data, struct Page *page_data)
 	page_data->window_title_tpgid = &(win_data->window_title_tpgid);
 	page_data->lost_focus = &(win_data->lost_focus);
 	page_data->current_vte = &(win_data->current_vte);
-	// page_data->update_window_title_only = &(win_data->update_window_title_only);
 	page_data->custom_window_title = (win_data->custom_window_title_str != NULL);
 }
-
 
 gboolean monitor_cmdline(struct Page *page_data)
 {
@@ -150,14 +141,9 @@ gboolean monitor_cmdline(struct Page *page_data)
 
 	gboolean lost_focus = *(page_data->lost_focus);
 
-	// g_debug("Get page_data->keep_vte_size = %d in monitor_cmdline()", *(page_data->keep_vte_size));
-
 	// g_debug ("\nvte_terminal_get_status_line = %s,"
 	//	"vte_terminal_get_icon_title = %s,\n"
 	//	"vte_terminal_get_window_title = %s\n",
-	//	vte_terminal_get_status_line(VTE_TERMINAL(page_data->vte)),
-	//	vte_terminal_get_icon_title(VTE_TERMINAL(page_data->vte)),
-	//	vte_terminal_get_window_title(VTE_TERMINAL(page_data->vte)));
 
 	// The pagename won't be updated if LilyTerm is not on focus or when resizing.
 	// But it will still update the window title.
@@ -200,9 +186,6 @@ gboolean monitor_cmdline(struct Page *page_data)
 			page_data->is_root = check_is_root(page_data->current_tpgid);
 	}
 
-	// g_debug("lost_focus = %d", lost_focus);
-	// g_debug("page_data->window_title_updated = %d", page_data->window_title_updated);
-
 	if (check_window_title(page_data, lost_focus))
 		page_name_changed = TRUE;
 
@@ -221,33 +204,25 @@ gboolean monitor_cmdline(struct Page *page_data)
 		new_pwd = NULL;
 	}
 
-	// g_debug("check_tpgid = %d, and current_tpgid = %d", *check_tpgid, page_data->current_tpgid);
 	// only update the page name when tpgid is updated.
-	// g_debug("Final: page_data->page_update_method = %d", page_data->page_update_method);
 	if (page_name_changed)
 	{
-		// g_debug("!!! Update the page name for page_no %d", page_data->page_no);
 		page_data->is_bold = page_data->bold_action_page_name;
 		page_data->should_be_bold = TRUE;
-		// g_debug("page_data->is_bold = %d for page_data %p", page_data->is_bold, page_data);
 
-		// g_debug("Launch get_and_update_page_name() in monitor_cmdline()");
 		if (( ! get_and_update_page_name(page_data, *(page_data->lost_focus))) && (! lost_focus) && old_pwd)
 		{
 			// if update "tab title" fault. upate window title will never fault.
-			// g_debug("!! Tab name is NOT changed to '%s'", page_data->pwd);
 			// Put the old directory back. (get_and_update_page_name() may have
 			// replaced page_data->pwd: free whatever is there now.)
 			g_free(page_data->pwd);
 			page_data->pwd = old_pwd;
 			old_pwd = NULL;
-			// g_debug("Restore page_data->pwd to %s", page_data->pwd);
 		}
 	}
 	else
 	{
 		page_data->page_update_method = page_update_method;
-		// g_debug("Restore page_data->page_update_method to %d!!!", page_data->page_update_method);
 	}
 
 	g_free(old_pwd);
@@ -264,7 +239,6 @@ gboolean check_cmdline(struct Page *page_data, pid_t check_tpgid)
 #ifdef SAFEMODE
 	if (page_data==NULL) return FALSE;
 #endif
-	// g_debug("check_tpgid = %d", check_tpgid);
 
 	gboolean page_name_changed = FALSE;
 	if (page_data->page_shows_current_cmdline || page_data->page_shows_current_dir)
@@ -274,11 +248,8 @@ gboolean check_cmdline(struct Page *page_data, pid_t check_tpgid)
 
 		if (page_data->current_tpgid == -1) return FALSE;
 
-		// g_debug("Get page_data->current_tpgid = %d, check_tpgid = %d",
-		//	page_data->current_tpgid, check_tpgid);
 		if (check_tpgid != page_data->current_tpgid)
 		{
-			// g_debug("Trying to update Cmdline!!!");
 			page_name_changed = TRUE;
 			page_data->page_update_method = PAGE_METHOD_CMDLINE;
 #ifdef PAGENAME
@@ -287,15 +258,10 @@ gboolean check_cmdline(struct Page *page_data, pid_t check_tpgid)
 					check_tpgid, ANSI_COLOR_CYAN, page_data->current_tpgid);
 #endif
 		}
-		// else if (page_data->current_tpgid==page_data->pid)
 		else if (page_data->window_title_updated == 0)
 			page_data->window_title_updated = -1;
 
-		// g_debug("page_data->window_title_updated = %d", page_data->window_title_updated);
-		// g_debug("page_data->page_update_method = %d", page_data->page_update_method);
 	}
-	// g_debug("the original tpgid is %d, and got tpgid from get_tpgid() is: %d",
-	//	page_data->displayed_tpgid, page_data->current_tpgid);
 	return page_name_changed;
 }
 
@@ -312,11 +278,8 @@ gboolean check_window_title (struct Page *page_data, gboolean lost_focus)
 	if ((page_data->page_shows_window_title) && (page_data->window_title_updated >= 1))
 	{
 		// don't update window title when lost focus
-		// g_debug("lost_focus = %d", lost_focus);
-		// g_debug("page_data->window_title_updated = %d", page_data->window_title_updated);
 		if (! (lost_focus && (page_data->window_title_updated == 2)))
 		{
-			// g_debug("Trying to update Window title!!!");
 			page_name_changed = TRUE;
 			page_data->page_update_method = PAGE_METHOD_WINDOW_TITLE;
 			page_data->window_title_updated = 1;
@@ -334,13 +297,10 @@ gboolean check_pwd(struct Page *page_data, gchar *pwd, gchar *new_pwd, gint page
 #ifdef SAFEMODE
 	if ((page_data==NULL) || (page_data->window_title_tpgid==NULL)) return FALSE;
 #endif
-	// g_debug("pwd = %s", pwd);
-	// g_debug("new_pwd = %s", new_pwd);
 
 	gboolean page_name_changed = FALSE;
 
 	// update the page name with PWD when pid=tpgid
-	// g_debug ("page_name_changed = %d, ", page_name_changed);
 #if defined(PAGENAME) && ! defined(DETAIL)
 	if (page_data->current_tpgid == page_data->pid)
 		fprintf(stderr, "!! check_pwd(): "
@@ -367,19 +327,14 @@ gboolean check_pwd(struct Page *page_data, gchar *pwd, gchar *new_pwd, gint page
 
 		if (page_name_changed)
 		{
-			// g_debug("Trying to update PWD!!!");
 			page_data->page_update_method = PAGE_METHOD_PWD;
 			page_name_changed = TRUE;
 		}
-		// g_debug("page_data->window_title_pwd = %s\npage_name_changed = %d",
-		//	page_data->window_title_pwd, page_name_changed);
 	}
 	return page_name_changed;
 }
 
-
 // it will update the text in label ,page_name, and the title of window
-// return FALSE if update the label (and page_name) fault.
 // updating the title of window will never fault.
 gboolean get_and_update_page_name(struct Page *page_data, gboolean lost_focus)
 {
@@ -390,18 +345,11 @@ gboolean get_and_update_page_name(struct Page *page_data, gboolean lost_focus)
 	if ((page_data==NULL) || (page_data->window==NULL)) return FALSE;
 #endif
 	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(page_data->window), "Win_Data");
-	// g_debug("Get win_data = %p (page_data->window = %p) when update tab name!", win_data, page_data->window);
 #ifdef SAFEMODE
 	if (win_data==NULL) return FALSE;
 #endif
 	// page_color should not be free().
 	gchar *page_name = NULL, *page_color = NULL;
-
-	// g_debug("Get pid=%d, tpgid=%d", page_data->pid, page_data->current_tpgid);
-	// g_debug("win_data->page_shows_window_title = %d", win_data->page_shows_window_title);
-	// g_debug("page_data->window_title_updated = %d", page_data->window_title_updated);
-	// g_debug("lost_focus = %d", lost_focus);
-	// g_debug("page_data->page_update_method = %d", page_data->page_update_method);
 
 	switch (page_data->page_update_method)
 	{
@@ -449,10 +397,7 @@ gboolean get_and_update_page_name(struct Page *page_data, gboolean lost_focus)
 	if (page_data->custom_page_name!=NULL)
 	{
 		page_color = win_data->user_page_color[3];
-		// g_debug("page_shows_custom_dir : page_name = %s, color = %s", page_name, page_color);
 	}
-
-	// g_debug("Final : page_name = %s, color = %s", page_name, page_color);
 
 	if (win_data->use_color_page)
 		page_data->tab_color = page_color;
@@ -477,7 +422,6 @@ gboolean get_and_update_page_name(struct Page *page_data, gboolean lost_focus)
 	g_free(local_page_name);
 
 	gboolean return_value = FALSE;
-	// g_debug ("Launch update_page_name() in get_and_update_page_name()!!!");
 	if (update_page_name(page_data->window, page_data->vte, page_data->page_name, page_data->label_text,
 			     page_data->page_no+1, page_data->custom_page_name, page_color, page_data->is_root,
 			     page_data->is_bold, compare_strings(win_data->runtime_encoding,
@@ -485,8 +429,6 @@ gboolean get_and_update_page_name(struct Page *page_data, gboolean lost_focus)
 								 FALSE),
 			     page_data->encoding_str, page_data->custom_window_title, lost_focus))
 	{
-		// g_debug("Update page_data->displayed_tpgid (%d) = page_data->current_tpgid (%d)",
-		//	page_data->displayed_tpgid, page_data->current_tpgid);
 		if (! lost_focus)
 		{
 #ifdef PAGENAME
@@ -538,10 +480,7 @@ gboolean get_and_update_page_name(struct Page *page_data, gboolean lost_focus)
 			ANSI_COLOR_YELLOW, page_data->current_tpgid, ANSI_COLOR_CYAN);
 #endif
 	win_data->window_title_tpgid = page_data->current_tpgid;
-	// g_debug("Final: page_data->displayed_tpgid = %d", page_data->displayed_tpgid);
-	// g_debug("Final: page_data->window_title_tpgid = %d", *(page_data->window_title_tpgid));
 
-	// g_debug("(get_and_update_page_name): return_value = %d", return_value);
 	return return_value;
 }
 
@@ -557,13 +496,11 @@ void update_page_name_wintitle(StrAddr **page_name,
 #ifdef SAFEMODE
 	if ((page_name==NULL) || (page_color==NULL) || (win_data==NULL) || (page_data==NULL)) return;
 #endif
-	// g_debug("Trying to update Window Title!");
 	if (win_data->page_shows_window_title && (*page_name==NULL) && (page_data->window_title_updated == 1))
 	{
 		*page_name = g_strdup(vte_terminal_get_window_title(VTE_TERMINAL(page_data->vte)));
 		*page_color = win_data->user_page_color[0];
 		page_data->window_title_updated = 0;
-		// g_debug("Window title updated: *page_name = %s, color = %s", *page_name, *page_color);
 		page_data->page_update_method = PAGE_METHOD_WINDOW_TITLE;
 	}
 }
@@ -580,12 +517,8 @@ void update_page_name_cmdline(StrAddr **page_name,
 #ifdef SAFEMODE
 	if ((page_name==NULL) || (page_color==NULL) || (win_data==NULL) || (page_data==NULL)) return;
 #endif
-	// g_debug("Trying to update Cmdline!");
 	// if win_data->page_shows_current_dir = 0 && win_data->page_shows_window_title = 0
 	// We need to show /bin/bash on the tab name.
-	// g_debug("page_name = %p (%s)", *page_name, *page_name);
-	// g_debug("win_data->page_shows_current_cmdline = %d", win_data->page_shows_current_cmdline);
-	// g_debug("page_data->pid = %d, page_data->current_tpgid = %d", page_data->pid, page_data->current_tpgid);
 	if ( (*page_name==NULL) && win_data->page_shows_current_cmdline &&
 	    ((! (win_data->page_shows_current_dir ||
 		 ( win_data->page_shows_window_title &&
@@ -599,7 +532,6 @@ void update_page_name_cmdline(StrAddr **page_name,
 		{
 #endif
 			*page_color = win_data->user_page_color[1];
-			// g_debug("Cmdline updated: *page_name = %s, color = %s", *page_name, *page_color);
 			page_data->page_update_method = PAGE_METHOD_CMDLINE;
 #ifdef SAFEMODE
 		}
@@ -621,18 +553,12 @@ void update_page_name_pwd(StrAddr **page_name,
 #ifdef SAFEMODE
 	if ((page_name==NULL) || (page_color==NULL) || (win_data==NULL) || (page_data==NULL)) return;
 #endif
-	// g_debug("Trying to update PWD!");
 	if (win_data->page_shows_current_dir && (*page_name==NULL))
 	{
-		// g_free(page_data->pwd);
-		// g_debug("!!! Getting new page_data->pwd");
-		// page_data->pwd = get_tab_name_with_current_dir(page_data->current_tpgid);
-		// page_name = get_tab_name_with_current_dir(pid);
 		if (lost_focus)
 			*page_name = g_strdup(page_data->window_title_pwd);
 		else
 		{
-			// g_debug("page_data->pwd (get_and_update_page_name())= %s", page_data->pwd);
 			*page_name = g_strdup(page_data->pwd);
 		}
 
@@ -641,7 +567,6 @@ void update_page_name_pwd(StrAddr **page_name,
 			*page_color = win_data->user_page_color[2];
 			page_data->window_title_updated = -1;
 		}
-		// g_debug("PWD updated: *page_name = %s, color = %s", *page_name, *page_color);
 		page_data->page_update_method = PAGE_METHOD_PWD;
 	}
 }
@@ -658,7 +583,6 @@ void update_page_name_normal(StrAddr **page_name,
 #ifdef SAFEMODE
 	if ((page_name==NULL) || (page_color==NULL) || (win_data==NULL) || (page_data==NULL)) return;
 #endif
-	// g_debug("Trying to update to NORMAL page!");
 	if (*page_name==NULL)
 	{
 		if (page_data->page_name && (page_data->page_update_method != PAGE_METHOD_REFRESH))
@@ -670,9 +594,7 @@ void update_page_name_normal(StrAddr **page_name,
 			*page_color = win_data->user_page_color[5];
 		else
 			*page_color = NULL;
-		// g_debug("page_shows_normal_dir : page_name = %s, color = %s", *page_name, *page_color);
 		if (page_data->page_update_method==PAGE_METHOD_REFRESH) win_data->page_names_no++;
-		// g_debug("page_data->page_update_method = %d", page_data->page_update_method);
 		page_data->page_update_method = PAGE_METHOD_NORMAL;
 	}
 }
@@ -699,7 +621,6 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 #ifdef SAFEMODE
 		if (page_data==NULL) return FALSE;
 #endif
-		// g_debug("page_name = NULL!! trying to call get_and_update_page_name()");
 		get_and_update_page_name(page_data, FALSE);
 	}
 
@@ -715,8 +636,6 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 #endif
 	// We don't update label name when the size of window is changing.
 	// 0xfe = 11,111,110
-	// g_debug("win_data->keep_vte_size = %x", win_data->keep_vte_size);
-		// g_debug("Updating %d page name to %s...", page_no, page_name);
 		gchar *label_name = NULL;
 
 		if (custom_page_name==NULL)
@@ -726,7 +645,6 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 
 		if (! lost_focus)
 			gtk_widget_set_tooltip_text(label, label_name);
-		// g_debug("[1] Updating %d page name to %s...", page_no, label_name);
 
 		// FIXME: label_name = NULL when initing page.
 		if (label_name==NULL) return FALSE;
@@ -735,7 +653,6 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 			label_name = g_strdup_printf("(%d) %s", page_no, label_name);
 		else
 			label_name = g_strdup(label_name);
-		// g_debug("[2] Updating %d page name to %s...", page_no, label_name);
 		// label_name will be freed later.
 
 		if (win_data->page_shows_encoding && show_encoding && encoding_str)
@@ -743,23 +660,16 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 			gchar *temp_str = g_strdup_printf("%s (%s)", label_name, encoding_str);
 			g_free(label_name);
 			label_name = temp_str;
-			// g_debug("[3] Updating %d page name to %s...", page_no, label_name);
 		}
 
 		// if the window is lost focus, don't update the tab name
-		// g_debug("lost_focus = %d", lost_focus);
 		if (! lost_focus)
 		{
-			// win_data->keep_vte_size |= 1;
-			// g_debug("window_resizable in update_page_name! and keep_vte_size =%d", keep_vte_size);
-			// window_resizable(window, vte, 2, 1);
 
 			// DANGEROUS: remark the following keep_window_size()
 			//	      will break the geometry of window when drag and drop.
-			// g_debug("update_page_name(): launch keep_window_size()!");
 			if (win_data->use_color_page && (tab_color != NULL))
 			{
-				// g_debug("[Debug] Updating %d page name to %s...", page_no, label_name);
 				gchar *color_label_name;
 				if (is_bold)
 					color_label_name = convert_text_to_html (&label_name, FALSE,
@@ -768,12 +678,10 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 					color_label_name = convert_text_to_html (&label_name, FALSE,
 										 (gchar *)tab_color, NULL);
 				gtk_label_set_markup (GTK_LABEL(label), color_label_name);
-				// g_debug("[FINAL] Updating %d page name to %s...", page_no, color_label_name);
 				g_free(color_label_name);
 			}
 			else
 				gtk_label_set_text(GTK_LABEL(label), label_name);
-			// g_debug("Updated the tab name to %s!", page_name);
 			page_name_updated = TRUE;
 			if (win_data->window_status != WINDOW_APPLY_PROFILE_NORMAL)
 			{
@@ -786,16 +694,10 @@ gboolean update_page_name(GtkWidget *window, GtkWidget *vte, gchar *page_name, G
 				keep_gtk3_window_size(win_data, FALSE);
 			}
 		}
-#ifdef DEBUG
-		// else
-		//	g_debug("!!! the window is lost focus, don't update the tab name");
-#endif
 		// free the data
 		g_free(label_name);
 	// we should update window title if page name changed.
 	check_and_update_window_title(win_data, custom_window_title, page_no, custom_page_name, page_name);
-
-	// g_debug("(update_page_name): page_name_updated = %d", page_name_updated);
 
 	return page_name_updated;
 }
@@ -816,10 +718,8 @@ void check_and_update_window_title(struct Window *win_data, gboolean custom_wind
 	gint current_page_no = gtk_notebook_get_current_page(GTK_NOTEBOOK(win_data->notebook));
 
 	// we only update the window title for current page
-	// g_debug("current_page_no = %d, page_no = %d", current_page_no, page_no);
 
 	// FIXME: A dirty hack... current_page_no=-1 when creating a 2rd new window.
-	// if (win_data->adding_page && (current_page_no<0)) current_page_no = 0;
 
 	if ((current_page_no == (page_no-1)) || ((current_page_no==-1) && (page_no==1)))
 	{
@@ -830,7 +730,6 @@ void check_and_update_window_title(struct Window *win_data, gboolean custom_wind
 			window_title = page_name;
 
 		if (window_title)
-			// g_debug("page_name = %s before calling update_window_title()", page_name);
 			update_window_title(win_data->window, window_title,
 					    win_data->window_title_append_package_name);
 	}
@@ -848,7 +747,6 @@ void update_window_title(GtkWidget *window, gchar *name, gboolean window_title_a
 	if (window_title_append_package_name)
 	{
 		gchar *window_title = g_strdup_printf("%s - %s", name, PACKAGE);
-		// g_debug("Update the window title to %s!", window_title);
 #ifdef SAFEMODE
 		if (window_title)
 #endif
@@ -868,9 +766,6 @@ gchar *get_tab_name_with_page_names(struct Window *win_data)
 #ifdef SAFEMODE
 	if (win_data==NULL) return NULL;
 #endif
-	// g_debug("Get win_data = %d when get tab name with page names!", win_data);
-	// g_debug("Got win_data->page_names_no = %d, win_data->max_page_names_no = %d",
-	//	win_data->page_names_no, win_data->max_page_names_no);
 
 	win_data->page_names_no = CLAMP(win_data->page_names_no, 0, win_data->max_page_names_no);
 
@@ -882,7 +777,6 @@ gchar *get_tab_name_with_page_names(struct Window *win_data)
 #endif
 		win_data->page_names_no=0;
 
-	// g_debug("Got win_data->page_names_no = %d", win_data->page_names_no);
 #ifdef SAFEMODE
 	if (win_data->splited_page_names &&
 	    (win_data->splited_page_names[win_data->page_names_no]!=NULL))
@@ -905,7 +799,6 @@ gchar *get_tab_name_with_cmdline(struct Page *page_data)
 #ifdef SAFEMODE
 	if (page_data==NULL) return NULL;
 #endif
-	// if cmdline always be "", don't call get_cmdline(). It always get "".
 	if (! vte_fork_cmdline_returned_empty)
 	{
 		if (page_data->pid_cmdline == NULL) page_data->pid_cmdline = get_cmdline(page_data->pid);
@@ -919,17 +812,12 @@ gchar *get_tab_name_with_cmdline(struct Page *page_data)
 	{
 		gchar *tpgid_cmdline = get_cmdline(page_data->current_tpgid);
 
-		// g_debug("get_tab_name_with_cmdline(): tpgid_cmdline = %s", tpgid_cmdline);
-
-		//if ((page_data->pid == page_data->current_tpgid) ||
-		//    (compare_strings(page_data->pid_cmdline, tpgid_cmdline, TRUE)))
 		if ((page_data->pid == page_data->current_tpgid) ||
 		    (tpgid_cmdline && page_data->pid_cmdline &&
 		     (! g_str_has_suffix(tpgid_cmdline, page_data->pid_cmdline))))
 			return tpgid_cmdline;
 		else
 		{
-			// g_debug("pid = %d, tpgid = %d, pid_cmdline = %s", pid, tpgid, pid_cmdline);
 #ifdef DEBUG
 			g_message("Got (%s), Trying to reread the %s/%d/cmdline...",
 				  tpgid_cmdline, proc_file_system_path, (gint)page_data->current_tpgid);
@@ -975,7 +863,6 @@ gchar *get_tab_name_with_current_dir(pid_t pid)
 	return NULL;
 }
 
-
 gint get_tpgid(pid_t pid)
 {
 #ifdef FULL
@@ -1015,7 +902,6 @@ gint get_tpgid(pid_t pid)
 				}
 				else
 				{
-					// g_debug("Setting checked_pid[%d] = TRUE ...", current_tpgid);
 					checked_pid[current_tpgid] = TRUE;
 				}
 			}
@@ -1026,7 +912,6 @@ gint get_tpgid(pid_t pid)
 		else
 		{
 			timeout++;
-			// g_debug("get_tpgid(): get_tpgid(): Set timeout = %d", timeout);
 		}
 		g_strfreev(stats);
 	}
@@ -1041,7 +926,6 @@ gint get_tpgid(pid_t pid)
 		current_tpgid = -1;
 	}
 
-	// g_debug("The pid =%d, tpgid=%d", pid, current_tpgid);
 	return current_tpgid;
 }
 
@@ -1059,14 +943,12 @@ gchar *get_cmdline(const pid_t tpgid)
 	gchar *cmdline = get_proc_data(tpgid, "cmdline", &length);
 	if (length)
 	{
-		// g_debug("Get length = %d, cmdline = %s", length, cmdline);
 		gint i;
 		// convert '\0' to ' '
 		for (i=0; i<(length-1); i++)
 			if (*(cmdline+i)==0)
 				*(cmdline+i)=' ';
 	}
-	// g_debug("get_cmdline(): cmdline = %s", cmdline);
 	return cmdline;
 }
 
@@ -1087,8 +969,6 @@ gboolean check_is_root(pid_t tpgid)
 	// Don't use g_stat here. 'CAUSE A BUG IN GDK, IT MAY CAUSE SEGFAULT UNDER I386 MACHINE!!
 	if (! stat(tpgid_path, &buf))
 	{
-		// g_debug("Got uid of %s is %d", tpgid_path, buf.st_uid);
-		// g_debug("Got gid of %s is %d", tpgid_path, buf.st_gid);
 		if ((buf.st_uid==0) ||(buf.st_gid==0))
 			is_root = TRUE;
 	}
@@ -1097,86 +977,14 @@ gboolean check_is_root(pid_t tpgid)
 }
 
 //gboolean check_is_root(pid_t tpgid)
-//{
-//#ifdef DETAIL
-//	g_debug("! Launch check_is_root() for tpgid %d", tpgid);
-//#endif
-//#ifdef SAFEMODE
-//	if (tpgid<1) return FALSE;
-//#endif
-//	gboolean is_root=FALSE;
-//	gboolean uid_checked = FALSE, gid_checked = FALSE;
 //
-//	gsize length = 0;
-//	gchar *status = get_proc_data(tpgid, "status", &length);
 //
-//#ifdef SAFEMODE
-//	if (status)
-//	{
-//#endif
-//		gchar **status_line = split_string(status, "\n", -1);
 //		gchar **status_data;
-//		gint i=0;
 //
-//#ifdef SAFEMODE
-//		if (status_line)
-//		{
-//#endif
-//			while (status_line[i]!=NULL)
-//			{
-//				// g_debug("%d) %s",i ,status_line[i]);
-//				status_data = split_string(status_line[i], "\t", -1);
-//#ifdef SAFEMODE
-//				if (status_data)
-//				{
-//#endif
-//					if (strcmp(status_data[0], "Uid:")==0)
-//					{
-//						is_root = check_status_data(status_data);
-//						uid_checked = TRUE;
-//					}
-//					else if (strcmp(status_data[0], "Gid:")==0)
-//					{
-//						is_root = check_status_data(status_data);
-//						gid_checked = TRUE;
-//					}
-//#ifdef SAFEMODE
-//				}
-//#endif
-//				g_strfreev(status_data);
-//				if ((is_root) || (uid_checked && gid_checked))
-//					break;
 //				i++;
-//			}
-//#ifdef SAFEMODE
-//		}
-//#endif
-//		g_strfreev(status_line);
-//#ifdef SAFEMODE
-//	}
-//#endif
-//	g_free(status);
-//	return is_root;
-//}
 //
-//gboolean check_status_data(gchar **status_data)
-//{
-//#ifdef DETAIL
-//	g_debug("! Launch check_status_data() !");
-//#endif
 //
 //	gint i;
-//	for (i=1; i<5; i++)
-//	{
-//		// g_debug("Checking %s...", status_data[i]);
-//		if (atoi(status_data[i])==0)
-//		{
-//			// g_debug("IT IS ROOT (%d)!", atoi(status_data[i]));
-//			return TRUE;
-//		}
-//	}
-//	return FALSE;
-//}
 
 void update_page_window_title (VteTerminal *vte, struct Page *page_data)
 {
@@ -1187,53 +995,17 @@ void update_page_window_title (VteTerminal *vte, struct Page *page_data)
 	if (page_data==NULL) return;
 #endif
 	page_data->window_title_updated = 1;
-	// get_and_update_page_name(page_data);
 	monitor_cmdline(page_data);
 }
 
 // The returned string should be freed when no longer needed.
 // gchar *get_current_pwd_by_pid(pid_t pid)
-// {
-// #ifdef DETAIL
-//	g_debug("! Launch get_current_pwd_by_pid() with pid = %d", pid);
-// #endif
-//	if (! proc_exist) return NULL;
 //
-//	gchar *priv_pwd = g_strdup_printf("%s/%d/cwd", proc_file_system_path, pid);
-//	gchar *pwd = g_file_read_link(priv_pwd, NULL);
-//	g_free(priv_pwd);
-//	// g_debug("use the directory %s (%s/%d/cwd)", directory, proc_file_system_path, prev_page->pid);
-//	return pwd;
-//}
 
 //void monitor_cmdline(GFileMonitor *monitor, pid_t pid)
-//{
-//	GError *error = NULL;
-//	gchar *stat_path = g_strdup_printf("%s/%d/stat", proc_file_system_path, (gint) pid);
-//	GFile *file = g_file_new_for_path(stat_path);
-//	monitor = g_file_monitor_file (file, 0, NULL, &error);
-//	if (monitor)
-//		g_signal_connect (monitor, "changed", (GCallback)monitor_cmdline_changed, NULL);
-//	else
-//	{
-//		g_free (monitor);
-//		monitor = NULL;
-//	}
-//}
 
 //void monitor_cmdline_changed(GFileMonitor *monitor, GFile *file, GFile *other_file,
 //			     GFileMonitorEvent event_type, gpointer user_data)
-//{
-//	g_debug("Got monitor_cmdline_changed message");
-//	struct Page *page_data = (struct Page *)g_object_get_data(G_OBJECT(current_vte), "Page_Data");
-//	gint current_page_no = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
 //
-//	get_and_update_page_name(page_data->label_text, page_data->pid, &(page_data->tpgid), current_page_no+1);
-//}
 
 //void monitor_cmdline_cancel(GFileMonitor *monitor)
-//{
-//	g_io_channel_close(channel);
-//	g_file_monitor_cancel (monitor);
-//}
-

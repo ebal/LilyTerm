@@ -21,9 +21,7 @@
 #include <vte/vte.h>
 // for L10n
 #include <glib/gi18n.h>
-// for strlen()
 #include <string.h>
-// for aoti()
 #include <stdlib.h>
 
 #include "lilyterm.h"
@@ -139,4 +137,3 @@ void clear_key_group_all(GtkButton *button, struct Dialog *dialog_data);
 void clear_key_groups(struct Dialog *dialog_data, gboolean clear_all);
 GtkWidget *add_text_to_notebook(GtkWidget *notebook, const gchar *label, const gchar *stock_id, const gchar *text);
 void show_usage_text(GtkWidget *notebook, gpointer page, guint page_num, struct Dialog *dialog_data);
-// void err_page_data_is_null(gchar *function_name);

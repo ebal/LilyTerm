@@ -21,11 +21,8 @@
 // for L10n
 #include <locale.h>
 #include <glib/gi18n.h>
-// for exit()
 #include <stdlib.h>
-// for va_start(), va_arg(), va_end()
 #include <stdarg.h>
-// for strcmp()
 #include <string.h>
 
 #include "lilyterm.h"

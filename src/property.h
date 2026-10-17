@@ -24,11 +24,8 @@
 // for L10n
 #include <locale.h>
 #include <glib/gi18n.h>
-// for strlen()
 #include <string.h>
-// for aoti() aotf() canonicalize_file_name()
 #include <stdlib.h>
-// for access()
 #include <unistd.h>
 
 #include "lilyterm.h"

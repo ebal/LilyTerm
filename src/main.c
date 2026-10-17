@@ -50,10 +50,7 @@ extern gchar *restricted_locale_message;
 int main( int   argc,
 	  char *argv[])
 {
-	// command_line_path = argv[0];
 
-	// g_debug ("argc = %d", argc);
-	// print_array ("argv", argv);
 	// i18n support. We need to support i18n under console, too.
 	setlocale(LC_ALL, "");
 	bindtextdomain(BINARY, LOCALEDIR);
@@ -74,7 +71,6 @@ int main( int   argc,
 #endif
 	// in BSD system, /proc may not exist.
 	proc_exist = check_if_default_proc_dir_exist(NULL);
-	// g_debug ("Get proc_exist = %d, proc_file_system_path = %s", proc_exist, proc_file_system_path);
 
 	shell = g_getenv("SHELL");
 	if (shell==NULL) shell = "";
@@ -91,23 +87,19 @@ int main( int   argc,
 		pwd_need_be_free = FALSE;
 		pwd = "";
 	}
-	// g_debug("Got $PWD = %s", pwd);
 
 	home = g_getenv("HOME");
 	if (home==NULL) home = "";
-	// g_debug("Get $HOME = %s", home);
 
 	// deal the command line options
 	command_option(argc, argv);
 	if (wmclass_name==NULL) wmclass_name = g_getenv("RESOURCE_NAME");
 	if (wmclass_name==NULL) wmclass_name = "";
 	if (wmclass_class==NULL) wmclass_class = "";
-	// g_debug("Got wmclass_name = %s, wmclass_class = %s", wmclass_name, wmclass_class);
 
 	// init the gtk+2 engine
 
 	// GTK3: get gtk_test_widget_click() working...
-	// gdk_disable_multidevice();
 
 	gtk_init(&argc, &argv);
 	// FIXME: we should get the single_process from profile. Current is command-line option only.
@@ -124,38 +116,27 @@ int main( int   argc,
 
 	// start LilyTerm
 
-	// empty_environ = g_strsplit("", " ", -1);
 	extern gchar **environ;
-	// print_array("main(): environ", environ);
 	gchar *environ_str = convert_array_to_string(environ, '\t');
-	// if (window_list) g_error("CHECK: window_list = %p !!", window_list);
-	// g_debug("Got environ_str (in main.c) = %s", environ_str);
 	selection_clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 	selection_primary = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
 	system_locale_list = get_locale_list();
-	// g_debug("Got system_locale_list = %s", system_locale_list);
 	init_LC_CTYPE = g_strdup(get_default_lc_data(LC_CTYPE));
-	// g_debug("Got init_LC_CTYPE = %s", init_LC_CTYPE);
 	init_LANGUAGE = g_strdup(get_default_lc_data(LANGUAGE));
-	// g_debug("Got init_LANGUAGE = %s", init_LANGUAGE);
 	init_LC_MESSAGES = g_strdup(get_default_lc_data(LC_MESSAGES));
-	// g_debug("init_LC_MESSAGES = %s", init_LC_MESSAGES);
 	init_encoding = (gchar *)get_encoding_from_locale(NULL);
 	if (! compare_strings(init_encoding, "ANSI_X3.4-1968", TRUE))
 	{
 		g_free(init_encoding);
 		init_encoding = g_strdup("UTF-8");
 	}
-	// g_debug("init_encoding = %s", init_encoding);
 	SYSTEM_VTE_CJK_WIDTH_STR = g_getenv("VTE_CJK_WIDTH");
-	// g_debug ("Got SYSTEM_VTE_CJK_WIDTH_STR = %s", SYSTEM_VTE_CJK_WIDTH_STR);
 	// FIXME: signal(SIGCHLD, SIG_IGN);
 	// The first window of LilyTerm
 
 	// Convert the GdkColor to GdkRGBA
 	convert_system_color_to_rgba();
 
-	// g_debug("Got original encoding = %s", get_encoding_from_locale(NULL));
 	//GtkNotebook *new_window(int argc,
 	//			char *argv[],
 	//			gchar *shell,
@@ -174,7 +155,6 @@ int main( int   argc,
 	//			struct Window *win_data_orig,
 	//			struct Page *page_data_orig)
 
-	// g_debug("main(1): gtk_main_level = %d, g_list_length(window_list) = %d", gtk_main_level(), g_list_length(window_list));
 	if ((new_window(argc,
 			argv,
 			(gchar *) shell,
@@ -198,28 +178,18 @@ int main( int   argc,
 		// Set it to NULL here to avoid double_free().
 		argv=NULL;
 		gdk_notify_startup_complete_with_id(PACKAGE);
-		// g_debug("main(2): gtk_main_level = %d, g_list_length(window_list) = %d", gtk_main_level(), g_list_length(window_list));
 		if (! gtk_main_level())
 			gtk_main();
 	}
 #ifdef DETAIL
 	else
 	{
-//		g_debug("Got window_list = %p", window_list);
-//		GList *win_list = window_list;
-//		gint i=0;
 //
-//		while (win_list)
-//		{
-//			g_debug("Got %d win_data = %p", ++i, win_list->data);
-//			win_list = win_list->next;
-//		}
 		g_debug("??? The creation of first window is FAIL!!!");
 	}
 #endif
 	extern struct KeyValue system_keys[KEYS];
 	gint i;
-	// g_debug("Clear function key data!!");
 	for (i=KEY_SWITCH_TO_TAB_1; i<=KEY_SWITCH_TO_TAB_12; i++)
 	{
 		g_free(system_keys[i].name);
@@ -228,8 +198,6 @@ int main( int   argc,
 		g_free(system_keys[i].translation);
 	}
 
-	// g_free(pwd);
-	// g_strfreev(empty_environ);
 	g_free(environ_str);
 	g_free(init_encoding);
 	g_free(system_locale_list);
@@ -256,19 +224,15 @@ gchar *convert_socket_data_to_string(char *argv[])
 	// VTE_CJK_WIDTH can't = NULL
 	if (VTE_CJK_WIDTH_STR == NULL) VTE_CJK_WIDTH_STR = "";
 
-	// g_debug("Got LOCALE = %s in send_socket...", get_encoding_from_locale(NULL));
 	gchar *encoding = get_encoding_from_locale(NULL);
 	if (! compare_strings(encoding, "ANSI_X3.4-1968", TRUE))
 	{
 		g_free(encoding);
 		encoding = g_strdup("UTF-8");
 	}
-	// g_debug("Got encoding = %s in send_socket...", encoding);
 	gchar *lc_messages = g_strdup(get_default_lc_data(LC_MESSAGES));
 
 	gchar *environ_str = convert_array_to_string(environ, '\t');
-	// print_array("! send_socket() environ", environ);
-	// g_debug("environ_str = %s", environ_str);
 	gchar *argv_str = convert_array_to_string(argv, SEPARATE_CHAR);
 #ifdef SAFEMODE
 	gboolean need_free_argv_str = TRUE;
@@ -279,17 +243,7 @@ gchar *convert_socket_data_to_string(char *argv[])
 		argv_str = "";
 	}
 #endif
-	// g_debug("argv_str = %s", argv_str);
 
-	// g_debug("SEND DATA: SOCKET_DATA_VERSION = %s", SOCKET_DATA_VERSION);
-	// g_debug("SEND DATA: locale_list = %s", locale_list);
-	// g_debug("SEND DATA: encoding = %s", encoding);
-	// g_debug("SEND DATA: PWD = %s", PWD);
-	// g_debug("SEND DATA: VTE_CJK_WIDTH_STR = %s", VTE_CJK_WIDTH_STR);
-	// g_debug("SEND DATA: wmclass_name = %s", wmclass_name);
-	// g_debug("SEND DATA: wmclass_class = %s", wmclass_class);
-	// g_debug("SEND DATA: environ_str = %s", environ_str);
-	// g_debug("SEND DATA: argv_str = %s", argv_str);
 	//	      0			  1	2	    3	     4		 5   6	  7		    8		 9	       10      11
 	// send data: SOCKET_DATA_VERSION SHELL LOCALE_LIST ENCODING LC_MESSAGES PWD HOME VTE_CJK_WIDTH_STR wmclass_name wmclass_class ENVIRON ARGV
 	//				  0	1     2	    3	  4	5     6	    7	  8	9     10    11
@@ -317,7 +271,6 @@ gchar *convert_socket_data_to_string(char *argv[])
 					 environ_str,
 					 SEPARATE_CHAR,
 					 argv_str);
-	// g_debug("arg_str = %s", arg_str);
 	g_free(locale_list);
 	g_free(encoding);
 	g_free(lc_messages);
@@ -340,8 +293,6 @@ gboolean convert_string_to_socket_data(gchar *socket_str)
 	// get data: SOCKET_DATA_VERSION SHELL LOCALE_LIST ENCODING LC_MESSAGES PWD HOME VTE_CJK_WIDTH_STR wmclass_name wmclass_class ENVIRON ARGV
 
 	gchar **datas = split_string(socket_str, SEPARATE_STR, 12);
-	// g_debug("The SOCKET_DATA_VERSION = %s ,and the data sent via socket is %s",
-	//	   SOCKET_DATA_VERSION, datas[0]);
 
 	if (datas==NULL)
 	{
@@ -388,26 +339,11 @@ gboolean convert_string_to_socket_data(gchar *socket_str)
 	}
 	else
 	{
-		// g_debug("datas[11] = %s", datas[11]);
 		gchar **argv = split_string(datas[11], SEPARATE_STR, -1);
 		gint argc = 0;
 		if (argv)
 			while (argv[argc])
 				argc ++;
-
-		// g_debug("Final:");
-		// g_debug("\targc =%d", argc);
-		// print_array("\targv", argv);
-		// g_debug("\tSHELL = %s", datas[1]);
-		// g_debug("\tenvironments = %s", datas[10]);
-		// g_debug("\tlocale_list = %s", datas[2]);
-		// g_debug("\tPWD = %s", datas[5]);
-		// g_debug("\tHOME = %s", datas[6]);
-		// g_debug("\tVTE_CJK_WIDTH_STR = %s", datas[7]);
-		// g_debug("\twmclass_name = %s", datas[8]);
-		// g_debug("\twmclass_class= %s", datas[9]);
-		// g_debug("\tencoding = %s", datas[3]);
-		// g_debug("\tlc_messages = %s", datas[4]);
 
 		//GtkNotebook *new_window(int argc,
 		//			char *argv[],
@@ -446,7 +382,6 @@ gboolean convert_string_to_socket_data(gchar *socket_str)
 				NULL) == NULL && (g_list_length(window_list) == 0)))
 			// Sometimes, new_window() will return NULL. Therefore LilyTerm may should quit.
 			quit_gtk();
-		// g_debug("main(3): gtk_main_level = %d, g_list_length(window_list) = %d", gtk_main_level(), g_list_length(window_list));
 		g_strfreev(argv);
 	}
 	g_strfreev(datas);
@@ -460,11 +395,9 @@ void main_quit(GtkWidget *widget, struct Window *win_data)
 #ifdef DETAIL
 	g_debug("! Launch main_quit() with win_data = %p!", win_data);
 #endif
-	// g_debug("Total window = %d", g_list_length(window_list));
 	if (g_list_length(window_list)==1)
 	{
 #ifdef SAFEMODE
-		// g_debug ("main_quit(): win_data==NULL, call gtk_main_quit()");
 		if (win_data==NULL) return quit_gtk();
 #endif
 		window_quit(win_data->window, NULL, win_data);
@@ -489,7 +422,6 @@ void main_quit(GtkWidget *widget, struct Window *win_data)
 			i++;
 		}
 
-		// g_debug("Got all_process_list =%s", all_process_list->str);
 #ifdef SAFEMODE
 		if ((all_process_list==NULL) || (all_process_list->len==0) ||
 		    (display_child_process_dialog (all_process_list, win_data,
@@ -501,7 +433,6 @@ void main_quit(GtkWidget *widget, struct Window *win_data)
 #endif
 		{
 			force_to_quit = TRUE;
-			// g_debug ("main_quit(): call gtk_main_quit()");
 			quit_gtk();
 		}
 		g_string_free(all_process_list, TRUE);
