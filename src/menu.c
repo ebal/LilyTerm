@@ -234,6 +234,17 @@ gboolean create_menu(struct Window *win_data)
 	// ----------------------------------------
 	add_separator_menu (win_data->menu);
 
+	// split panes: the keys for them are in [Set key binding]
+	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Split right"), NULL, GTK_FAKE_STOCK_ADD,
+			  (GSourceFunc)menu_split_right, win_data);
+	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Split down"), NULL, GTK_FAKE_STOCK_ADD,
+			  (GSourceFunc)menu_split_down, win_data);
+	create_menu_item (IMAGE_MENU_ITEM, win_data->menu, _("Close pane"), NULL, GTK_FAKE_STOCK_CLOSE,
+			  (GSourceFunc)menu_close_pane, win_data);
+
+	// ----------------------------------------
+	add_separator_menu (win_data->menu);
+
 	GtkWidget *misc_sub_menu = create_sub_item (win_data->menu, _("Misc"), GTK_FAKE_STOCK_CONVERT);
 
 	create_menu_item (IMAGE_MENU_ITEM, misc_sub_menu, _("Paste to every Vte Terminal"), NULL, GTK_FAKE_STOCK_PASTE,

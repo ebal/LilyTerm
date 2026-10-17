@@ -194,6 +194,31 @@ struct Page *split_page(struct Window *win_data, struct Page *page_data, GtkOrie
 	return new_page;
 }
 
+// The right click menu items for split panes: they act on the current pane.
+void menu_split_right(GtkWidget *menuitem, struct Window *win_data)
+{
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
+#endif
+	split_page(win_data, get_page_data_from_vte(win_data->current_vte, win_data, -1), GTK_ORIENTATION_HORIZONTAL);
+}
+
+void menu_split_down(GtkWidget *menuitem, struct Window *win_data)
+{
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
+#endif
+	split_page(win_data, get_page_data_from_vte(win_data->current_vte, win_data, -1), GTK_ORIENTATION_VERTICAL);
+}
+
+void menu_close_pane(GtkWidget *menuitem, struct Window *win_data)
+{
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
+#endif
+	close_page(win_data->current_vte, CLOSE_WITH_KEY_STRIKE);
+}
+
 // Close the tab that page_data is in: every pane of it, the last one first.
 // Stops (and returns FALSE) if the user does not confirm closing a pane.
 gboolean close_tab(struct Page *page_data, gint close_type)
@@ -1573,6 +1598,8 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 	}
 	else if (event->button == 3)
 	{
+		// The menu acts on the current pane: make it the one that was clicked.
+		if (win_data->current_vte != vte) gtk_widget_grab_focus(vte);
 		menu_activated = TRUE;
 		// Find/Add the encoding of current tab on right click menu
 		if (win_data->locale_sub_menu)

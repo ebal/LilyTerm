@@ -42,11 +42,11 @@ For each of them it checks that
 * `-g COLUMNSxROWS` produces exactly that terminal size (`stty size`),
 * a second `lilyterm` hands its command to the running one over the socket,
 * the sample profile printed by `-p` is accepted by `-u`,
-* split panes (prototype): Ctrl+Alt+R splits right and Ctrl+Alt+D splits
-  down without changing the window size, Ctrl+Alt+N moves the focus,
-  Ctrl+Alt+W and a pane's shell exiting give the space back, and the
-  last pane closing ends LilyTerm. Keys are sent with `xdotool` (X11) and
-  `wtype` (Wayland); each pane reports its own `stty size`.
+* split panes: Ctrl+Shift+E splits right and a split down key rebound in
+  the profile (Alt+Down) splits down, without changing the window size;
+  Ctrl+Shift+N moves the focus, Ctrl+Shift+W and a pane's shell exiting
+  give the space back, and the last pane closing ends LilyTerm. Keys are
+  sent with `xdotool` (X11) and `wtype` (Wayland); each pane reports its own `stty size`.
 
 Useful knobs: `BACKENDS="x11"` or `BACKENDS="wayland"` to test one of them,
 `LILYTERM=/path/to/binary` to test an existing binary instead of building.

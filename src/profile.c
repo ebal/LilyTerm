@@ -753,6 +753,10 @@ void init_user_keys(struct Window *win_data)
 	win_data->user_keys[KEY_SCROLL_UP_1_LINE].value = g_strdup("Shift Up");
 	win_data->user_keys[KEY_SCROLL_DOWN_1_LINE].value = g_strdup("Shift Down");
 	win_data->user_keys[KEY_CLEAN_SCROLLBACK_LINES].value = g_strdup("Ctrl H");
+	win_data->user_keys[KEY_SPLIT_RIGHT].value = g_strdup("Ctrl+Shift E");
+	win_data->user_keys[KEY_SPLIT_DOWN].value = g_strdup("Ctrl+Shift O");
+	win_data->user_keys[KEY_NEXT_PANE].value = g_strdup("Ctrl+Shift N");
+	win_data->user_keys[KEY_CLOSE_PANE].value = g_strdup("Ctrl+Shift W");
 	win_data->user_keys[KEY_DISABLE_URL_L].value = g_strdup("Control_L");
 	win_data->user_keys[KEY_DISABLE_URL_R].value = g_strdup("Control_R");
 #ifdef FATAL
@@ -834,6 +838,14 @@ void init_key_bindings_name_and_group(void)
 	system_keys[KEY_SCROLL_DOWN_1_LINE].group = KEY_GROUP_SCROLL;
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].name = "clean_scrollback_lines";
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].group = KEY_GROUP_SCROLL;
+	system_keys[KEY_SPLIT_RIGHT].name = "split_right_key";
+	system_keys[KEY_SPLIT_RIGHT].group = KEY_GROUP_PANE;
+	system_keys[KEY_SPLIT_DOWN].name = "split_down_key";
+	system_keys[KEY_SPLIT_DOWN].group = KEY_GROUP_PANE;
+	system_keys[KEY_NEXT_PANE].name = "next_pane_key";
+	system_keys[KEY_NEXT_PANE].group = KEY_GROUP_PANE;
+	system_keys[KEY_CLOSE_PANE].name = "close_pane_key";
+	system_keys[KEY_CLOSE_PANE].group = KEY_GROUP_PANE;
 	system_keys[KEY_DISABLE_URL_L].name = "disable_url_for_temporary_L";
 	system_keys[KEY_DISABLE_URL_L].group = KEY_GROUP_NONE;
 	system_keys[KEY_DISABLE_URL_R].name = "disable_url_for_temporary_R";
@@ -858,6 +870,7 @@ void init_key_bindings(void)
 	key_groups[KEY_GROUP_TEXT] = _("Text operation");
 	key_groups[KEY_GROUP_SCROLL] = _("Scroll up/down");
 	key_groups[KEY_GROUP_FONT] = _("Font");
+	key_groups[KEY_GROUP_PANE] = _("Split panes");
 	key_groups[KEY_GROUP_NONE] = "None";
 
 
@@ -992,6 +1005,19 @@ void init_key_bindings(void)
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].topic = _("Clean scrollback lines");
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].comment = "# Asks to clean scrollback lines.";
 	system_keys[KEY_CLEAN_SCROLLBACK_LINES].translation = _("Asks to clean scrollback lines.");
+	// Split panes
+	system_keys[KEY_SPLIT_RIGHT].topic = _("Split right");
+	system_keys[KEY_SPLIT_RIGHT].comment = "# Split the current pane in two, side by side.";
+	system_keys[KEY_SPLIT_RIGHT].translation = _("Split the current pane in two, side by side.");
+	system_keys[KEY_SPLIT_DOWN].topic = _("Split down");
+	system_keys[KEY_SPLIT_DOWN].comment = "# Split the current pane in two, one above the other.";
+	system_keys[KEY_SPLIT_DOWN].translation = _("Split the current pane in two, one above the other.");
+	system_keys[KEY_NEXT_PANE].topic = _("Switch to next pane");
+	system_keys[KEY_NEXT_PANE].comment = "# Move the focus to the next pane of the current tab.";
+	system_keys[KEY_NEXT_PANE].translation = _("Move the focus to the next pane of the current tab.");
+	system_keys[KEY_CLOSE_PANE].topic = _("Close pane");
+	system_keys[KEY_CLOSE_PANE].comment = "# Close the current pane. The tab closes with its last pane.";
+	system_keys[KEY_CLOSE_PANE].translation = _("Close the current pane. The tab closes with its last pane.");
 	// disable URL for temporary
 	system_keys[KEY_DISABLE_URL_L].topic = "Disable URL for temporary";
 	system_keys[KEY_DISABLE_URL_L].comment = "# Disable URL for temporary.";

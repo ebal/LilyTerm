@@ -658,7 +658,7 @@
 // mods = (event->state | GDK_LOCK_MASK | GDK_MOD2_MASK) & GDK_MODIFIER_MASK;
 #define DUD_MASK (GDK_LOCK_MASK | GDK_MOD2_MASK | ( ~GDK_MODIFIER_MASK))
 
-#define KEY_GROUP 9
+#define KEY_GROUP 10
 typedef enum {
 	KEY_GROUP_MISC,						// 0
 	KEY_GROUP_TAB_OPERATION,				// 1
@@ -668,14 +668,15 @@ typedef enum {
 	KEY_GROUP_TEXT,						// 5
 	KEY_GROUP_SCROLL,					// 6
 	KEY_GROUP_FONT,						// 7
-	KEY_GROUP_NONE,						// 8, MUST BE THE LAST ONE!!
+	KEY_GROUP_PANE,						// 8
+	KEY_GROUP_NONE,						// 9, MUST BE THE LAST ONE!!
 } Key_Binding_Groups;
 
 #ifdef FATAL
-	#define KEYS 46
+	#define KEYS 50
 	#define FIXED_KEYS 3
 #else
-	#define KEYS 45
+	#define KEYS 49
 	#define FIXED_KEYS 2
 #endif
 
@@ -723,6 +724,11 @@ typedef enum {
 	KEY_SCROLL_UP_1_LINE,					// 37
 	KEY_SCROLL_DOWN_1_LINE,					// 38
 	KEY_CLEAN_SCROLLBACK_LINES,				// NEW
+	// split panes. The FIXED_KEYS (not in the profile) must stay the last ones.
+	KEY_SPLIT_RIGHT,					// NEW
+	KEY_SPLIT_DOWN,						// NEW
+	KEY_NEXT_PANE,						// NEW
+	KEY_CLOSE_PANE,						// NEW
 	KEY_DISABLE_URL_L,					// NEW
 	KEY_DISABLE_URL_R,					// NEW
 #ifdef FATAL

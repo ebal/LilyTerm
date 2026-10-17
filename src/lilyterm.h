@@ -243,6 +243,9 @@ gboolean page_is_split(struct Page *page_data);
 struct Page *split_page(struct Window *win_data, struct Page *page_data, GtkOrientation orientation);
 void focus_next_pane(struct Window *win_data);
 gboolean close_tab(struct Page *page_data, gint close_type);
+void menu_split_right(GtkWidget *menuitem, struct Window *win_data);
+void menu_split_down(GtkWidget *menuitem, struct Window *win_data);
+void menu_close_pane(GtkWidget *menuitem, struct Window *win_data);
 struct Page *get_page_data_from_vte(GtkWidget *vte, struct Window *win_data, gint page_no);
 
 //

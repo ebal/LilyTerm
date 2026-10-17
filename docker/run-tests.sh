@@ -230,7 +230,7 @@ run_gui_tests() {
 	run_pane_tests "$backend" "$work"
 }
 
-# send_keys BACKEND COMBO: press a key combination (e.g. ctrl+alt+r) in LilyTerm
+# send_keys BACKEND COMBO: press a key combination (e.g. ctrl+shift+e, alt+Down) in LilyTerm
 send_keys() {
 	if [ "$1" = x11 ]; then
 		local id
@@ -241,7 +241,8 @@ send_keys() {
 		local key=${2##*+} mods m args=()
 		mods=$(echo "${2%+*}" | tr + ' ')
 		for m in $mods; do args+=(-M "$m"); done
-		args+=("$key")
+		# wtype types a bare argument as text: a named key (Down, F5, ...) needs -k
+		if [ ${#key} -gt 1 ]; then args+=(-k "$key"); else args+=("$key"); fi
 		for m in $mods; do args+=(-m "$m"); done
 		wtype "${args[@]}"
 	fi
@@ -271,8 +272,13 @@ run_pane_tests() {
 	rows_are() { [ "$(rows "$1")" = "$2" ]; }
 
 	# The pane "shell" is a script, not a known shell: without this LilyTerm
-	# asks for a confirmation before it closes a pane with Ctrl+Alt+W.
-	"$LILYTERM" -p | sed 's/^confirm_to_kill_running_command = .*/confirm_to_kill_running_command = 0/' > "$pdir/profile"
+	# asks for a confirmation before it closes a pane with Ctrl+Shift+W.
+	# It also moves "split down" to Alt+Down, to check that the pane keys can be rebound.
+	"$LILYTERM" -p | sed -e 's/^confirm_to_kill_running_command = .*/confirm_to_kill_running_command = 0/' \
+		-e 's/^split_down_key = .*/split_down_key = Alt Down/' > "$pdir/profile"
+	if ! grep -q '^split_down_key = Alt Down' "$pdir/profile"; then
+		ng "[$backend] panes: lilyterm -p does not list split_down_key"
+	fi
 	SHELL="$pdir/shell" PANE_DIR="$pdir" timeout 120 "$LILYTERM" -s -u "$pdir/profile" -g 100x30 > "$work/panes.log" 2>&1 &
 	local pid=$!
 	if ! wait_for 15 size_is 1 "30 100"; then
@@ -282,34 +288,34 @@ run_pane_tests() {
 	sleep 1
 
 	# split right: two panes side by side share the 100 columns
-	send_keys "$backend" ctrl+alt+r
+	send_keys "$backend" ctrl+shift+e
 	if wait_for 10 test -s "$pdir/pane-2/size"; then
 		sleep 1
 		local c1 c2 r3 r2
 		c1=$(cols 1); c2=$(cols 2)
 		if [ "$(rows 1)" = 30 ] && [ "$(rows 2)" = 30 ] && [ "$c1" -ge 40 ] && [ "$c2" -ge 40 ] &&
 		   [ $((c1 + c2)) -ge 95 ] && [ $((c1 + c2)) -le 100 ]; then
-			ok "[$backend] Ctrl+Alt+R splits right: $(size 1 | tr ' ' x) + $(size 2 | tr ' ' x), the window keeps its size"
+			ok "[$backend] Ctrl+Shift+E splits right: $(size 1 | tr ' ' x) + $(size 2 | tr ' ' x), the window keeps its size"
 		else
 			ng "[$backend] split right: pane sizes $(size 1 | tr ' ' x) and $(size 2 | tr ' ' x)"
 		fi
 	else
-		ng "[$backend] Ctrl+Alt+R did not open a second pane"
+		ng "[$backend] Ctrl+Shift+E did not open a second pane"
 	fi
 
 	# split the new (focused) pane down
-	send_keys "$backend" ctrl+alt+d
+	send_keys "$backend" alt+Down
 	if wait_for 10 test -s "$pdir/pane-3/size"; then
 		sleep 1
 		r2=$(rows 2); r3=$(rows 3)
 		if [ "$(cols 3)" = "$(cols 2)" ] && [ "$r2" -ge 12 ] && [ "$r3" -ge 12 ] &&
 		   [ $((r2 + r3)) -ge 27 ] && [ $((r2 + r3)) -le 30 ] && [ "$(size 1)" = "30 $c1" ]; then
-			ok "[$backend] Ctrl+Alt+D splits the focused pane down: $(size 2 | tr ' ' x) over $(size 3 | tr ' ' x)"
+			ok "[$backend] Alt+Down (rebound in the profile) splits the focused pane down: $(size 2 | tr ' ' x) over $(size 3 | tr ' ' x)"
 		else
 			ng "[$backend] split down: panes $(size 1 | tr ' ' x), $(size 2 | tr ' ' x), $(size 3 | tr ' ' x)"
 		fi
 	else
-		ng "[$backend] Ctrl+Alt+D did not open a third pane"
+		ng "[$backend] Alt+Down (rebound in the profile) did not open a third pane"
 	fi
 	if [ "$backend" = x11 ]; then
 		xwd -root -silent 2>/dev/null | $MAGICK xwd:- "$work/panes.png" 2>/dev/null
@@ -325,13 +331,13 @@ run_pane_tests() {
 		ng "[$backend] after closing pane 3, pane 2 is $(size 2 | tr ' ' x)"
 	fi
 	# panes 1 | 2 are left, and pane 2 has the focus: move it to pane 1 and close that one
-	send_keys "$backend" ctrl+alt+n
+	send_keys "$backend" ctrl+shift+n
 	sleep 0.5
-	send_keys "$backend" ctrl+alt+w
+	send_keys "$backend" ctrl+shift+w
 	if wait_for 10 size_is 2 "30 100"; then
-		ok "[$backend] Ctrl+Alt+N moves the focus, Ctrl+Alt+W closes that pane: back to one pane of 100x30"
+		ok "[$backend] Ctrl+Shift+N moves the focus, Ctrl+Shift+W closes that pane: back to one pane of 100x30"
 	else
-		ng "[$backend] after Ctrl+Alt+N, Ctrl+Alt+W: panes $(size 1 | tr ' ' x) and $(size 2 | tr ' ' x)"
+		ng "[$backend] after Ctrl+Shift+N, Ctrl+Shift+W: panes $(size 1 | tr ' ' x) and $(size 2 | tr ' ' x)"
 	fi
 
 	touch "$pdir/pane-2/quit"

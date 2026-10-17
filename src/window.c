@@ -1114,28 +1114,6 @@ gboolean window_key_press(GtkWidget *window, GdkEventKey *event, struct Window *
 #endif
 	// don't check if only shift key pressed!
 	// FIXME: GDK_asciitilde = 0x7e, it is for some keys like <F3> only.
-	// Split panes. Fixed key bindings for now:
-	// Ctrl+Alt+R split right, Ctrl+Alt+D split down, Ctrl+Alt+W close the pane, Ctrl+Alt+N next pane.
-	if (win_data->enable_key_binding && win_data->current_vte &&
-	    ((event->state & (GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_SHIFT_MASK)) == (GDK_CONTROL_MASK | GDK_MOD1_MASK)))
-	{
-		struct Page *page_data = get_page_data_from_vte(win_data->current_vte, win_data, -1);
-		switch (gdk_keyval_to_lower(event->keyval))
-		{
-			case GDK_KEY_r:
-				split_page(win_data, page_data, GTK_ORIENTATION_HORIZONTAL);
-				return TRUE;
-			case GDK_KEY_d:
-				split_page(win_data, page_data, GTK_ORIENTATION_VERTICAL);
-				return TRUE;
-			case GDK_KEY_w:
-				close_page(win_data->current_vte, CLOSE_WITH_KEY_STRIKE);
-				return TRUE;
-			case GDK_KEY_n:
-				focus_next_pane(win_data);
-				return TRUE;
-		}
-	}
 	if ((event->state & SHIFT_ONLY_MASK) || (event->keyval > GDK_KEY_asciitilde))
 	{
 		// g_debug("ALL_ACCELS_MASK = %X", ALL_ACCELS_MASK);
@@ -1579,6 +1557,18 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 #endif
 		case KEY_CLEAN_SCROLLBACK_LINES:
 			clean_scrollback_lines(NULL, win_data);
+			break;
+		case KEY_SPLIT_RIGHT:
+			split_page(win_data, page_data, GTK_ORIENTATION_HORIZONTAL);
+			break;
+		case KEY_SPLIT_DOWN:
+			split_page(win_data, page_data, GTK_ORIENTATION_VERTICAL);
+			break;
+		case KEY_NEXT_PANE:
+			focus_next_pane(win_data);
+			break;
+		case KEY_CLOSE_PANE:
+			close_page(win_data->current_vte, CLOSE_WITH_KEY_STRIKE);
 			break;
 		case KEY_DISABLE_URL_L:
 		case KEY_DISABLE_URL_R:
