@@ -1,0 +1,110 @@
+# Build and test LilyTerm on the Gitea server.
+#
+#   every push to main / pull request:  dynamic build + tests on X11 and
+#                                       Wayland, static build + the same tests,
+#                                       the packaged files as a workflow artifact
+#
+# This is where every change is built and tested first. Releases are only made
+# on GitHub (.github/workflows/build.yml), for a tag vX.Y.Z pushed there after
+# the same commits passed here.
+#
+# The jobs run in a container of act_runner, with the Docker of the host. So
+# images and their build cache stay on the host between runs: GLib, GTK+, VTE,
+# ... only compile again when docker/Dockerfile.static changes. A job cannot
+# bind-mount its own files into a container it starts (the path would be one
+# on the host): they go in and out with docker cp.
+
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ gitea.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Build against the distribution's GTK+ 3 / VTE, test on X11 and Wayland
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the test image
+        run: docker build -f docker/Dockerfile.dev -t lilyterm-dev:ci .
+
+      - name: Build LilyTerm and run the tests on X11 and Wayland
+        run: |
+          c=lilyterm-dev-${{ gitea.run_id }}
+          trap 'docker rm -f "$c" > /dev/null 2>&1' EXIT
+          docker create --name "$c" lilyterm-dev:ci > /dev/null
+          docker cp . "$c":/src
+          status=0
+          docker start -a "$c" || status=$?
+          mkdir -p test-output
+          docker cp "$c":/build/test-output/. test-output/ || true
+          exit $status
+
+      - name: Keep the logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-dynamic
+          path: test-output
+          if-no-files-found: ignore
+
+  # The static binary: build, test in a clean image, package
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: version
+        run: |
+          echo "version=$(sed -n 's/^VERSION = //p' .default)" >> "$GITHUB_OUTPUT"
+          echo "epoch=$(git log -1 --format=%ct)" >> "$GITHUB_OUTPUT"
+
+      - name: Build the static binary and its test image
+        run: docker build -f docker/Dockerfile.static --target test -t lilyterm-static-test:ci .
+
+      - name: Test the static binary on X11 and Wayland
+        run: |
+          c=lilyterm-static-${{ gitea.run_id }}
+          trap 'docker rm -f "$c" > /dev/null 2>&1' EXIT
+          docker create --name "$c" lilyterm-static-test:ci > /dev/null
+          status=0
+          docker start -a "$c" || status=$?
+          mkdir -p test-output
+          docker cp "$c":/tmp/test-output/. test-output/ || true
+          exit $status
+
+      - name: Keep the logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-static
+          path: test-output
+          if-no-files-found: ignore
+
+      - name: Export the binary and its data files
+        run: docker build -f docker/Dockerfile.static --target export --output dist .
+
+      - name: Package
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.version.outputs.epoch }}
+        run: |
+          chmod +x dist/lilyterm
+          docker/package.sh dist release
+          ./release/lilyterm-x86_64 -v
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lilyterm-${{ steps.version.outputs.version }}-linux-x86_64
+          path: release/
+          if-no-files-found: error

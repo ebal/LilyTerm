@@ -125,17 +125,23 @@ and the terminfo entry of `$TERM`. Every desktop system has them.
 `install.sh` (from the tarball) installs into `~/.local`, or into `/usr/local`
 when run as root; `PREFIX=...` overrides it and `--uninstall` removes it again.
 
-The GitHub workflow in `.github/workflows/build.yml` builds LilyTerm and the
-static binary on every push and pull request, runs the tests that need no
-display (`BACKENDS=`), and keeps the packaged files as a workflow artifact.
-The X11 and Wayland tests only run locally: on the shared GitHub runners their
-key presses get lost now and then. Run them before you push a release tag. The compiled dependencies are kept as a build cache in the GitHub
-container registry (`ghcr.io/OWNER/lilyterm-buildcache`), shared by all
-branches and tags: a run takes a few minutes, and GLib, GTK+ and VTE are only
-compiled again (about half an hour) when `Dockerfile.static` changes.
+Every change is built and tested on Gitea first. The workflow in
+`.gitea/workflows/build.yml` runs on every push to `main` and every pull
+request: both test suites, X11 and Wayland included, and the packaged static
+binary as a workflow artifact. Its jobs run with the Docker of the Gitea host,
+so the images and their build cache stay there between runs.
 
-Pushing a tag `vX.Y.Z` also publishes them as a GitHub release. The
-tag has to match `VERSION` in `.default`, which is what `lilyterm -v` prints:
+The same commits are pushed to GitHub once they passed on Gitea. The GitHub
+workflow in `.github/workflows/build.yml` only runs for a tag `vX.Y.Z`: it
+builds the static binary, runs the tests that need no display (`BACKENDS=`;
+on the shared GitHub runners the key presses of the X11 and Wayland tests get
+lost now and then), and publishes the release. Its compiled dependencies
+are kept as a build cache in the GitHub container registry
+(`ghcr.io/OWNER/lilyterm-buildcache`): a run takes a few minutes, and GLib,
+GTK+ and VTE are only compiled again (about half an hour) when
+`Dockerfile.static` changes.
+
+The tag has to match `VERSION` in `.default`, which is what `lilyterm -v` prints:
 
 ```sh
 # after setting VERSION in .default and committing it

@@ -1,10 +1,12 @@
-# Build and test LilyTerm, and publish a release when a version tag is pushed.
+# Publish a release when a version tag is pushed.
 #
-#   every push / pull request:  dynamic build, static build, the tests that
-#                               need no display; the packaged files are kept
-#                               as a workflow artifact
-#   push of a tag vX.Y.Z:       the same, then a GitHub release with
-#                               lilyterm-x86_64, the tarball and SHA256SUMS
+#   push of a tag vX.Y.Z:  static build, the tests that need no display, then a
+#                          GitHub release with lilyterm-x86_64, the tarball and
+#                          SHA256SUMS
+#
+# Every change is built and tested on Gitea first (.gitea/workflows/build.yml,
+# with the X11 and Wayland tests); the same commits come here once they passed
+# there. So GitHub only builds what it releases.
 #
 # The compiled dependencies (GLib, GTK+, VTE, ...) are kept as a build cache in
 # the GitHub container registry, ghcr.io/OWNER/lilyterm-buildcache. Unlike the
@@ -12,8 +14,8 @@
 # they are only compiled again when docker/Dockerfile.static itself changes.
 # A normal run then takes a few minutes.
 #
-# The X11 and Wayland tests only run locally (docker/README.md): on the shared
-# runners their key presses get lost now and then. BACKENDS= turns them off.
+# The X11 and Wayland tests run on Gitea, not here: on the shared runners their
+# key presses get lost now and then. BACKENDS= turns them off.
 #
 # To release: set VERSION in .default, commit, then
 #   git tag v$(sed -n 's/^VERSION = //p' .default) && git push origin --tags
@@ -22,9 +24,7 @@ name: build
 
 on:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -32,50 +32,9 @@ permissions:
 
 concurrency:
   group: build-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+  cancel-in-progress: false
 
 jobs:
-  # Build against the distribution's GTK+ 3 / VTE, test on X11 and Wayland
-  test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v4
-      - name: Build cache location
-        id: cache
-        run: echo "ref=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lilyterm-buildcache" >> "$GITHUB_OUTPUT"
-      # Pull requests from forks get a read-only token: they read the cache, if they can
-      - uses: docker/login-action@v4
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-      - name: Build the test image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: docker/Dockerfile.dev
-          tags: lilyterm-dev
-          load: true
-          cache-from: type=registry,ref=${{ steps.cache.outputs.ref }}:dev
-          cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:dev,mode=max', steps.cache.outputs.ref) || '' }}
-      - name: Build LilyTerm and run the tests that need no display
-        run: |
-          mkdir -p test-output
-          docker run --rm -e GITHUB_ACTIONS -e BACKENDS= -v "$PWD":/src:ro -v "$PWD/test-output":/build/test-output lilyterm-dev
-      - name: Keep the logs and screenshots
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-output-dynamic
-          path: test-output
-          if-no-files-found: ignore
-
   # The static binary: build, test in a clean image, package
   static:
     runs-on: ubuntu-latest
@@ -102,9 +61,7 @@ jobs:
       - name: Build cache location
         id: cache
         run: echo "ref=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/lilyterm-buildcache" >> "$GITHUB_OUTPUT"
-      # Pull requests from forks get a read-only token: they read the cache, if they can
       - uses: docker/login-action@v4
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -121,7 +78,7 @@ jobs:
           tags: lilyterm-static-test
           load: true
           cache-from: type=registry,ref=${{ steps.cache.outputs.ref }}:static
-          cache-to: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:static,mode=max', steps.cache.outputs.ref) || '' }}
+          cache-to: type=registry,ref=${{ steps.cache.outputs.ref }}:static,mode=max
 
       - name: Test the static binary (the tests that need no display)
         run: |
@@ -161,7 +118,7 @@ jobs:
 
   release:
     if: github.ref_type == 'tag'
-    needs: [test, static]
+    needs: [static]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
