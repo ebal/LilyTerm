@@ -2,6 +2,19 @@
 
 ## 2026-10-17
 
+Version 0.9.9.8.
+The first release with the fixes of 0.9.9.7: its tag never got a release,
+because the tests failed on the GitHub runner.
+
+### FIX
+
+- The tests of the split panes failed now and then on slow machines: a
+  key press could reach no window while the new LilyTerm window was still
+  being mapped. The tests give the window the keyboard focus before each
+  key press, and press a split key once more if no pane appears.
+
+## 2026-10-17
+
 Version 0.9.9.7.
 Icons and README for the modern LilyTerm.
 
