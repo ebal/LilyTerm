@@ -63,7 +63,7 @@ jobs:
       - name: Build LilyTerm and run the tests
         run: |
           mkdir -p test-output
-          docker run --rm -v "$PWD":/src:ro -v "$PWD/test-output":/build/test-output lilyterm-dev
+          docker run --rm -e GITHUB_ACTIONS -v "$PWD":/src:ro -v "$PWD/test-output":/build/test-output lilyterm-dev
       - name: Keep the logs and screenshots
         if: always()
         uses: actions/upload-artifact@v7
@@ -122,7 +122,7 @@ jobs:
       - name: Test the static binary on X11 and Wayland
         run: |
           mkdir -p test-output
-          docker run --rm -v "$PWD/test-output":/tmp/test-output lilyterm-static-test
+          docker run --rm -e GITHUB_ACTIONS -v "$PWD/test-output":/tmp/test-output lilyterm-static-test
 
       - name: Keep the logs and screenshots
         if: always()

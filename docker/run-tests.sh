@@ -27,6 +27,11 @@ PIDS=()
 
 ok()   { PASS=$((PASS+1)); printf '\033[1;32m  PASS\033[0m %s\n' "$*"; }
 ng()   { FAIL=$((FAIL+1)); printf '\033[1;31m  FAIL\033[0m %s\n' "$*"; }
+# In GitHub Actions a failure also becomes an annotation, which can be read
+# on the run page without signing in (unlike the log)
+if [ -n "${GITHUB_ACTIONS:-}" ]; then
+	ng() { FAIL=$((FAIL+1)); printf '\033[1;31m  FAIL\033[0m %s\n::error title=Test failed::%s\n' "$*" "$*"; }
+fi
 note() { printf '\033[1;36m== %s\033[0m\n' "$*"; }
 
 cleanup() {
@@ -230,14 +235,33 @@ run_gui_tests() {
 	run_pane_tests "$backend" "$work"
 }
 
+has_x11_focus() { [ "$(xdotool getwindowfocus 2>/dev/null)" = "$1" ]; }
+
+# press_until BACKEND COMBO COMMAND...: press COMBO until COMMAND succeeds.
+# One press can get lost while a window is still mapping: try it twice.
+press_until() {
+	local backend=$1 keys=$2; shift 2
+	send_keys "$backend" "$keys"
+	wait_for 5 "$@" && return
+	send_keys "$backend" "$keys"
+	wait_for 10 "$@"
+}
+
 # send_keys BACKEND COMBO: press a key combination (e.g. ctrl+shift+e, alt+Down) in LilyTerm
 send_keys() {
+	# A key press only counts when LilyTerm has the keyboard focus: on a slow
+	# machine the new window may not have it yet, so give it the focus first.
 	if [ "$1" = x11 ]; then
 		local id
 		id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1)
-		[ -n "$id" ] && xdotool windowfocus --sync "$id" 2>/dev/null
+		if [ -n "$id" ]; then
+			xdotool windowfocus --sync "$id" 2>/dev/null
+			wait_for 5 has_x11_focus "$id"
+		fi
 		xdotool key --clearmodifiers "$2"
 	else
+		swaymsg -q '[app_id="(?i)lilyterm"] focus' 2>/dev/null
+		sleep 0.2
 		local key=${2##*+} mods m args=()
 		mods=$(echo "${2%+*}" | tr + ' ')
 		for m in $mods; do args+=(-M "$m"); done
@@ -288,8 +312,7 @@ run_pane_tests() {
 	sleep 1
 
 	# split right: two panes side by side share the 100 columns
-	send_keys "$backend" ctrl+shift+e
-	if wait_for 10 test -s "$pdir/pane-2/size"; then
+	if press_until "$backend" ctrl+shift+e test -s "$pdir/pane-2/size"; then
 		sleep 1
 		local c1 c2 r3 r2
 		c1=$(cols 1); c2=$(cols 2)
@@ -304,8 +327,7 @@ run_pane_tests() {
 	fi
 
 	# split the new (focused) pane down
-	send_keys "$backend" alt+Down
-	if wait_for 10 test -s "$pdir/pane-3/size"; then
+	if press_until "$backend" alt+Down test -s "$pdir/pane-3/size"; then
 		sleep 1
 		r2=$(rows 2); r3=$(rows 3)
 		if [ "$(cols 3)" = "$(cols 2)" ] && [ "$r2" -ge 12 ] && [ "$r3" -ge 12 ] &&
@@ -379,8 +401,10 @@ for backend in $BACKENDS; do
 		if ! wait_for 10 test -S "$XDG_RUNTIME_DIR/wayland-1"; then
 			ng "sway did not start"; sed 's/^/      /' "$OUT/sway.log" | tail -20; continue
 		fi
+		# swaymsg (send_keys) talks to sway over this socket
+		SWAYSOCK=$(ls "$XDG_RUNTIME_DIR"/sway-ipc.*.sock 2>/dev/null | head -n1)
 		# No DISPLAY at all: proves that nothing falls back to X11/XWayland.
-		( export WAYLAND_DISPLAY=wayland-1 GDK_BACKEND=wayland; unset DISPLAY; run_gui_tests wayland; echo "$PASS $FAIL" > "$OUT/.count" )
+		( export WAYLAND_DISPLAY=wayland-1 GDK_BACKEND=wayland SWAYSOCK; unset DISPLAY; run_gui_tests wayland; echo "$PASS $FAIL" > "$OUT/.count" )
 		read -r PASS FAIL < "$OUT/.count"
 		;;
 	esac
