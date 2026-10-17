@@ -385,9 +385,10 @@ void apply_font_to_every_vte(GtkWidget *window, gchar *new_font_name, glong colu
 	// g_debug("Trying to apply every vte to %dx%d!", column, row);
 	// g_debug("Trying to apply font %s to every vte!", new_font_name);
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data==NULL) continue;
 #endif
@@ -400,6 +401,7 @@ void apply_font_to_every_vte(GtkWidget *window, gchar *new_font_name, glong colu
 		page_data->font_name = g_strdup(new_font_name);
 		// g_debug("The new font for %d page is: %s (%s)", i, page_data->font_name, new_font_name);
 	}
+	g_ptr_array_unref(all_pages);
 
 	// g_debug("* Set hints to HINTS_FONT_BASE!, win_data->window_status = %d", win_data->window_status);
 	win_data->hints_type = HINTS_FONT_BASE;
@@ -458,9 +460,10 @@ gboolean check_if_every_vte_is_using_restore_font_name(struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 	gboolean return_value = TRUE;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data==NULL) continue;
 #endif
@@ -470,6 +473,7 @@ gboolean check_if_every_vte_is_using_restore_font_name(struct Window *win_data)
 			break;
 		}
 	}
+	g_ptr_array_unref(all_pages);
 	return return_value;
 }
 

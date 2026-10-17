@@ -53,6 +53,12 @@ void reorder_page_number(GtkNotebook *notebook, GtkWidget *child, guint page_num
 #endif
 		// g_debug("Got page_data = %p", page_data);
 		// we store current_page_no in "struct Page" for performance.
+		// Every pane of the tab carries it: they share the tab.
+		GPtrArray *panes = get_pages_in_tab(page_data);
+		guint j;
+		for (j=0; j<panes->len; j++)
+			((struct Page *)g_ptr_array_index(panes, j))->page_no = i;
+		g_ptr_array_unref(panes);
 		page_data->page_no = i;
 
 		// g_debug("Launch get_and_update_page_name() in reorder_page_number()");

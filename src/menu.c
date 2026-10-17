@@ -750,14 +750,16 @@ void set_cursor_blinks(GtkWidget *menuitem_cursor_blinks, struct Window *win_dat
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			set_cursor_blink(win_data, page_data);
 	}
+	g_ptr_array_unref(all_pages);
 }
 
 void set_allow_bold_text(GtkWidget *menuitem_allow_bold_text, struct Window *win_data)
@@ -772,14 +774,16 @@ void set_allow_bold_text(GtkWidget *menuitem_allow_bold_text, struct Window *win
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_allow_bold(VTE_TERMINAL(page_data->vte), win_data->allow_bold_text);
 	}
+	g_ptr_array_unref(all_pages);
 }
 
 void set_open_url_with_ctrl_pressed(GtkWidget *menuitem_open_url_with_ctrl_pressed, struct Window *win_data)
@@ -820,14 +824,16 @@ void set_audible_bell(GtkWidget *menuitem_audible_bell, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_audible_bell (VTE_TERMINAL(page_data->vte), win_data->audible_bell);
 	}
+	g_ptr_array_unref(all_pages);
 }
 
 #if defined(ENABLE_VISIBLE_BELL) || defined(UNIT_TEST)
@@ -844,14 +850,16 @@ void set_visible_bell(GtkWidget *menuitem_visible_bell, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_visible_bell (VTE_TERMINAL(page_data->vte), win_data->visible_bell);
 	}
+	g_ptr_array_unref(all_pages);
 }
 #endif
 
@@ -877,14 +885,16 @@ void set_urgent_bell(GtkWidget *menuitem_urgent_bell, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			set_vte_urgent_bell(win_data, page_data);
 	}
+	g_ptr_array_unref(all_pages);
 	win_data->urgent_bell_status = win_data->urgent_bell;
 }
 
@@ -1183,14 +1193,16 @@ void set_trans_bg(GtkWidget *menuitem_trans_bg, struct Window *win_data)
 	gint i;
 	struct Page *page_data = NULL;
 
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #  ifdef SAFEMODE
 		if (page_data)
 #  endif
 			set_background_saturation (NULL, 0, win_data->background_saturation, page_data->vte);
 	}
+	g_ptr_array_unref(all_pages);
 }
 #endif
 
@@ -1297,15 +1309,17 @@ void set_ansi_theme(GtkWidget *menuitem, Set_ANSI_Theme_Type type, gboolean use_
 
 	if (menuitem)
 	{
-		for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+		GPtrArray *all_pages = get_pages_in_window(win_data);
+		for (i=0; i<all_pages->len; i++)
 		{
-			page_data = get_page_data_from_nth_page(win_data, i);
+			page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 			if (page_data)
 #endif
 				set_vte_color(page_data->vte, default_vte_theme, win_data->custom_cursor_color, win_data->cursor_color,
 					      win_data->color, FALSE, (win_data->color_theme_index==(THEME-1)));
 		}
+		g_ptr_array_unref(all_pages);
 
 		if (menuitem != win_data->menuitem_invert_color)
 		{
@@ -1367,14 +1381,16 @@ void set_erase_binding (GtkWidget *menuitem, gint value)
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_backspace_binding (VTE_TERMINAL(page_data->vte), win_data->erase_binding);
 	}
+	g_ptr_array_unref(all_pages);
 	win_data->current_menuitem_erase_binding = menuitem;
 }
 
@@ -1401,14 +1417,16 @@ void set_cursor_shape (GtkWidget *menuitem, gint value)
 
 	gint i;
 	struct Page *page_data = NULL;
-	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+	GPtrArray *all_pages = get_pages_in_window(win_data);
+	for (i=0; i<all_pages->len; i++)
 	{
-		page_data = get_page_data_from_nth_page(win_data, i);
+		page_data = g_ptr_array_index(all_pages, i);
 #ifdef SAFEMODE
 		if (page_data)
 #endif
 			vte_terminal_set_cursor_shape(VTE_TERMINAL(page_data->vte), win_data->cursor_shape);
 	}
+	g_ptr_array_unref(all_pages);
 	win_data->current_menuitem_cursor_shape = menuitem;
 }
 #endif
@@ -2418,9 +2436,10 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		}
 
 		struct Page *page_data = NULL;
-		for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+		GPtrArray *all_pages = get_pages_in_window(win_data);
+		for (i=0; i<all_pages->len; i++)
 		{
-			page_data = get_page_data_from_nth_page(win_data, i);
+			page_data = g_ptr_array_index(all_pages, i);
 #  ifdef SAFEMODE
 			if (page_data==NULL) continue;
 #  endif
@@ -2432,6 +2451,7 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 
 			if (refresh_match) set_hyperlink(win_data, page_data);
 		}
+		g_ptr_array_unref(all_pages);
 
 		glong column=0, row=0;
 		get_row_and_column_from_geometry_str(&column, &row, &(win_data->default_column), &(win_data->default_row), win_data->geometry);
@@ -2561,15 +2581,17 @@ void load_background_image_from_file(GtkWidget *widget, struct Window *win_data)
 		if (win_data->notebook)
 		{
 #  endif
-			for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+			GPtrArray *all_pages = get_pages_in_window(win_data);
+			for (i=0; i<all_pages->len; i++)
 			{
-				page_data = get_page_data_from_nth_page(win_data, i);
+				page_data = g_ptr_array_index(all_pages, i);
 #  ifdef SAFEMODE
 				if (page_data)
 #  endif
 					set_background_saturation (NULL, 0, win_data->background_saturation,
 								   page_data->vte);
 			}
+			g_ptr_array_unref(all_pages);
 #  ifdef SAFEMODE
 		}
 #  endif

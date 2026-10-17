@@ -1497,7 +1497,11 @@ struct Page
 	GtkWidget *label;
 	GtkWidget *label_text;
 	GtkWidget *label_button;
+	// the box that holds the vte and its scroll bar: one pane.
 	GtkWidget *hbox;
+	// the notebook page (the tab) the pane is in. All the panes of a tab share it.
+	// It holds a single pane, or a tree of GtkPaned with the panes as leaves.
+	GtkWidget *tab_box;
 	GtkWidget *vte;
 #if defined(USE_GTK3_GEOMETRY_METHOD) || defined(UNIT_TEST)
 	GtkBorder *border;

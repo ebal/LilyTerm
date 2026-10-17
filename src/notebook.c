@@ -545,6 +545,12 @@ struct Page *add_page(struct Window *win_data,
 	// Therefore, it is recommended to show child widgets before adding them to a notebook.
 	gtk_widget_show_all(page_data->hbox);
 
+	// The notebook page is a container of panes, so that a pane can be split later
+	// without removing the page from the notebook.
+	page_data->tab_box = dirty_gtk_vbox_new(FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(page_data->tab_box), page_data->hbox, TRUE, TRUE, 0);
+	gtk_widget_show(page_data->tab_box);
+
 	// if (! win_data->show_scroll_bar)
 	//	hide_scroll_bar(win_data, page_data);
 
@@ -558,7 +564,7 @@ struct Page *add_page(struct Window *win_data,
 	if (page_data->notebook) {
 #endif
 		page_data->page_no = gtk_notebook_append_page(GTK_NOTEBOOK(page_data->notebook),
-						      page_data->hbox, page_data->label);
+						      page_data->tab_box, page_data->label);
 		// g_debug("Got page_data->page_no = %d", page_data->page_no);
 
 #ifdef DISABLE_PAGE_ADDED
@@ -568,7 +574,7 @@ struct Page *add_page(struct Window *win_data,
 		// move the page to next to original page
 		if (page_data_prev && add_to_next)
 		{
-			gtk_notebook_reorder_child(GTK_NOTEBOOK(page_data->notebook), page_data->hbox,
+			gtk_notebook_reorder_child(GTK_NOTEBOOK(page_data->notebook), page_data->tab_box,
 								page_data_prev->page_no + 1);
 			// g_debug("New Page No after move to next to prev page = %d", page_data->page_no);
 		}
@@ -1915,6 +1921,7 @@ void page_data_dup(struct Page *page_data_prev, struct Page *page_data)
 	page_data->label_text = NULL;
 	page_data->label_button = NULL;
 	page_data->hbox = NULL;
+	page_data->tab_box = NULL;
 	page_data->vte = NULL;
 	page_data->scroll_bar = NULL;
 
@@ -1982,6 +1989,54 @@ struct Page *get_page_data_from_nth_page(struct Window *win_data, guint page_no)
 									 page_no))),
 							"VteBox");
 	return (struct Page *)g_object_get_data(G_OBJECT(vte), "Page_Data");
+}
+
+// gtk_container_foreach() callback: add the page data of every vte found under widget.
+static void collect_pages(GtkWidget *widget, gpointer pages)
+{
+	if (VTE_IS_TERMINAL(widget))
+	{
+		struct Page *page_data = (struct Page *)g_object_get_data(G_OBJECT(widget), "Page_Data");
+		if (page_data) g_ptr_array_add((GPtrArray *)pages, page_data);
+	}
+	else if (GTK_IS_CONTAINER(widget))
+		gtk_container_foreach(GTK_CONTAINER(widget), collect_pages, pages);
+}
+
+// All the panes (vte terminals) of the tab that page_data is in, in the order they are shown.
+// Free it with g_ptr_array_unref().
+GPtrArray *get_pages_in_tab(struct Page *page_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_pages_in_tab() with page_data = %p", page_data);
+#endif
+	GPtrArray *pages = g_ptr_array_new();
+#ifdef SAFEMODE
+	if (page_data==NULL) return pages;
+#endif
+	if (page_data->tab_box)
+		collect_pages(page_data->tab_box, pages);
+	else
+		g_ptr_array_add(pages, page_data);
+	return pages;
+}
+
+// All the panes (vte terminals) of a window: every pane of every tab, tab by tab.
+// Use it instead of looping over the notebook pages whenever something is about
+// the terminals, not about the tabs. Free it with g_ptr_array_unref().
+GPtrArray *get_pages_in_window(struct Window *win_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_pages_in_window() with win_data = %p", win_data);
+#endif
+	GPtrArray *pages = g_ptr_array_new();
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->notebook==NULL)) return pages;
+#endif
+	gint i;
+	for (i=0; i<gtk_notebook_get_n_pages(GTK_NOTEBOOK(win_data->notebook)); i++)
+		collect_pages(gtk_notebook_get_nth_page(GTK_NOTEBOOK(win_data->notebook), i), pages);
+	return pages;
 }
 
 struct Page *get_page_data_from_vte(GtkWidget *vte, struct Window *win_data, gint page_no)
