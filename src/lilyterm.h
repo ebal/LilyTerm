@@ -200,6 +200,9 @@ void generate_all_color_datas(struct Window *win_data);
 GdkRGBA *get_current_color_theme(struct Window *win_data);
 void init_new_page(struct Window *win_data, struct Page *page_data, glong column, glong row);
 void set_cursor_blink(struct Window *win_data, struct Page *page_data);
+#ifdef ENABLE_SET_WORD_CHARS
+void set_vte_word_chars(GtkWidget *vte, const gchar *word_chars);
+#endif
 void set_hyperlink(struct Window *win_data, struct Page *page_data);
 void clean_hyperlink(struct Window *win_data, struct Page *page_data);
 void enable_custom_cursor_color(GtkWidget *vte, gboolean custom_cursor_color, GdkRGBA *cursor_color);

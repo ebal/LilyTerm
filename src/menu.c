@@ -926,7 +926,7 @@ void set_vte_urgent_bell(struct Window *win_data, struct Page *page_data)
 	{
 		// g_debug("set_vte_urgent_bell: get page_data->urgent_bell_handler_id = %ld", page_data->urgent_bell_handler_id);
 		if (page_data->urgent_bell_handler_id==0)
-			page_data->urgent_bell_handler_id = g_signal_connect(G_OBJECT(page_data->vte), "beep",
+			page_data->urgent_bell_handler_id = g_signal_connect(G_OBJECT(page_data->vte), VTE_BELL_SIGNAL,
 									     G_CALLBACK(urgent_beep), page_data);
 	}
 	else

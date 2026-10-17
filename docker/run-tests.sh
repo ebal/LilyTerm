@@ -234,6 +234,94 @@ run_gui_tests() {
 	fi
 	# --- 5. split panes: split right, split down, close panes again
 	run_pane_tests "$backend" "$work"
+	# --- 6. word_chars, the bell and cursor_shape (the mouse, WM_HINTS and xwd need X11)
+	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
+}
+
+# A double click selects a word by word_chars, a bell sets the urgency hint,
+# and cursor_shape changes the cursor. The shell prints a line with ',' and '!' in it: the default word_chars
+# has '!' but not ',' (VTE's own default is the other way round). A middle
+# click pastes the selection back into the shell, which saves it in word/line.
+run_word_and_bell_tests() {
+	local work=$1 wdir="$1/word" id a b c
+	mkdir -p "$wdir"
+	a=$(printf 'a%.0s' $(seq 20)); b=$(printf 'b%.0s' $(seq 30)); c=$(printf 'c%.0s' $(seq 20))
+	cat > "$wdir/shell" <<-EOF
+		#!/bin/sh
+		printf '\033[H\033[2J$a,$b!$c\n'
+		IFS= read -r line && printf '%s\n' "\$line" > "$wdir/line.tmp" && mv "$wdir/line.tmp" "$wdir/line"
+		while [ ! -e "$wdir/ring" ]; do sleep 0.1; done
+		printf '\a'
+		sleep 3
+	EOF
+	chmod +x "$wdir/shell"
+	SHELL="$wdir/shell" timeout 40 "$LILYTERM" -s -g 80x5 > "$work/word.log" 2>&1 &
+	local pid=$!
+	if ! wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+		ng "[x11] word_chars: no LilyTerm window"; kill "$pid" 2>/dev/null; return
+	fi
+	sleep 1
+	# set by xdotool getwindowgeometry --shell
+	# shellcheck disable=SC2034
+	local WIDTH HEIGHT X Y SCREEN WINDOW
+	eval "$(xdotool getwindowgeometry --shell "$id")"
+	# the middle of the b's: columns 22 to 51 of 80, on the first line
+	xdotool mousemove --window "$id" $((WIDTH * 36 / 80)) $((HEIGHT / 10)) click --repeat 2 --delay 80 1
+	sleep 0.5
+	xdotool click 2
+	send_keys x11 Return
+	if wait_for 5 test -s "$wdir/line" && [ "$(cat "$wdir/line")" = "$b!$c" ]; then
+		ok "[x11] a double click selects a word by word_chars ('!' is part of it, ',' is not)"
+	else
+		ng "[x11] word_chars: a double click selected '$(cat "$wdir/line" 2>/dev/null)', expected '$b!$c'"
+	fi
+
+	# The urgent bell is only for a window without the focus: give the focus
+	# to another window first (to this one before, so it gets a focus-out)
+	timeout 20 "$LILYTERM" -s -g 40x5 -e sleep 15 > "$work/word-other.log" 2>&1 &
+	local other_pid=$! other=''
+	wait_for 15 eval 'other=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | grep -vx "$id" | tail -n1); [ -n "$other" ]'
+	if [ -n "$other" ]; then
+		xdotool windowfocus --sync "$id" 2>/dev/null; sleep 0.5
+		xdotool windowfocus --sync "$other" 2>/dev/null; sleep 0.5
+	fi
+	touch "$wdir/ring"
+	# XUrgencyHint is bit 8 of the flags in WM_HINTS
+	urgent() {
+		local flags
+		flags=$(xprop -id "$id" -notype -f WM_HINTS 32x ' $0\n' WM_HINTS 2>/dev/null | awk '{print $2}')
+		case "$flags" in 0x[0-9a-fA-F]*) [ $((flags & 256)) -ne 0 ];; *) false;; esac
+	}
+	if wait_for 5 urgent; then
+		ok "[x11] a bell sets the urgency hint (urgent_bell)"
+	else
+		ng "[x11] urgent_bell: no urgency hint after a bell (WM_HINTS flags: $(xprop -id "$id" -notype -f WM_HINTS 32x ' $0' WM_HINTS 2>/dev/null))"
+	fi
+	wait "$pid" 2>/dev/null
+	kill "$other_pid" 2>/dev/null; wait "$other_pid" 2>/dev/null
+
+	# cursor_shape: the window looks different with a block (0) and an
+	# underline (2) cursor; the cursor does not blink (cursor_blinks = 2)
+	local shape sums=()
+	printf '#!/bin/sh\nexec sleep 10\n' > "$wdir/sleep"; chmod +x "$wdir/sleep"
+	for shape in 0 2; do
+		"$LILYTERM" -p | sed -e "s/^cursor_shape = .*/cursor_shape = $shape/" \
+			-e 's/^cursor_blinks = .*/cursor_blinks = 2/' > "$wdir/cursor-$shape.conf"
+		SHELL="$wdir/sleep" timeout 20 "$LILYTERM" -s -u "$wdir/cursor-$shape.conf" -g 20x3 > "$work/cursor-$shape.log" 2>&1 &
+		pid=$!; id=''
+		wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'
+		sleep 1.5
+		sums+=("$(xwd -id "$id" -silent 2>/dev/null | $MAGICK xwd:- rgb:- 2>/dev/null | md5sum | cut -d' ' -f1)")
+		xwd -id "$id" -silent 2>/dev/null | $MAGICK xwd:- "$work/cursor-$shape.png" 2>/dev/null
+		kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null
+	done
+	if ! grep -q '^cursor_shape = ' "$wdir/cursor-0.conf"; then
+		ng "[x11] cursor_shape: lilyterm -p does not list it"
+	elif [ -n "${sums[0]}" ] && [ "${sums[0]}" != "${sums[1]}" ]; then
+		ok "[x11] cursor_shape changes the cursor (block and underline look different)"
+	else
+		ng "[x11] cursor_shape: the window looks the same with a block and an underline cursor (see cursor-*.png)"
+	fi
 }
 
 has_x11_focus() { [ "$(xdotool getwindowfocus 2>/dev/null)" = "$1" ]; }

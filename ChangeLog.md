@@ -1,5 +1,16 @@
 # ChangeLog
 
+## Unreleased
+
+### FIX
+
+- `cursor_shape`, `urgent_bell` and `word_chars` work again. They were
+  left out of every build with VTE 0.38 or later, so the settings were
+  ignored, `lilyterm -p` did not list them, and the menu items were gone.
+  VTE renamed the "beep" signal to "bell", and since VTE 0.40 letters and
+  digits are always part of a word: `word_chars` still takes ranges like
+  `A-Z`, and LilyTerm passes VTE the other characters.
+
 ## 2026-10-17
 
 Version 0.9.9.9.

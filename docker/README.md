@@ -46,7 +46,11 @@ For each of them it checks that
   the profile (Alt+Down) splits down, without changing the window size;
   Ctrl+Shift+N moves the focus, Ctrl+Shift+W and a pane's shell exiting
   give the space back, and the last pane closing ends LilyTerm. Keys are
-  sent with `xdotool` (X11) and `wtype` (Wayland); each pane reports its own `stty size`.
+  sent with `xdotool` (X11) and `wtype` (Wayland); each pane reports its own `stty size`,
+* profile settings applied to VTE (X11 only: mouse clicks, `WM_HINTS` and
+  window screenshots): a double click selects a word by `word_chars`, a
+  bell in a window without the focus sets the urgency hint (`urgent_bell`),
+  and `cursor_shape` changes how the cursor looks.
 
 Useful knobs: `BACKENDS="x11"` or `BACKENDS="wayland"` to test one of them,
 `BACKENDS=` (empty) for only the build and the tests that need no display,

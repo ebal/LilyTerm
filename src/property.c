@@ -169,7 +169,7 @@ void init_new_page(struct Window *win_data,
 #endif
 	// other settings
 #ifdef ENABLE_SET_WORD_CHARS
-	vte_terminal_set_word_chars(VTE_TERMINAL(page_data->vte), win_data->word_chars);
+	set_vte_word_chars(page_data->vte, win_data->word_chars);
 #endif
 	vte_terminal_set_scrollback_lines(VTE_TERMINAL(page_data->vte), win_data->scrollback_lines);
 
@@ -223,6 +223,62 @@ void set_cursor_blink(struct Window *win_data, struct Page *page_data)
 	vte_terminal_set_cursor_blinks (VTE_TERMINAL(page_data->vte), win_data->cursor_blinks);
 #endif
 }
+
+#ifdef ENABLE_SET_WORD_CHARS
+// word_chars: the characters that a double click selects as a word, like
+// "-A-Za-z0-9_.+!@&=/~%", where A-Z is a range and a leading - is a hyphen.
+// VTE 0.40 always selects letters and digits, and only takes the other
+// characters (the "exceptions"), without ranges: expand them and leave the
+// letters and digits out.
+void set_vte_word_chars(GtkWidget *vte, const gchar *word_chars)
+{
+#ifdef DETAIL
+	g_debug("! Launch set_vte_word_chars() with vte = %p, word_chars = %s", vte, word_chars);
+#endif
+#ifdef SAFEMODE
+	if (vte==NULL) return;
+#endif
+#  ifdef USE_VTE_SET_WORD_CHARS
+	vte_terminal_set_word_chars(VTE_TERMINAL(vte), word_chars);
+#  else
+	GString *exceptions = g_string_new(NULL);
+	const gchar *str = word_chars;
+	if (str && (*str == '-'))
+	{
+		g_string_append_c(exceptions, '-');
+		str++;
+	}
+	while (str && *str)
+	{
+		gunichar start = g_utf8_get_char_validated(str, -1);
+		if ((start == (gunichar)-1) || (start == (gunichar)-2)) break;
+		const gchar *next = g_utf8_next_char(str);
+		gunichar end = start;
+		if ((*next == '-') && next[1])
+		{
+			end = g_utf8_get_char_validated(next+1, -1);
+			if ((end == (gunichar)-1) || (end == (gunichar)-2)) break;
+			next = g_utf8_next_char(next+1);
+			// a reversed or huge range: only take its two ends
+			if ((end < start) || (end - start > 0x400))
+			{
+				if (! g_unichar_isalnum(start) && ! g_utf8_strchr(exceptions->str, -1, start))
+					g_string_append_unichar(exceptions, start);
+				start = end;
+			}
+		}
+		gunichar c;
+		for (c = start; c <= end; c++)
+			if (! g_unichar_isalnum(c) && ! g_utf8_strchr(exceptions->str, -1, c))
+				g_string_append_unichar(exceptions, c);
+		str = next;
+	}
+	// g_debug("set_vte_word_chars(): word_chars = %s, exceptions = %s", word_chars, exceptions->str);
+	vte_terminal_set_word_char_exceptions(VTE_TERMINAL(vte), exceptions->str);
+	g_string_free(exceptions, TRUE);
+#  endif
+}
+#endif
 
 void set_hyperlink(struct Window *win_data, struct Page *page_data)
 {
@@ -884,7 +940,7 @@ void apply_new_win_data_to_page (struct Window *win_data_orig,
 // ---- other settings for init a vte ---- //
 #ifdef ENABLE_SET_WORD_CHARS
 	if (compare_strings(win_data_orig->word_chars, win_data->word_chars, TRUE))
-		vte_terminal_set_word_chars(VTE_TERMINAL(page_data->vte), win_data->word_chars);
+		set_vte_word_chars(page_data->vte, win_data->word_chars);
 #endif
 	if (win_data_orig->show_scroll_bar != win_data->show_scroll_bar)
 		// hide_scroll_bar(win_data, page_data);

@@ -527,12 +527,17 @@
 	// SINCE: vte-0.17.1/src/vte.h: vte_terminal_match_add_gregex()
 	#define USE_NEW_VTE_MATCH_ADD_GREGEX
 #endif
-#if VTE_CHECK_VERSION(0,19,1) && ! VTE_CHECK_VERSION(0,38,0)
+#if VTE_CHECK_VERSION(0,19,1)
 	// SINCE: vte-0.19.1/src/vte.h: vte_terminal_set_cursor_shape()
 	#define ENABLE_CURSOR_SHAPE
 	// SINCE: vte-0.19.1/src/vteseq.c: g_signal_emit_by_name(terminal, "beep");
-	// END: vte-0.37.90/src/vteseq.c: g_signal_emit_by_name(terminal, "beep");
 	#define ENABLE_BEEP_SINGAL
+#endif
+#if VTE_CHECK_VERSION(0,37,90)
+	// SINCE: vte-0.37.90/src/vteseq.c: the "beep" signal is called "bell"
+	#define VTE_BELL_SIGNAL "bell"
+#else
+	#define VTE_BELL_SIGNAL "beep"
 #endif
 #if VTE_CHECK_VERSION(0,20,4)
 	// SINCE: vte-0.20.4/src/vte.h: VTE_ERASE_TTY
@@ -621,12 +626,17 @@
 	#define vte_terminal_spawn_sync(a,b,c,d,e,f,g,h,i,j,k) vte_terminal_fork_command_full(a,b,c,d,e,f,g,h,i,k)
 	// END: vte-0.36.3/src/vte.h: void vte_terminal_set_word_chars()
 	#define ENABLE_SET_WORD_CHARS
+	#define USE_VTE_SET_WORD_CHARS
 	// END: vte-0.37.0/src/vteterminal.h: void vte_terminal_set_emulation()
 	#define ENABLE_SET_EMULATION
 	// END: vte-0.36.3/src/vte.h void vte_terminal_match_clear_all()
 	#define vte_terminal_match_remove_all vte_terminal_match_clear_all
 	// END: vte-0.36.3/src/vte-private.h: GtkBorder inner_border;
 	#define VTE_HAS_INNER_BORDER
+#endif
+#if VTE_CHECK_VERSION(0,40,0)
+	// SINCE: vte-0.40.0/src/vte/vteterminal.h: void vte_terminal_set_word_char_exceptions()
+	#define ENABLE_SET_WORD_CHARS
 #endif
 #if VTE_CHECK_VERSION(0,37,90)
 	// SINCE: ./vte-0.37.90/src/vteterminal.h: gboolean vte_terminal_set_encoding(VteTerminal *terminal, const char *codeset, GError **error)

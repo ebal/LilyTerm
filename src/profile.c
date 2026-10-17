@@ -2679,6 +2679,8 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 					"window_resize_ratio = %1.3f\n\n", win_data->window_resize_ratio);
 #  ifdef ENABLE_SET_WORD_CHARS
 	g_string_append_printf(contents,"# When user double clicks on a text, which character will be selected.\n"
+					"# A-Z is a range, and a - at the start is a hyphen. Letters and digits\n"
+					"# are always selected (vte >= 0.40).\n"
 					"word_chars = %s\n\n", win_data->word_chars);
 #  endif
 	g_string_append_printf(contents,"# The lines of scrollback history. -1 means unlimited (vte >= 0.22.3).\n"
