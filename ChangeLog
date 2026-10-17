@@ -1,3 +1,23 @@
+2026-10-17
+  Version 0.9.9.6.
+
+  New Feature:
+	* Split panes: a tab can hold several terminals, side by side or one
+	  above the other. Split with Ctrl+Shift+E (right) and Ctrl+Shift+O
+	  (down), move the focus with Ctrl+Shift+N, close a pane with
+	  Ctrl+Shift+W, or use the new items of the right click menu. A pane
+	  opens in the directory of the one it was split from, the window
+	  keeps its size, and the divider between panes can be dragged.
+	* The pane keys are in a new "Split panes" group of [Set key binding],
+	  and are saved in the profile (split_right_key, split_down_key,
+	  next_pane_key, close_pane_key).
+	* A right click gives the focus to the pane under the mouse, so the
+	  menu acts on that pane.
+
+  Known limits:
+	* A split tab can not be dragged to another window yet.
+	* While a tab is split, the window is not resized in whole characters.
+
 2026-10-06
   Version 0.9.9.5.
   Bring LilyTerm up to date with GTK+ 3.24, VTE 0.84, GCC 15+ and Wayland.
