@@ -1129,3 +1129,101 @@ gchar **sanitize_environs(gchar **environs)
 	g_ptr_array_add(cleaned, NULL);
 	return (gchar **) g_ptr_array_free(cleaned, FALSE);
 }
+
+#ifdef USE_LILYTERM_STOCK_ICONS
+// The icon names that GTK+ 3 itself uses for the stock ids LilyTerm uses.
+static const struct { const gchar *stock_id; const gchar *icon_name; } stock_icons[] = {
+	{ "gtk-about",			"help-about" },
+	{ "gtk-add",			"list-add" },
+	{ "gtk-clear",			"edit-clear" },
+	{ "gtk-close",			"window-close" },
+	{ "gtk-copy",			"edit-copy" },
+	{ "gtk-dialog-authentication",	"dialog-password" },
+	{ "gtk-dialog-error",		"dialog-error" },
+	{ "gtk-dialog-info",		"dialog-information" },
+	{ "gtk-dialog-question",	"dialog-question" },
+	{ "gtk-dialog-warning",		"dialog-warning" },
+	{ "gtk-execute",		"system-run" },
+	{ "gtk-file",			"text-x-generic" },
+	{ "gtk-find",			"edit-find" },
+	{ "gtk-go-back",		"go-previous" },
+	{ "gtk-go-down",		"go-down" },
+	{ "gtk-go-up",			"go-up" },
+	{ "gtk-goto-bottom",		"go-bottom" },
+	{ "gtk-goto-top",		"go-top" },
+	{ "gtk-help",			"help-browser" },
+	{ "gtk-new",			"document-new" },
+	{ "gtk-open",			"document-open" },
+	{ "gtk-paste",			"edit-paste" },
+	{ "gtk-preferences",		"preferences-system" },
+	{ "gtk-properties",		"document-properties" },
+	{ "gtk-quit",			"application-exit" },
+	{ "gtk-refresh",		"view-refresh" },
+	{ "gtk-revert-to-saved",	"document-revert" },
+	{ "gtk-save",			"document-save" },
+	{ "gtk-save-as",		"document-save-as" },
+	{ "gtk-zoom-100",		"zoom-original" },
+	{ "gtk-zoom-in",		"zoom-in" },
+	{ "gtk-zoom-out",		"zoom-out" },
+};
+
+// An image for a stock id, from the current icon theme.
+// Small icons prefer the symbolic variant, as GTK+ 3 applications do, and dialog
+// icons the full color one; each falls back to the other. Icons that are only
+// there as SVG are skipped by a GTK+ without SVG support (the static build),
+// which then finds PNG ones (an older theme, or GTK+'s own built-in icons).
+// If no theme has the icon at all, the image stays empty: better than a
+// "missing image" placeholder.
+GtkWidget *lilyterm_image_new_from_stock(const gchar *stock_id, GtkIconSize size)
+{
+#ifdef DETAIL
+	g_debug("! Launch lilyterm_image_new_from_stock() with stock_id = %s, size = %d", stock_id, size);
+#endif
+	const gchar *icon_name = NULL;
+	guint i;
+	for (i=0; stock_id && (i<G_N_ELEMENTS(stock_icons)); i++)
+		if (! strcmp(stock_id, stock_icons[i].stock_id))
+			icon_name = stock_icons[i].icon_name;
+	if (icon_name==NULL) return gtk_image_new();
+
+	gchar *symbolic = g_strconcat(icon_name, "-symbolic", NULL);
+	gchar *names[3] = {symbolic, (gchar *)icon_name, NULL};
+	if (size >= GTK_ICON_SIZE_DND)
+	{
+		names[0] = (gchar *)icon_name;
+		names[1] = symbolic;
+	}
+	GIcon *gicon = g_themed_icon_new_from_names(names, 2);
+
+	gint width = 16, height = 16;
+	gtk_icon_size_lookup(size, &width, &height);
+	GtkIconInfo *info = gtk_icon_theme_lookup_by_gicon(gtk_icon_theme_get_default(), gicon,
+							   MAX(width, height), 0);
+	GtkWidget *image;
+	if (info)
+	{
+		image = gtk_image_new_from_gicon(gicon, size);
+		g_object_unref(info);
+	}
+	else
+		image = gtk_image_new();
+	g_object_unref(gicon);
+	g_free(symbolic);
+	return image;
+}
+
+// A button with the translated label of a stock id ("_Paste"), like the ones
+// gtk_dialog_add_button() makes for the other buttons of a dialog.
+GtkWidget *lilyterm_button_new_from_stock(const gchar *stock_id)
+{
+#ifdef DETAIL
+	g_debug("! Launch lilyterm_button_new_from_stock() with stock_id = %s", stock_id);
+#endif
+	GtkWidget *button;
+	G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+	// the parentheses keep the macro of the same name from expanding
+	button = (gtk_button_new_from_stock)(stock_id);
+	G_GNUC_END_IGNORE_DEPRECATIONS
+	return button;
+}
+#endif

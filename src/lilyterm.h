@@ -50,6 +50,10 @@ gchar *get_VTE_CJK_WIDTH_str(gint VTE_CJK_WIDTH);
 #define GEOMETRY_X_NEGATIVE	0x10
 #define GEOMETRY_Y_NEGATIVE	0x20
 gchar **sanitize_environs(gchar **environs);
+#ifdef USE_LILYTERM_STOCK_ICONS
+GtkWidget *lilyterm_image_new_from_stock(const gchar *stock_id, GtkIconSize size);
+GtkWidget *lilyterm_button_new_from_stock(const gchar *stock_id);
+#endif
 gint parse_geometry_str(const gchar *geometry_str, gint *offset_x, gint *offset_y, guint *width, guint *height);
 gint get_default_VTE_CJK_WIDTH(void);
 void restore_SYSTEM_VTE_CJK_WIDTH_STR(void);

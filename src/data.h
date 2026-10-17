@@ -348,9 +348,12 @@
 #endif
 #if GTK_CHECK_VERSION(3,9,8)
 	// END: gtk+-3.9.8/gtk/gtkbutton.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_button_new_with_label) gtk_button_new_from_stock()
-	#define gtk_button_new_from_stock(x) gtk_button_new_from_icon_name(x,GTK_ICON_SIZE_BUTTON)
 	// END: gtk+-3.9.8/gtk/gtkimage.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_image_new_from_icon_name) gtk_image_new_from_stock()
-	#define gtk_image_new_from_stock gtk_image_new_from_icon_name
+	// A stock id ("gtk-close") is not an icon name, and icon themes do not
+	// carry gtk-* aliases any more: map stock ids to real icon names.
+	#define gtk_button_new_from_stock(x) lilyterm_button_new_from_stock(x)
+	#define gtk_image_new_from_stock lilyterm_image_new_from_stock
+	#define USE_LILYTERM_STOCK_ICONS
 	// END: gtk+-3.9.8/gtk/gtkimagemenuitem.h: GDK_DEPRECATED_IN_3_10_FOR(gtk_menu_item_new_with_label) gtk_image_menu_item_new_with_label()
 	#define gtk_image_menu_item_new_with_label gtk_menu_item_new_with_label
 	// END: gtk+-3.9.8/gtk/gtkimagemenuitem.h: GDK_DEPRECATED_IN_3_10 gtk_image_menu_item_set_image()

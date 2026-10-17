@@ -551,6 +551,10 @@ void set_window_icon(GtkWidget *window)
 		gtk_window_set_icon(GTK_WINDOW(window), icon);
 		g_object_unref(icon);
 	}
+	else
+		// not installed in ICONDIR (e.g. the static build in ~/.local):
+		// the icon theme may have it, as installed by install.sh
+		gtk_window_set_icon_name(GTK_WINDOW(window), BINARY);
 }
 
 gboolean window_quit(GtkWidget *window, GdkEvent *event, struct Window *win_data)

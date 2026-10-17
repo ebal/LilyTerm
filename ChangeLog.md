@@ -1,5 +1,20 @@
 # ChangeLog
 
+## Unreleased
+
+### FIX
+
+- Icons were missing on GTK+ 3: the close button of the tabs and the
+  icons of the dialogs showed a "missing image" placeholder, with every
+  current icon theme. LilyTerm passed GTK+ stock ids (`gtk-close`) where
+  GTK+ 3 expects icon names (`window-close`). They are mapped to icon
+  names now, symbolic ones for the small icons; an icon that no installed
+  theme has is left out instead of shown as missing.
+- The Paste button of [Paste to every Vte Terminal] has its label again.
+- The window icon falls back to the `lilyterm` icon of the icon theme when
+  it is not installed in the pixmaps directory (the static build in
+  `~/.local`).
+
 ## 2026-10-17
 
 Version 0.9.9.6.
