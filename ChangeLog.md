@@ -1,6 +1,10 @@
 # ChangeLog
 
-## Unreleased
+## 2026-10-18
+
+Version 0.9.10.
+LilyTerm now follows Semantic Versioning (https://semver.org): versions are
+MAJOR.MINOR.PATCH, so 0.9.10 follows 0.9.9.9.
 
 ### DROP
 

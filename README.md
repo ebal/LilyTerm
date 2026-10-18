@@ -174,7 +174,8 @@ Run the test suite in `docker/` before you open a pull request.
 
 ## Changes
 
-[ChangeLog.md](ChangeLog.md) lists the changes of every release.
+[ChangeLog.md](ChangeLog.md) lists the changes of every release. Since
+0.9.10 the versions follow [Semantic Versioning](https://semver.org/).
 
 ## Authors
 
