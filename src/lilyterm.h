@@ -58,6 +58,9 @@ const gchar *get_default_lc_data(gint lc_type);
 gchar *get_encoding_from_locale(const gchar *locale);
 gboolean check_string_in_array(gchar *str, gchar **lists);
 gchar *get_proc_data(pid_t pid, gchar *file, gsize *length);
+#ifdef __APPLE__
+gboolean macos_proc_is_root(pid_t pid);
+#endif
 gchar **split_string(const gchar *str, const gchar *split, gint max_tokens);
 gint count_char_in_string(const gchar *str, const gchar split);
 gchar **get_pid_stat(pid_t pid, gint max_tokens);

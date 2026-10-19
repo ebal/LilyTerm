@@ -18,6 +18,9 @@
  */
 
 #include "pagename.h"
+#ifdef __APPLE__
+#  include <libproc.h>
+#endif
 
 extern gint dialog_activated;
 extern gboolean proc_exist;
@@ -846,6 +849,15 @@ gchar *get_tab_name_with_current_dir(pid_t pid)
 #endif
 	if (! proc_exist) return NULL;
 
+#ifdef __APPLE__
+	// only for the processes of our own user, like /proc/PID/cwd
+	struct proc_vnodepathinfo info;
+	if ((pid>0) &&
+	    (proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &info, sizeof(info)) == sizeof(info)) &&
+	    info.pvi_cdir.vip_path[0])
+		return g_strndup(info.pvi_cdir.vip_path, sizeof(info.pvi_cdir.vip_path));
+	return NULL;
+#endif
 	if (pid>0)
 	{
 		gchar *cwd_path = g_strdup_printf("%s/%d/cwd", proc_file_system_path, pid);
@@ -959,6 +971,9 @@ gboolean check_is_root(pid_t tpgid)
 #endif
 #ifdef SAFEMODE
 	if (tpgid<1) return FALSE;
+#endif
+#ifdef __APPLE__
+	return macos_proc_is_root(tpgid);
 #endif
 	gchar *tpgid_path = g_strdup_printf("%s/%d", proc_file_system_path, tpgid);
 #ifdef SAFEMODE

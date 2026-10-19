@@ -18,6 +18,9 @@
  */
 
 #include "misc.h"
+#ifdef __APPLE__
+#  include <sys/sysctl.h>
+#endif
 extern gboolean proc_exist;
 extern gchar *proc_file_system_path;
 
@@ -406,6 +409,88 @@ gboolean check_string_in_array(gchar *str, gchar **lists)
 //
 //
 
+#ifdef __APPLE__
+// macOS has no /proc: make up the two files LilyTerm reads from it.
+
+// The kernel's data of process PID, for every process (like ps)
+static gboolean macos_kinfo_proc(pid_t pid, struct kinfo_proc *kp)
+{
+	int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, pid };
+	size_t size = sizeof(*kp);
+	memset(kp, 0, size);
+	return (sysctl(mib, 4, kp, &size, NULL, 0) == 0) && (size == sizeof(*kp));
+}
+
+// /proc/PID/cmdline: the arguments, each one ended with a '\0'.
+// Only for the processes of our own user.
+static gchar *macos_proc_cmdline(pid_t pid, gsize *length)
+{
+	int argmax_mib[2] = { CTL_KERN, KERN_ARGMAX };
+	int argmax = 0;
+	size_t size = sizeof(argmax);
+	if ((sysctl(argmax_mib, 2, &argmax, &size, NULL, 0) < 0) || (argmax <= 0)) return NULL;
+
+	// argc, the path of the executable, '\0' padding, then the arguments
+	int mib[3] = { CTL_KERN, KERN_PROCARGS2, pid };
+	gchar *buffer = g_malloc(argmax);
+	size = argmax;
+	if ((sysctl(mib, 3, buffer, &size, NULL, 0) < 0) || (size <= sizeof(int)))
+	{
+		g_free(buffer);
+		return NULL;
+	}
+	int argc;
+	memcpy(&argc, buffer, sizeof(argc));
+	const gchar *end = buffer + size;
+	const gchar *str = buffer + sizeof(argc);
+	while ((str < end) && *str) str++;
+	while ((str < end) && (! *str)) str++;
+	const gchar *args = str;
+	gint found = 0;
+	while ((str < end) && (found < argc))
+		if (! *str++) found++;
+
+	gchar *cmdline = NULL;
+	if (str > args)
+	{
+		// one more '\0', in case the last argument was cut
+		cmdline = g_malloc0(str - args + 1);
+		memcpy(cmdline, args, str - args);
+		*length = str - args;
+	}
+	g_free(buffer);
+	return cmdline;
+}
+
+// /proc/PID/stat, as far as LilyTerm reads it:
+// pid (comm) state ppid pgrp session tty_nr tpgid ...
+static gchar *macos_proc_stat(pid_t pid, gsize *length)
+{
+	struct kinfo_proc kp;
+	if (! macos_kinfo_proc(pid, &kp)) return NULL;
+
+	gchar comm[MAXCOMLEN + 1] = {0};
+	memcpy(comm, kp.kp_proc.p_comm, MAXCOMLEN);
+	// split_string() splits at these, as it does with /proc
+	g_strdelimit(comm, " ()", '_');
+	pid_t session = getsid(pid);
+	gchar *stat = g_strdup_printf("%d (%s) S %d %d %d %d %d 0 0 0 0\n",
+				      (gint) pid, comm, (gint) kp.kp_eproc.e_ppid, (gint) kp.kp_eproc.e_pgid,
+				      (gint) ((session > 0)? session: 0), (gint) kp.kp_eproc.e_tdev,
+				      (gint) kp.kp_eproc.e_tpgid);
+	*length = strlen(stat);
+	return stat;
+}
+
+// TRUE if process PID runs as root
+gboolean macos_proc_is_root(pid_t pid)
+{
+	struct kinfo_proc kp;
+	return macos_kinfo_proc(pid, &kp) &&
+	       ((kp.kp_eproc.e_ucred.cr_uid == 0) || (kp.kp_eproc.e_pcred.p_rgid == 0));
+}
+#endif
+
 gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
 {
 #ifdef FULL
@@ -413,6 +498,12 @@ gchar *get_proc_data(pid_t pid, gchar *file, gsize *length)
 #endif
 	if (! proc_exist) return NULL;
 	if (pid<1) return NULL;
+#ifdef __APPLE__
+	*length = 0;
+	if (strcmp(file, "cmdline") == 0) return macos_proc_cmdline(pid, length);
+	if (strcmp(file, "stat") == 0) return macos_proc_stat(pid, length);
+	return NULL;
+#endif
 	gchar *contents=NULL;
 	gint timeout=0;
 	gchar *proc_path = g_strdup_printf("%s/%d", proc_file_system_path, (gint)pid);

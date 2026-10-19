@@ -21,6 +21,7 @@
 #ifdef __APPLE__
 #  include <objc/runtime.h>
 #  include <objc/message.h>
+#  include <libproc.h>
 #endif
 
 extern gboolean proc_exist;
@@ -697,6 +698,38 @@ gboolean display_child_process_dialog (GString *child_process_list, struct Windo
 // tpgid: the foreground command of this page
 // show_foreground: check tpgid=pid or not
 // entry_pid: the pid list of /proc
+// The pids of all processes. Free it with g_array_free(pids, TRUE).
+static GArray *get_all_pids(void)
+{
+	GArray *pids = g_array_new(FALSE, FALSE, sizeof(pid_t));
+#ifdef __APPLE__
+	gint count = proc_listallpids(NULL, 0);
+	if (count > 0)
+	{
+		// room for the processes started meanwhile
+		count += 64;
+		pid_t *buffer = g_new0(pid_t, count);
+		gint got = proc_listallpids(buffer, count * sizeof(pid_t));
+		if (got > 0) g_array_append_vals(pids, buffer, MIN(got, count));
+		g_free(buffer);
+	}
+#else
+	// man 5 proc for more details
+	GDir *dir = g_dir_open ("/proc", 0, NULL);
+	if (dir)
+	{
+		const gchar *entry;
+		while ((entry = g_dir_read_name(dir)) != NULL)
+		{
+			pid_t pid = atoi(entry);
+			if (pid > 0) g_array_append_val(pids, pid);
+		}
+		g_dir_close(dir);
+	}
+#endif
+	return pids;
+}
+
 // entry_tpgid: the the foreground command of entry_pid
 // ppid: the parent of entry_tpgid
 // cmd: the cmd of entry_tpgid
@@ -715,16 +748,11 @@ GString *get_child_process_list(GtkWidget *window, gint window_no, gint page_no,
 	// Don't return foreground running process
 	if (! proc_exist) return process_list;
 
-	GDir *dir  = g_dir_open ("/proc", 0, NULL);
-	if (dir==NULL) goto FINISH;
-
-	const gchar *entry = g_dir_read_name(dir);
-	if (entry==NULL) goto FINISH;
-
-	// man 5 proc for more details
-	do
+	GArray *pids = get_all_pids();
+	guint n;
+	for (n=0; n<pids->len; n++)
 	{
-		pid_t entry_pid = atoi(entry);
+		pid_t entry_pid = g_array_index(pids, pid_t, n);
 		gchar **stats = NULL;
 		struct Process_Data entry_data = {0};
 #ifdef SAFEMODE
@@ -796,10 +824,7 @@ GString *get_child_process_list(GtkWidget *window, gint window_no, gint page_no,
 		}
 		g_strfreev(stats);
 	}
-	while ((entry = g_dir_read_name(dir)) != NULL);
-
-FINISH:
-	g_dir_close(dir);
+	g_array_free(pids, TRUE);
 	return process_list;
 }
 

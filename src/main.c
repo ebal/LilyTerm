@@ -69,8 +69,13 @@ int main( int   argc,
 #ifdef OUT_OF_MEMORY
 	#define g_strdup_printf(...) NULL
 #endif
+#ifdef __APPLE__
+	// no /proc, but get_proc_data() makes up what LilyTerm reads from it
+	proc_exist = TRUE;
+#else
 	// in BSD system, /proc may not exist.
 	proc_exist = check_if_default_proc_dir_exist(NULL);
+#endif
 
 	shell = g_getenv("SHELL");
 	if (shell==NULL) shell = "";
