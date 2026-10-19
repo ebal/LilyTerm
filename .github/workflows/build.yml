@@ -1,8 +1,12 @@
 # Publish a release when a version tag is pushed.
 #
-#   push of a tag vX.Y.Z:  static build, the tests that need no display, then a
-#                          GitHub release with lilyterm-x86_64, the tarball and
+#   push of a tag vX.Y.Z:  static build, the tests that need no display, the
+#                          macOS app (Apple Silicon) tested without Homebrew,
+#                          then a GitHub release with lilyterm-x86_64, the
+#                          tarball, LilyTerm-VERSION-macos-arm64.dmg and
 #                          SHA256SUMS
+#   workflow_dispatch:     the same builds and tests, without a release (to try
+#                          a branch: Actions > build > Run workflow)
 #
 # Every change is built and tested on Gitea first (.gitea/workflows/build.yml,
 # with the X11 and Wayland tests); the same commits come here once they passed
@@ -116,9 +120,47 @@ jobs:
           path: release/
           if-no-files-found: error
 
+  # The macOS app: GTK+ 3 and VTE from Homebrew, copied into LilyTerm.app
+  # (macos/bundle-app.sh), tested with Homebrew moved away (macos/test-app.sh)
+  macos:
+    runs-on: macos-latest   # Apple Silicon
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version
+        id: version
+        run: echo "version=$(sed -n 's/^VERSION = //p' .default)" >> "$GITHUB_OUTPUT"
+
+      - name: Install GTK+ 3, VTE and the build tools
+        env:
+          HOMEBREW_NO_INSTALL_CLEANUP: 1
+          HOMEBREW_NO_ENV_HINTS: 1
+        run: brew install gtk+3 vte3 librsvg adwaita-icon-theme pkgconf gettext
+
+      - name: Build LilyTerm.app and the .dmg
+        run: macos/bundle-app.sh release
+
+      - name: Test the app without Homebrew
+        run: macos/test-app.sh release/LilyTerm-${{ steps.version.outputs.version }}-macos-arm64.dmg test-output
+
+      - name: Keep the log and screenshot
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-output-macos
+          path: test-output
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: lilyterm-${{ steps.version.outputs.version }}-macos-arm64
+          path: release/*.dmg
+          if-no-files-found: error
+
   release:
     if: github.ref_type == 'tag'
-    needs: [static]
+    needs: [static, macos]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -126,7 +168,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
-          pattern: lilyterm-*-linux-x86_64
+          pattern: lilyterm-*-*-*
           path: release
           merge-multiple: true
 
@@ -138,13 +180,16 @@ jobs:
         run: |
           cd release
           sha256sum -c SHA256SUMS
+          dmg=$(ls LilyTerm-*-macos-arm64.dmg)
+          sha256sum "$dmg" >> SHA256SUMS
           tarball=$(ls lilyterm-*-linux-x86_64.tar.gz)
           base=https://github.com/$GH_REPO/releases/download/$TAG
           cat > ../notes.md << EOF
-          A static build of LilyTerm for Linux x86_64: one binary with GTK+ 3 and VTE
-          linked in. It runs on X11 and on Wayland, and needs no library from your system.
+          LilyTerm for Linux x86_64, as one static binary with GTK+ 3 and VTE linked in
+          (it runs on X11 and on Wayland, and needs no library from your system), and for
+          macOS on Apple Silicon, as an app with GTK+ 3 and VTE inside.
 
-          ### Just run it
+          ### Linux: just run it
 
           \`\`\`sh
           curl -L -o lilyterm $base/lilyterm-x86_64
@@ -152,13 +197,23 @@ jobs:
           ./lilyterm
           \`\`\`
 
-          ### Install it, with a menu entry, icon and man page
+          ### Linux: install it, with a menu entry, icon and man page
 
           \`\`\`sh
           curl -LO $base/$tarball
           tar xzf $tarball
           cd ${tarball%.tar.gz}
           ./install.sh          # for you, in ~/.local   (sudo ./install.sh: for everyone, in /usr/local)
+          \`\`\`
+
+          ### macOS (Apple Silicon)
+
+          Download [$dmg]($base/$dmg), open it and drag LilyTerm to Applications.
+          LilyTerm is not signed by Apple, so macOS refuses to open it the first time.
+          Run this once in Terminal:
+
+          \`\`\`sh
+          xattr -dr com.apple.quarantine /Applications/LilyTerm.app
           \`\`\`
 
           ### Checksums (SHA-256)
@@ -168,4 +223,4 @@ jobs:
           \`\`\`
           EOF
           gh release create "$TAG" --verify-tag --title "LilyTerm ${TAG#v}" --notes-file ../notes.md \
-            lilyterm-x86_64 "$tarball" SHA256SUMS
+            lilyterm-x86_64 "$tarball" "$dmg" SHA256SUMS

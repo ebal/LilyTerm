@@ -9,8 +9,9 @@ This repository is a modernized fork of
 [Tetralet/LilyTerm](https://github.com/Tetralet/LilyTerm), whose last
 release was in 2019. The fork builds against current GTK+ 3 (3.24) and
 VTE (0.84), runs natively on Wayland and on X11, and is also released as
-one fully static binary that runs on any x86_64 Linux system. On macOS it
-runs with the native backend of GTK+ 3, installed with Homebrew.
+one fully static binary that runs on any x86_64 Linux system. On macOS
+(Apple Silicon) it runs with the native backend of GTK+ 3, from a .dmg
+with everything inside, or installed with Homebrew.
 
 ![Build](https://img.shields.io/github/actions/workflow/status/ebal/LilyTerm/build.yml?branch=main)
 ![Release](https://img.shields.io/github/v/release/ebal/LilyTerm)
@@ -71,18 +72,42 @@ The static binary cannot load plugins. Because of this:
 
 [docker/README.md](docker/README.md) has the full list.
 
-### macOS (Homebrew)
+### macOS (Apple Silicon)
+
+The [releases page](https://github.com/ebal/LilyTerm/releases) has
+`LilyTerm-VERSION-macos-arm64.dmg`: LilyTerm.app with GTK+ 3 and VTE
+inside, so it needs nothing else.
+
+1. Open the .dmg and drag LilyTerm to Applications. It has to be in
+   `/Applications`, where it finds its icon, translations and settings.
+2. LilyTerm is not signed by Apple, so macOS refuses to open it the
+   first time ("cannot be opened" or "is damaged"). Remove the quarantine
+   flag once, in Terminal:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/LilyTerm.app
+   ```
+
+3. Open LilyTerm from Launchpad, Spotlight or the Applications folder.
+   It starts a login shell, so your `~/.zprofile` is read as in Terminal.
+
+The .dmg is built for the macOS version of the GitHub runner and later
+(`LSMinimumSystemVersion` in the app). Intel Macs are not supported.
+
+On macOS, tab names do not follow the running command or the current
+directory (there is no `/proc`), window transparency is off, and the key
+bindings use Ctrl, not Cmd.
+
+#### Or with Homebrew
 
 ```bash
 brew install ebal/tap/lilyterm
 lilyterm
 ```
 
-Homebrew builds LilyTerm from source, with GTK+ 3 and VTE from Homebrew.
-The [tap's README](https://github.com/ebal/homebrew-tap) has the details.
-On macOS, tab names do not follow the running command or the current
-directory (there is no `/proc`), window transparency is off, and the key
-bindings use Ctrl, not Cmd.
+Homebrew builds LilyTerm from source, with GTK+ 3 and VTE from Homebrew,
+and installs the `lilyterm` command, not an app. The
+[tap's README](https://github.com/ebal/homebrew-tap) has the details.
 
 ### From source
 
@@ -173,6 +198,10 @@ docker run --rm -v "$PWD":/src:ro lilyterm-dev
 docker build -f docker/Dockerfile.static --target export --output dist .
 ./dist/lilyterm
 ```
+
+The macOS app is built by `macos/bundle-app.sh`, on macOS with GTK+ 3
+and VTE from Homebrew, and tested by `macos/test-app.sh` with Homebrew
+moved away; GitHub Actions runs both on an Apple Silicon runner.
 
 [docker/README.md](docker/README.md) explains the tests, the static
 build and the release process. Every change is built and tested on Gitea
