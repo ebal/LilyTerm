@@ -1138,6 +1138,22 @@ gchar *load_profile_from_dir(const gchar *dir, const gchar* profile)
 	}
 }
 
+// The match regex of a command, from printf() style FORMAT, with its
+// escape sequences converted. The returned string should be freed when no
+// longer needed.
+static gchar *build_match_regex(const gchar *format, ...) G_GNUC_PRINTF(1, 2);
+static gchar *build_match_regex(const gchar *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	gchar *regex = g_strdup_vprintf(format, args);
+	va_end(args);
+
+	gchar *match_regex = convert_escape_sequence_from_string(regex);
+	g_free(regex);
+	return match_regex;
+}
+
 // get user settings from profile.
 // encoding is used for display error message if the profile is invalid.
 void get_user_settings(struct Window *win_data, const gchar *encoding)
@@ -1502,35 +1518,27 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 				gchar *password = (win_data->user_regex[REGEX_PASSWORD] == NULL)? PASSWORD: win_data->user_regex[REGEX_PASSWORD];
 				gchar *hostname = (win_data->user_regex[REGEX_HOSTNAME] == NULL)? HOSTNAME: win_data->user_regex[REGEX_HOSTNAME];
 				gchar *address_body = (win_data->user_regex[REGEX_ADDRESS_BODY] == NULL)? ADDRESS_BODY: win_data->user_regex[REGEX_ADDRESS_BODY];
-				gchar *address_end = (win_data->user_regex[REGEX_ADDRESS_END] == NULL)? ADDRESS_BODY: win_data->user_regex[REGEX_ADDRESS_END];
+				gchar *address_end = (win_data->user_regex[REGEX_ADDRESS_END] == NULL)? ADDRESS_END: win_data->user_regex[REGEX_ADDRESS_END];
 
 				// WWW
-				gchar *regex_str = g_strdup_printf("[Hh][Tt][Tt][Pp][Ss]?://(%s%s@)?%s%s(/%s%s)?/*",
-								    username, password, hostname, PORT, address_body, address_end);
-				win_data->user_command[TAG_WWW].match_regex = convert_escape_sequence_from_string(regex_str);
-				g_free(regex_str);
+				win_data->user_command[TAG_WWW].match_regex = build_match_regex(
+					"[Hh][Tt][Tt][Pp][Ss]?://(%s%s@)?%s%s(/%s%s)?/*",
+					username, password, hostname, PORT, address_body, address_end);
 
 				// FTP
-				regex_str = g_strdup_printf("[Ff][Tt][Pp][Ss]?://(%s%s@)?%s%s(/%s%s)?/*",
-								    username, password, hostname, PORT, address_body, address_end);
-				win_data->user_command[TAG_FTP].match_regex = convert_escape_sequence_from_string(regex_str);
-				g_free(regex_str);
+				win_data->user_command[TAG_FTP].match_regex = build_match_regex(
+					"[Ff][Tt][Pp][Ss]?://(%s%s@)?%s%s(/%s%s)?/*",
+					username, password, hostname, PORT, address_body, address_end);
 
 				// FILE
 				if (win_data->user_regex[REGEX_ADDRESS_BODY] || win_data->user_regex[REGEX_ADDRESS_END])
-				{
-					regex_str = g_strdup_printf("[Ff][Ii][Ll][Ee]://%s%s", address_body, address_end);
-					win_data->user_command[TAG_FILE].match_regex = convert_escape_sequence_from_string(regex_str);
-					g_free(regex_str);
-				}
+					win_data->user_command[TAG_FILE].match_regex = build_match_regex(
+						"[Ff][Ii][Ll][Ee]://%s%s", address_body, address_end);
 
 				// MAIL
 				if (win_data->user_regex[REGEX_USERNAME] || win_data->user_regex[REGEX_HOSTNAME])
-				{
-					regex_str = g_strdup_printf("([Mm][Aa][Ii][Ll][Tt][Oo]:)?%s@%s", username, hostname);
-					win_data->user_command[TAG_MAIL].match_regex = convert_escape_sequence_from_string(regex_str);
-					g_free(regex_str);
-				}
+					win_data->user_command[TAG_MAIL].match_regex = build_match_regex(
+						"([Mm][Aa][Ii][Ll][Tt][Oo]:)?%s@%s", username, hostname);
 			}
 
 			for (i=0; i<COMMAND; i++)
