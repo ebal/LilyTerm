@@ -121,17 +121,25 @@ bundle_file() {
 # the app, which the launcher fills in.
 #   bundle_modules SRC_DIR DEST_DIR CACHE QUERY_COMMAND
 bundle_modules() {
-	local src=$1 dest=$2 cache=$3 query=$4 module
+	local src=$1 dest=$2 cache=$3 query=$4 module name
 	[ -d "$src" ] || { echo "   (no $src: built in)"; return 0; }
 	ls "$src"/*.so > /dev/null 2>&1 || { echo "   (no module in $src)"; return 0; }
 	mkdir -p "$dest"
 	# Query the modules of Homebrew before rewriting the copies: the copies
-	# only load from inside the app.
-	"$query" "$src"/*.so | sed "s|$src|@RESOURCES@/${dest#"$RES"/}|g" > "$cache"
+	# only load from inside the app. The cache names each module by its path
+	# (in the Cellar, or through opt/), and the input methods also name
+	# where their translations are: point both into the app.
+	"$query" "$src"/*.so | sed -E \
+		-e '/^#/d' \
+		-e "s|\"[^\"]*/$(basename "$src")/|\"@RESOURCES@/${dest#"$RES"/}/|g" \
+		-e 's|"[^"]*/share/locale"|"@RESOURCES@/share/locale"|g' > "$cache"
 	for module in "$src"/*.so; do
+		name=$(basename "$module")
 		cp -L "$module" "$dest/"
-		chmod u+w "$dest/$(basename "$module")"
-		bundle_file "$dest/$(basename "$module")" "$(realpath "$module")"
+		chmod u+w "$dest/$name"
+		# A module has an install name too, still the one in Homebrew
+		install_name_tool -id "@executable_path/../Resources/${dest#"$RES"/}/$name" "$dest/$name" 2> /dev/null || true
+		bundle_file "$dest/$name" "$(realpath "$module")"
 	done
 }
 
@@ -253,16 +261,20 @@ MACHO_LIST=$WORK/macho.list
 find "$APP" -type f \( -name '*.dylib' -o -name '*.so' -o -name lilyterm-bin \) > "$MACHO_LIST"
 failed=0
 while IFS= read -r file; do
-	if refs=$(otool -L "$file" | tail -n +2 | awk '{print $1}' |
+	self=$(otool -D "$file" | sed -n 2p)
+	if refs=$(otool -L "$file" | tail -n +2 | awk '{print $1}' | grep -vxF "${self:-//none//}" |
 		grep -E "^($BREW/|/opt/homebrew/|/usr/local/|@rpath/|@loader_path/)"); then
 		echo "   ${file#"$APP"/} still needs: $refs" >&2
 		failed=1
 	fi
 done < "$MACHO_LIST"
-if grep -lE "$BREW/|/opt/homebrew/" "$RES"/lib/*/*/*.cache.in "$RES"/lib/*/*.cache.in 2> /dev/null; then
-	echo "   a module cache still points to Homebrew" >&2
-	failed=1
-fi
+for cache in "$RES/$PIXBUF_DIR/loaders.cache.in" "$RES/$IM_DIR/immodules.cache.in"; do
+	if grep -qE "$BREW/|/opt/homebrew/|/usr/local/" "$cache"; then
+		echo "   ${cache#"$APP"/} still points to Homebrew:" >&2
+		grep -nE "$BREW/|/opt/homebrew/|/usr/local/" "$cache" >&2
+		failed=1
+	fi
+done
 [ $failed -eq 0 ] || die "the app is not self-contained"
 echo "   $(wc -l < "$MACHO_LIST" | tr -d ' ') Mach-O files, all inside the app"
 
