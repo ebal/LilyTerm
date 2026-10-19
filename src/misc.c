@@ -689,6 +689,8 @@ GdkRGBA convert_color_to_rgba(GdkColor color)
 	rgba.red = (gdouble)(color.red>>8)/0xFF;
 	rgba.green = (gdouble)(color.green>>8)/0xFF;
 	rgba.blue = (gdouble)(color.blue>>8)/0xFF;
+	// VTE refuses a color with an alpha out of [0, 1]: never leave it uninitialized
+	rgba.alpha = 1.0;
 
 	return rgba;
 }
