@@ -82,7 +82,11 @@ endif
 all: default
 ifeq ($(DEBUG), N)
 	@ $(PRINTF) "\033[1;36m** striping \033[1;32m$(BINARY)\033[1;36m ...\033[0m\n"
+ifeq ($(shell uname), Darwin)
+	$(VERBOSITY_OUTPUT) $(STRIP) -x $(BINARY)
+else
 	$(VERBOSITY_OUTPUT) $(STRIP) --remove-section=.comment --remove-section=.note $(BINARY)
+endif
 endif
 
 .PHONY: default
