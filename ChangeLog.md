@@ -1,5 +1,43 @@
 # ChangeLog
 
+## 2026-10-19
+
+Version 0.10.0.
+LilyTerm runs on macOS, from the Homebrew tap `ebal/tap`, built from the
+same code as on Linux.
+
+### New Feature
+
+- macOS with the native Quartz backend of GTK+ 3, no X11 or XQuartz:
+  `brew install ebal/tap/lilyterm`. Tested on Apple Silicon.
+- The LilyTerm icon shows in the Dock, [Quit] in the Dock quits like
+  [Quit] on the right click menu, and the first window opens in front
+  of the terminal LilyTerm was started from.
+
+### FIX
+
+- The theme colors had an uninitialized alpha, and the colors dimmed by
+  `brightness` were not kept in [0, 1]: VTE refused them on macOS
+  ("vte_terminal_set_colors: assertion 'valid_color(foreground)'
+  failed"). They worked on Linux by chance.
+- The socket path was written as if `sun_path` had 108 bytes, as on
+  Linux: on macOS and the BSDs it has 104, so a long path wrote past its
+  end.
+- The socket server checks that a request comes from the same user with
+  `getpeereid()` where `SO_PEERCRED` does not exist (macOS, the BSDs).
+  The check was skipped there.
+- `make` strips the binary with the options of Apple's `strip` on macOS.
+
+### Known limits on macOS
+
+- macOS has no `/proc`: tab names do not follow the running command or
+  the current directory, and there is no warning about running programs
+  when a tab is closed.
+- Window transparency is off (`use_rgba` = auto means off): GTK+ 3
+  draws the title bar of an RGBA window clear, so it could not be moved.
+  `use_rgba = 1` turns it on anyway.
+- Key bindings use Ctrl, not Cmd.
+
 ## 2026-10-18
 
 Version 0.9.10.

@@ -1,15 +1,16 @@
 # LilyTerm
 
-LilyTerm is a light and easy to use terminal emulator for Linux, based on
-the [VTE](https://gitlab.gnome.org/GNOME/vte) library. It has tabs, split
-panes, profiles, and key bindings that you can change from the right click
-menu.
+LilyTerm is a light and easy to use terminal emulator for Linux and
+macOS, based on the [VTE](https://gitlab.gnome.org/GNOME/vte) library. It
+has tabs, split panes, profiles, and key bindings that you can change from
+the right click menu.
 
 This repository is a modernized fork of
 [Tetralet/LilyTerm](https://github.com/Tetralet/LilyTerm), whose last
 release was in 2019. The fork builds against current GTK+ 3 (3.24) and
 VTE (0.84), runs natively on Wayland and on X11, and is also released as
-one fully static binary that runs on any x86_64 Linux system.
+one fully static binary that runs on any x86_64 Linux system. On macOS it
+runs with the native backend of GTK+ 3, installed with Homebrew.
 
 ![Build](https://img.shields.io/github/actions/workflow/status/ebal/LilyTerm/build.yml?branch=main)
 ![Release](https://img.shields.io/github/v/release/ebal/LilyTerm)
@@ -69,6 +70,19 @@ The static binary cannot load plugins. Because of this:
 - If you use IBus or Fcitx on X11, start it with `GTK_IM_MODULE=xim`.
 
 [docker/README.md](docker/README.md) has the full list.
+
+### macOS (Homebrew)
+
+```bash
+brew install ebal/tap/lilyterm
+lilyterm
+```
+
+Homebrew builds LilyTerm from source, with GTK+ 3 and VTE from Homebrew.
+The [tap's README](https://github.com/ebal/homebrew-tap) has the details.
+On macOS, tab names do not follow the running command or the current
+directory (there is no `/proc`), window transparency is off, and the key
+bindings use Ctrl, not Cmd.
 
 ### From source
 
