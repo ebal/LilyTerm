@@ -13,6 +13,9 @@
 #   BACKENDS  which display servers to test    ["x11 wayland"]
 #             (empty: only the build and the tests that need no display)
 #   CFLAGS    passed to ./configure            ["-Wall -O2 -g"]
+#   SANITIZE  non-empty: build with AddressSanitizer and UndefinedBehavior-
+#             Sanitizer, and fail if they report anything. Leaks are not
+#             checked: GTK+ keeps a lot until the end on purpose.
 
 set -u
 
@@ -21,6 +24,7 @@ BUILD=${BUILD:-/build}
 OUT=${OUT:-$BUILD/test-output}
 BACKENDS=${BACKENDS-x11 wayland}
 LILYTERM=${LILYTERM:-}
+SANITIZE=${SANITIZE:-}
 
 PASS=0
 FAIL=0
@@ -55,6 +59,16 @@ wait_for() {
 
 mkdir -p "$OUT"
 
+# Every process (lilyterm, and each test's) writes what the sanitizers find
+# to $OUT/sanitizer.PID; any such file fails the run.
+SAN_FLAGS=
+if [ -n "$SANITIZE" ]; then
+	SAN_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+	export ASAN_OPTIONS="detect_leaks=0:log_path=$OUT/sanitizer"
+	export UBSAN_OPTIONS="print_stacktrace=1:log_path=$OUT/sanitizer"
+	rm -f "$OUT"/sanitizer.*
+fi
+
 # ImageMagick 7 calls it magick, and nags about convert
 MAGICK=$(command -v magick || command -v convert)
 
@@ -67,13 +81,14 @@ if [ -z "$LILYTERM" ]; then
 	cd "$BUILD/lilyterm" || exit 1
 	make distclean >/dev/null 2>&1
 
-	if CFLAGS="${CFLAGS:--Wall -O2 -g}" ./configure --prefix=/usr > "$OUT/configure.log" 2>&1; then
+	if CFLAGS="${CFLAGS:--Wall -O2 -g}${SAN_FLAGS:+ $SAN_FLAGS}" ./configure --prefix=/usr > "$OUT/configure.log" 2>&1; then
 		ok "configure ($(grep -E '^(GTK|VTE) = ' .config | tr '\n' ' '))"
 	else
 		ng "configure (see $OUT/configure.log)"; cat "$OUT/configure.log"; exit 1
 	fi
 
-	if make > "$OUT/make.log" 2>&1; then
+	# A sanitizer report is only readable with the symbols: no strip then
+	if make ${SANITIZE:+STRIP=true} > "$OUT/make.log" 2>&1; then
 		ok "make ($(grep -c 'warning:' "$OUT/make.log") compiler warnings)"
 	else
 		ng "make (see $OUT/make.log)"; grep -E 'error|Error' "$OUT/make.log" | head -40; exit 1
@@ -546,6 +561,18 @@ for backend in $BACKENDS; do
 		;;
 	esac
 done
+
+if [ -n "$SANITIZE" ]; then
+	if ls "$OUT"/sanitizer.* > /dev/null 2>&1; then
+		ng "AddressSanitizer / UndefinedBehaviorSanitizer reported errors:"
+		for report in "$OUT"/sanitizer.*; do
+			echo "      --- $(basename "$report")"
+			sed 's/^/      /' "$report" | head -40
+		done
+	else
+		ok "no AddressSanitizer / UndefinedBehaviorSanitizer report"
+	fi
+fi
 
 echo
 note "Result: $PASS passed, $FAIL failed (logs in $OUT)"

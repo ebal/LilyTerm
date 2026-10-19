@@ -1,8 +1,10 @@
 # Build and test LilyTerm on the Gitea server.
 #
 #   every push to main / pull request:  dynamic build + tests on X11 and
-#                                       Wayland, static build + the same tests,
-#                                       the packaged files as a workflow artifact
+#                                       Wayland, the same with AddressSanitizer
+#                                       and UndefinedBehaviorSanitizer, static
+#                                       build + the same tests, the packaged
+#                                       files as a workflow artifact
 #
 # This is where every change is built and tested first. Releases are only made
 # on GitHub (.github/workflows/build.yml), for a tag vX.Y.Z pushed there after
@@ -54,6 +56,37 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-output-dynamic
+          path: test-output
+          if-no-files-found: ignore
+
+  # The same tests on a build with AddressSanitizer and UndefinedBehavior-
+  # Sanitizer: any report of theirs fails the run (docker/run-tests.sh)
+  sanitize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the test image
+        run: docker build -f docker/Dockerfile.dev -t lilyterm-dev:ci .
+
+      - name: Build with the sanitizers and run the tests on X11 and Wayland
+        run: |
+          c=lilyterm-sanitize-${{ gitea.run_id }}
+          trap 'docker rm -f "$c" > /dev/null 2>&1' EXIT
+          docker create --name "$c" -e SANITIZE=1 lilyterm-dev:ci > /dev/null
+          docker cp . "$c":/src
+          status=0
+          docker start -a "$c" || status=$?
+          mkdir -p test-output
+          docker cp "$c":/build/test-output/. test-output/ || true
+          exit $status
+
+      - name: Keep the logs and the sanitizer reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output-sanitize
           path: test-output
           if-no-files-found: ignore
 
