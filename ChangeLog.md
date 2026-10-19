@@ -2,6 +2,42 @@
 
 ## 2026-10-19
 
+Version 0.11.0.
+
+### New Feature
+
+- macOS: tab names and the window title follow the running command and
+  the current directory, root privileges are shown, and closing a tab
+  asks first when programs still run in it, as on Linux. macOS has no
+  `/proc`: LilyTerm reads the same data from the kernel (sysctl and
+  libproc).
+- Unit tests for the string and parsing helpers (`tests/unit/`), run by
+  the test suite.
+- The test suite can run with AddressSanitizer and UndefinedBehavior-
+  Sanitizer (`SANITIZE=1`): Gitea CI does so on every push, and fails on
+  any report.
+- `packaging/arch/PKGBUILD` builds the release tag and runs the unit
+  tests.
+
+### FIX
+
+- Security: a second `lilyterm` sends its environment and command line
+  to the running one over a unix socket. Without `$XDG_RUNTIME_DIR` that
+  socket is in `/tmp`, where another user could create it first and
+  receive them. LilyTerm now checks that the server runs as the same
+  user, and runs on its own otherwise. (The server already checked its
+  clients.)
+- Every second `lilyterm` no longer waits one second after handing its
+  command over.
+- A read error on the socket freed its channel twice.
+- The find dialog got no text (a GTK+ warning) when the selection held
+  only line breaks; it falls back to the last search now.
+- `--help` and the About page sent bug reports to the original project,
+  which stopped in 2019; they point to github.com/ebal/LilyTerm now, and
+  the About page no longer advises to use the GTK+ 2 version.
+
+## 2026-10-19
+
 Version 0.10.1.
 
 ### New Feature

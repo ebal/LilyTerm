@@ -1,0 +1,37 @@
+# Maintainer: Evaggelos Balaskas
+#
+# The modernized LilyTerm (GTK+ 3, VTE 0.84, X11 and Wayland), built against
+# the system libraries, from the release tag vPKGVER.
+# To update: set pkgver (and pkgrel=1), then `makepkg -f`.
+
+pkgname=lilyterm
+pkgver=0.11.0
+pkgrel=1
+pkgdesc="A light and easy to use libvte based terminal emulator for X11 and Wayland"
+arch=('x86_64' 'aarch64')
+url="https://github.com/ebal/LilyTerm"
+license=('GPL-3.0-or-later')
+depends=('gtk3' 'vte3' 'glib2' 'pango' 'gdk-pixbuf2' 'glibc')
+makedepends=('git' 'gettext')
+conflicts=('lilyterm-git')
+backup=('etc/xdg/lilyterm.conf')
+# src/Makefile strips the binary itself: there is nothing left for a -debug package
+options=('!debug')
+source=("$pkgname::git+https://github.com/ebal/LilyTerm.git#tag=v$pkgver")
+sha256sums=('SKIP')
+
+build() {
+  cd "$pkgname"
+  ./configure --prefix=/usr --sysconfdir=/etc/xdg
+  make
+}
+
+check() {
+  cd "$pkgname"
+  tests/unit/run.sh "$srcdir/unit"
+}
+
+package() {
+  cd "$pkgname"
+  make DESTDIR="$pkgdir" install
+}

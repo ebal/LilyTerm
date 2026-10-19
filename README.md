@@ -94,9 +94,8 @@ inside, so it needs nothing else.
 The .dmg is built for the macOS version of the GitHub runner and later
 (`LSMinimumSystemVersion` in the app). Intel Macs are not supported.
 
-On macOS, tab names do not follow the running command or the current
-directory (there is no `/proc`), window transparency is off, and the key
-bindings use Ctrl, not Cmd.
+On macOS, window transparency is off (GTK+ 3 would draw the title bar
+clear as well), and the key bindings use Ctrl, not Cmd.
 
 #### Or with Homebrew
 
@@ -194,12 +193,14 @@ Wayland (headless sway). The other builds the static binary.
 ```bash
 docker build -f docker/Dockerfile.dev -t lilyterm-dev .
 docker run --rm -v "$PWD":/src:ro lilyterm-dev
+docker run --rm -e SANITIZE=1 -v "$PWD":/src:ro lilyterm-dev   # with ASan and UBSan
 
 docker build -f docker/Dockerfile.static --target export --output dist .
 ./dist/lilyterm
 ```
 
-The macOS app is built by `macos/bundle-app.sh`, on macOS with GTK+ 3
+The test suite starts with the unit tests of `tests/unit/` (also
+`tests/unit/run.sh` on its own). The macOS app is built by `macos/bundle-app.sh`, on macOS with GTK+ 3
 and VTE from Homebrew, and tested by `macos/test-app.sh` with Homebrew
 moved away; GitHub Actions runs both on an Apple Silicon runner.
 
