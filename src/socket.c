@@ -118,6 +118,7 @@ gboolean read_socket(GIOChannel *channel, GIOCondition condition, GSourceFunc re
 gint shutdown_socket_server(gpointer data);
 static void shutdown_socket_server_at_exit(void);
 gboolean socket_fault(Unix_Socket_Error type, GError *error, GIOChannel *channel, gboolean unref);
+static gboolean peer_is_same_user(gint fd);
 
 // for unix socket
 gint socket_fd = 0;
@@ -248,7 +249,36 @@ gboolean query_socket(void)
 	if (connect(socket_fd, (struct sockaddr *)&address, address_len) < 0)
 		// main_channel is NULL, so that we don't need to launch clear_channel()
 		return socket_fault(GTK_SOCKET_ERROR_CONNECT_SOCKET, error, NULL, FALSE);
+
+	// The request carries our whole environment: hand it only to a server of
+	// our own user, not to whoever created the socket first (in /tmp, without
+	// a $XDG_RUNTIME_DIR). Then this LilyTerm runs on its own.
+	if (! peer_is_same_user(socket_fd))
+	{
+		g_warning("The %s socket \"%s\" does not belong to uid %d: not using it.",
+			  PACKAGE, address.sun_path, (gint) getuid());
+		close(socket_fd);
+		socket_fd = -1;
+		address_len = -1;
+		return FALSE;
+	}
 	return TRUE;
+}
+
+// TRUE if the other end of the unix socket FD runs as our own user
+static gboolean peer_is_same_user(gint fd)
+{
+#ifdef SO_PEERCRED
+	struct ucred peer;
+	socklen_t peer_len = sizeof(peer);
+	return (getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &peer, &peer_len) == 0) &&
+	       (peer_len == sizeof(peer)) && (peer.uid == getuid());
+#else
+	// macOS and the BSDs
+	uid_t peer_uid;
+	gid_t peer_gid;
+	return (getpeereid(fd, &peer_uid, &peer_gid) == 0) && (peer_uid == getuid());
+#endif
 }
 
 // it will return TRUE if scucceed
@@ -291,11 +321,9 @@ gboolean send_socket(gchar *socket_str)
 		// main_channel is NULL, so that we don't need to launch clear_channel()
 		return socket_fault(GTK_SOCKET_ERROR_WRITE_BUFFER, error, channel, TRUE);
 
-	// So far so good. shutdown and clear channel!
+	// So far so good. shutdown and clear channel! The data stays in the
+	// socket for the server to read after we hung up: no need to wait for it.
 	clear_channel(channel, TRUE);
-
-	// FIXME: sleep for 1 sec to wait the socket server. any better idea?
-	sleep(1);
 
 	return TRUE;
 }
@@ -381,17 +409,7 @@ gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc r
 
 		// The request ends up as a command line that is executed with our
 		// privileges: never take one from another user.
-#ifdef SO_PEERCRED
-		struct ucred peer;
-		socklen_t peer_len = sizeof(peer);
-		if ((getsockopt(read_fd, SOL_SOCKET, SO_PEERCRED, &peer, &peer_len) < 0) ||
-		    (peer_len != sizeof(peer)) || (peer.uid != getuid()))
-#else
-		// macOS and the BSDs
-		uid_t peer_uid;
-		gid_t peer_gid;
-		if ((getpeereid(read_fd, &peer_uid, &peer_gid) < 0) || (peer_uid != getuid()))
-#endif
+		if (! peer_is_same_user(read_fd))
 		{
 			g_warning("Refused a request on the %s socket: it does not come from uid %d.",
 				  PACKAGE, (gint) getuid());
@@ -430,8 +448,12 @@ gboolean read_socket(GIOChannel *channel, GIOCondition condition, GSourceFunc re
 	gsize len = 0;
 	gsize term;
 
+	// socket_fault() shuts the channel down and unrefs it: do not touch it again
 	if (g_io_channel_read_line (channel, &str, &len, &term, &error) == G_IO_STATUS_ERROR)
-		socket_fault(GTK_SOCKET_ERROR_RECEIVE_DATA, error, channel, TRUE);
+	{
+		g_free(str);
+		return socket_fault(GTK_SOCKET_ERROR_RECEIVE_DATA, error, channel, TRUE);
+	}
 
 	// read_socket_functions...
 	if ((len == 0) || (str==NULL))
