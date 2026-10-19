@@ -40,9 +40,11 @@ echo "== lilyterm --version"
 "$APP/Contents/MacOS/LilyTerm" --version | tee "$OUT/version.txt"
 grep -q "^LilyTerm $VERSION" "$OUT/version.txt" || die "expected LilyTerm $VERSION"
 
+# As a user starts it: a terminal with a login shell. (-e would first ask
+# whether to run the command.)
 echo "== starting LilyTerm"
 LOG=$OUT/lilyterm-macos.log
-"$APP/Contents/MacOS/LilyTerm" -e sleep 60 > "$LOG" 2>&1 &
+"$APP/Contents/MacOS/LilyTerm" > "$LOG" 2>&1 &
 PID=$!
 sleep 10
 if ! kill -0 "$PID" 2> /dev/null; then
