@@ -18,6 +18,10 @@
  */
 
 #include "window.h"
+#ifdef __APPLE__
+#  include <objc/runtime.h>
+#  include <objc/message.h>
+#endif
 
 extern gboolean proc_exist;
 
@@ -449,6 +453,47 @@ void set_window_icon(GtkWidget *window)
 		// not installed in ICONDIR (e.g. the static build in ~/.local):
 		// the icon theme may have it, as installed by install.sh
 		gtk_window_set_icon_name(GTK_WINDOW(window), BINARY);
+}
+
+// GTK+ 3 on macOS ignores the window icon for the Dock, and draws the
+// menus without a background. Set the application icon through AppKit,
+// and give the menus the background color of the theme.
+void init_macos(void)
+{
+#ifdef __APPLE__
+#ifdef DETAIL
+	g_debug("! Launch init_macos()");
+#endif
+	Class app_class = objc_getClass("NSApplication");
+	Class image_class = objc_getClass("NSImage");
+	Class string_class = objc_getClass("NSString");
+	if (app_class && image_class && string_class && g_file_test(ICON_PATH, G_FILE_TEST_IS_REGULAR))
+	{
+		id path = ((id (*)(Class, SEL, const char *))objc_msgSend)
+				(string_class, sel_registerName("stringWithUTF8String:"), ICON_PATH);
+		id image = ((id (*)(Class, SEL))objc_msgSend)(image_class, sel_registerName("alloc"));
+		image = ((id (*)(id, SEL, id))objc_msgSend)(image, sel_registerName("initWithContentsOfFile:"), path);
+		if (image)
+		{
+			id app = ((id (*)(Class, SEL))objc_msgSend)(app_class, sel_registerName("sharedApplication"));
+			((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName("setApplicationIconImage:"), image);
+			((void (*)(id, SEL))objc_msgSend)(image, sel_registerName("release"));
+		}
+	}
+
+	GdkScreen *screen = gdk_screen_get_default();
+	if (screen)
+	{
+		GtkCssProvider *css = gtk_css_provider_new();
+		if (gtk_css_provider_load_from_data(css,
+						    "menu, .menu, .context-menu { background-color: @theme_bg_color; }\n"
+						    "window.popup { background-color: @theme_bg_color; }\n",
+						    -1, NULL))
+			gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(css),
+								  GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+		g_object_unref(css);
+	}
+#endif
 }
 
 gboolean window_quit(GtkWidget *window, GdkEvent *event, struct Window *win_data)

@@ -72,6 +72,10 @@ INCLUDES = -DBINARY=\"$(BINARY)\" \
 ifeq ($(BSD), 1)
 	INCLUDES += -DBSD
 endif
+ifeq ($(shell uname), Darwin)
+	# objc_msgSend() for the Dock icon, see init_macos()
+	LIBS += -lobjc
+endif
 ifeq ($(VERBOSITY), Y)
 	VERBOSITY_OUTPUT =
 else
