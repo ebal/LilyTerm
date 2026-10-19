@@ -137,6 +137,9 @@ int main( int   argc,
 	// Convert the GdkColor to GdkRGBA
 	convert_system_color_to_rgba();
 
+	// the Dock icon, the menu background, the front window and [Quit] in the Dock on macOS
+	init_macos();
+
 	//GtkNotebook *new_window(int argc,
 	//			char *argv[],
 	//			gchar *shell,

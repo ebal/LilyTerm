@@ -123,6 +123,7 @@ gboolean idle_set_vte_font_to_selected(struct Window *win_data);
 void dim_window(struct Window *win_data, gint dim_window);
 void clear_window(struct Window *win_data);
 void set_window_icon(GtkWidget *window);
+void init_macos(void);
 gboolean window_quit(GtkWidget *window, GdkEvent *event, struct Window *win_data);
 GString *close_multi_tabs(struct Window *win_data, int window_no);
 gboolean display_child_process_dialog (GString *child_process_list, struct Window *win_data, gsize style);

@@ -2712,10 +2712,14 @@ void init_rgba(struct Window *win_data)
 
 	if (win_data->use_rgba==2)
 	{
-		if (screen)
-			win_data->use_rgba = gdk_screen_is_composited(screen);
-		else
-			goto FINISH;
+		if (screen==NULL) goto FINISH;
+#ifdef __APPLE__
+		// GTK+ 3 on macOS draws an RGBA window clear, its title bar included,
+		// so there is nothing to see or to drag. Only on request (use_rgba = 1).
+		win_data->use_rgba = 0;
+#else
+		win_data->use_rgba = gdk_screen_is_composited(screen);
+#endif
 	}
 
 	if (win_data->use_rgba)

@@ -18,6 +18,10 @@
  */
 
 #include "window.h"
+#ifdef __APPLE__
+#  include <objc/runtime.h>
+#  include <objc/message.h>
+#endif
 
 extern gboolean proc_exist;
 
@@ -449,6 +453,98 @@ void set_window_icon(GtkWidget *window)
 		// not installed in ICONDIR (e.g. the static build in ~/.local):
 		// the icon theme may have it, as installed by install.sh
 		gtk_window_set_icon_name(GTK_WINDOW(window), BINARY);
+}
+
+#ifdef __APPLE__
+// The four char codes of the Apple event the Dock sends for [Quit]
+#  define MACOS_EVENT_CLASS_CORE 0x61657674	// 'aevt'
+#  define MACOS_EVENT_ID_QUIT 0x71756974	// 'quit'
+
+// the same as [Quit] on the right click menu: it asks first if programs run in the tabs
+static gboolean macos_quit(gpointer data)
+{
+	struct Window *win_data = NULL;
+	if (active_window) win_data = (struct Window *)g_object_get_data(G_OBJECT(active_window), "Win_Data");
+	if ((win_data==NULL) && window_list) win_data = window_list->data;
+	if (win_data)
+		main_quit(NULL, win_data);
+	else
+		quit_gtk();
+	return FALSE;
+}
+
+// The handler of the quit Apple event. A dialog may show up: run it from the main loop.
+static void macos_quit_event(id self, SEL cmd, id event, id reply)
+{
+	g_idle_add(macos_quit, NULL);
+}
+
+// GTK+ 3 only activates the application on a click, so the first window
+// would open behind the terminal LilyTerm was started from.
+static gboolean macos_activate(gpointer data)
+{
+	id app = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
+	((void (*)(id, SEL, BOOL))objc_msgSend)(app, sel_registerName("activateIgnoringOtherApps:"), (BOOL)1);
+	return FALSE;
+}
+#endif
+
+// GTK+ 3 on macOS ignores the window icon for the Dock, draws the menus
+// without a background, does not bring the application to the front and
+// ignores [Quit] in the Dock (only GtkApplication handles it). Fix them
+// through AppKit and CSS.
+void init_macos(void)
+{
+#ifdef __APPLE__
+#ifdef DETAIL
+	g_debug("! Launch init_macos()");
+#endif
+	g_idle_add(macos_activate, NULL);
+
+	Class handler_class = objc_allocateClassPair(objc_getClass("NSObject"), "LilyTermQuitHandler", 0);
+	Class manager_class = objc_getClass("NSAppleEventManager");
+	if (handler_class && manager_class)
+	{
+		SEL handle_quit = sel_registerName("handleQuit:withReplyEvent:");
+		class_addMethod(handler_class, handle_quit, (IMP)macos_quit_event, "v@:@@");
+		objc_registerClassPair(handler_class);
+		id handler = ((id (*)(Class, SEL))objc_msgSend)(handler_class, sel_registerName("new"));
+		id manager = ((id (*)(Class, SEL))objc_msgSend)(manager_class, sel_registerName("sharedAppleEventManager"));
+		((void (*)(id, SEL, id, SEL, uint32_t, uint32_t))objc_msgSend)
+			(manager, sel_registerName("setEventHandler:andSelector:forEventClass:andEventID:"),
+			 handler, handle_quit, MACOS_EVENT_CLASS_CORE, MACOS_EVENT_ID_QUIT);
+	}
+
+	Class app_class = objc_getClass("NSApplication");
+	Class image_class = objc_getClass("NSImage");
+	Class string_class = objc_getClass("NSString");
+	if (app_class && image_class && string_class && g_file_test(ICON_PATH, G_FILE_TEST_IS_REGULAR))
+	{
+		id path = ((id (*)(Class, SEL, const char *))objc_msgSend)
+				(string_class, sel_registerName("stringWithUTF8String:"), ICON_PATH);
+		id image = ((id (*)(Class, SEL))objc_msgSend)(image_class, sel_registerName("alloc"));
+		image = ((id (*)(id, SEL, id))objc_msgSend)(image, sel_registerName("initWithContentsOfFile:"), path);
+		if (image)
+		{
+			id app = ((id (*)(Class, SEL))objc_msgSend)(app_class, sel_registerName("sharedApplication"));
+			((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName("setApplicationIconImage:"), image);
+			((void (*)(id, SEL))objc_msgSend)(image, sel_registerName("release"));
+		}
+	}
+
+	GdkScreen *screen = gdk_screen_get_default();
+	if (screen)
+	{
+		GtkCssProvider *css = gtk_css_provider_new();
+		if (gtk_css_provider_load_from_data(css,
+						    "menu, .menu, .context-menu { background-color: @theme_bg_color; }\n"
+						    "window.popup { background-color: @theme_bg_color; }\n",
+						    -1, NULL))
+			gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(css),
+								  GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
+		g_object_unref(css);
+	}
+#endif
 }
 
 gboolean window_quit(GtkWidget *window, GdkEvent *event, struct Window *win_data)

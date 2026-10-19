@@ -73,6 +73,11 @@ void adjust_ansi_color(GdkRGBA *color, GdkRGBA *color_orig, gdouble color_bright
 		color->green = (1 + color_brightness) * color_orig->green;
 		color->blue = (1 + color_brightness) * color_orig->blue;
 	}
+	// VTE refuses a color with any component out of [0, 1]
+	color->red = CLAMP(color->red, 0, 1);
+	color->green = CLAMP(color->green, 0, 1);
+	color->blue = CLAMP(color->blue, 0, 1);
+	color->alpha = 1.0;
 }
 
 void generate_all_color_datas(struct Window *win_data)
