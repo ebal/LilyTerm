@@ -274,8 +274,9 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			gtk_box_pack_end (GTK_BOX(hbox), dialog_data->operate[3], FALSE, FALSE, 0);
 			gtk_box_pack_start (GTK_BOX(dialog_data->box), hbox, FALSE, FALSE, 0);
 
-			// Dirty Hack
+			// Dirty Hack: search for the first line of the selection, else for the last search
 			gchar *clipboard_str = NULL;
+			gchar *first_line = NULL;
 			if (vte_terminal_get_has_selection(VTE_TERMINAL(win_data->current_vte)))
 			{
 				extern GtkClipboard *selection_primary;
@@ -283,12 +284,12 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 				if (selection_primary)
 #endif
 					clipboard_str = gtk_clipboard_wait_for_text (selection_primary);
-				if (clipboard_str && (clipboard_str[0]!='\0'))
-					gtk_entry_set_text(GTK_ENTRY(dialog_data->operate[0]),
-							   strtok(clipboard_str, "\n\r"));
+				// NULL for an empty selection, or one of line breaks only
+				if (clipboard_str) first_line = strtok(clipboard_str, "\n\r");
 			}
-			if (((clipboard_str==NULL) || (clipboard_str[0]=='\0')) &&
-			    (win_data->find_string && (win_data->find_string[0]!='\0')))
+			if (first_line)
+				gtk_entry_set_text(GTK_ENTRY(dialog_data->operate[0]), first_line);
+			else if (win_data->find_string && (win_data->find_string[0]!='\0'))
 				gtk_entry_set_text(GTK_ENTRY(dialog_data->operate[0]), win_data->find_string);
 			g_free(clipboard_str);
 			break;
