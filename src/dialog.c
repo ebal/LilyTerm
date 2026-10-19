@@ -938,26 +938,12 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 			// TRANSLATE NOTE: Please be care of the spacing when translating the following site informatoins.
 			// TRANSLATE NOTE: Please check it in [Right Click Menu] -> [Usage] -> [About] page after translating.
 			str[9]  = g_strdup_printf (_("HomePage: %s"), MAINSITE);
-			str[10] = g_strdup_printf (_("Github:   %s"), GITHUBURL);
-			str[11] = g_strdup_printf (_("Blog:     %s"), BLOG);
-			str[12] = g_strdup_printf (_("Wiki:     %s"), WIKI);
 			str[13] = g_strdup_printf (_("Issues:   %s"), ISSUES);
-			str[14] = g_strdup_printf (_("IRC:      %s"), IRC);
 			str[15] = g_strdup_printf (_("Thank you for using %s!"), PACKAGE);
-			str[16] = g_strdup_printf ("%s <%s>\n\n%s\n%s\n"
-						   "%s\n%s\n\n%s",
-						   AUTHOR, BUGREPORT, str[9] ,str[10], str[13],
-						   str[14], str[15]);
+			// AUTHOR is the original author: the links are those of this fork
+			str[16] = g_strdup_printf ("%s\n\n%s\n%s\n\n%s",
+						   AUTHOR, str[9], str[13], str[15]);
 			str[17] = convert_text_to_html(&str[16], FALSE, NULL, "tt", NULL);
-			gchar *warn_str = g_strdup_printf (_("Using the GTK3+ version of %s is NOT recommended.\n"
-							     "Please consider to use GTK2+ version instead."),
-							   PACKAGE);
-			gchar *warn_html = convert_text_to_html (&warn_str, FALSE, "darkred", "tt", "b", NULL);
-			gchar *new_str = g_strdup_printf("%s\n\n%s", str[17], warn_html);
-			g_free(str[17]);
-			g_free(warn_str);
-			g_free(warn_html);
-			str[17] = new_str;
 			dialog_data->operate[4] = add_text_to_notebook(notebook, _("About"), GTK_FAKE_STOCK_ABOUT, str[17]);
 
 			show_usage_text(notebook, NULL, 0, dialog_data);

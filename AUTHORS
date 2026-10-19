@@ -1,21 +1,15 @@
 Authors:
 	Lu, Chao-Ming (Tetralet) <tetralet@gmail.com>
 
-Homepage:
+This modernized fork (GTK+ 3, VTE 0.84, Wayland, macOS):
+	Evaggelos Balaskas
+	Homepage: https://github.com/ebal/LilyTerm
+	Issues:   https://github.com/ebal/LilyTerm/issues
+
+The original LilyTerm (last release in 2019):
+	https://github.com/Tetralet/LilyTerm
 	http://lilyterm.luna.com.tw/ (Main site)
-	https://github.com/Tetralet/LilyTerm (Github site)
-
-Blog:
-	http://tetralet.luna.com.tw
-
-Wiki:
-	https://github.com/Tetralet/LilyTerm/wiki
-
-Issues:
-	https://github.com/Tetralet/LilyTerm/issues
-
-IRC:
-	#hime@freenode.net
+	http://tetralet.luna.com.tw (Blog)
 
 Translators:
 
