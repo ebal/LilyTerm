@@ -154,7 +154,8 @@ gchar *convert_escape_sequence_from_string(const gchar *string)
 	long i=-1;
 	while (string[++i])
 	{
-		if (string[i]=='\\')
+		// a backslash at the very end escapes nothing: keep it, and do not read past the end
+		if ((string[i]=='\\') && (string[i+1]!='\0'))
 		{
 			switch (string[++i])
 			{
