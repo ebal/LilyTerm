@@ -16,3 +16,4 @@ dist/
 release/
 test-output/
 tests/unit/build/
+claude.session
