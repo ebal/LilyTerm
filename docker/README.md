@@ -25,7 +25,9 @@ docker run --rm -v "$PWD":/src:ro -v /tmp/lilyterm-test:/build/test-output lilyt
 
 ## The test suite (`run-tests.sh`)
 
-`run-tests.sh` configures, builds and installs LilyTerm, then starts it for
+`run-tests.sh` configures, builds and installs LilyTerm, runs the unit
+tests of `src/misc.c` (`tests/unit/`: escape sequences, the socket data,
+`-g` geometries, the environment of a new terminal), then starts it for
 real under two headless display servers:
 
 * **X11**: `Xvfb`, with `GDK_BACKEND=x11`
@@ -56,7 +58,15 @@ For each of them it checks that
 
 Useful knobs: `BACKENDS="x11"` or `BACKENDS="wayland"` to test one of them,
 `BACKENDS=` (empty) for only the build and the tests that need no display,
-`LILYTERM=/path/to/binary` to test an existing binary instead of building.
+`LILYTERM=/path/to/binary` to test an existing binary instead of building,
+and `SANITIZE=1` to build with AddressSanitizer and UndefinedBehaviorSanitizer:
+every report of theirs (in `test-output/sanitizer.PID`) fails the run. Leaks
+are not checked, as GTK+ keeps memory until the end on purpose.
+
+```sh
+docker run --rm -e SANITIZE=1 -v "$PWD":/src:ro lilyterm-dev
+tests/unit/run.sh                      # only the unit tests, on the host
+```
 
 ## The static binary
 
@@ -126,22 +136,30 @@ and the terminfo entry of `$TERM`. Every desktop system has them.
 |----------------------------------------|---------------------------------------------------------|
 | `lilyterm-x86_64`                      | the bare binary: download, `chmod +x`, run              |
 | `lilyterm-VERSION-linux-x86_64.tar.gz` | the binary, its data files, and `install.sh`            |
-| `SHA256SUMS`                           | checksums of the two                                    |
+| `SHA256SUMS`                           | checksums of all the files of the release               |
+
+The release also carries `LilyTerm-VERSION-macos-arm64.dmg`, built by the
+GitHub workflow on macOS (see below).
 
 `install.sh` (from the tarball) installs into `~/.local`, or into `/usr/local`
 when run as root; `PREFIX=...` overrides it and `--uninstall` removes it again.
 
 Every change is built and tested on Gitea first. The workflow in
 `.gitea/workflows/build.yml` runs on every push to `main` and every pull
-request: both test suites, X11 and Wayland included, and the packaged static
-binary as a workflow artifact. Its jobs run with the Docker of the Gitea host,
+request: both test suites, X11 and Wayland included, the same tests again with
+the sanitizers (`SANITIZE=1`), and the packaged static binary as a workflow
+artifact. Its jobs run with the Docker of the Gitea host,
 so the images and their build cache stay there between runs.
 
 The same commits are pushed to GitHub once they passed on Gitea. The GitHub
 workflow in `.github/workflows/build.yml` only runs for a tag `vX.Y.Z`: it
 builds the static binary, runs the tests that need no display (`BACKENDS=`;
 on the shared GitHub runners the key presses of the X11 and Wayland tests get
-lost now and then), and publishes the release. Its compiled dependencies
+lost now and then), builds the macOS app on an Apple Silicon runner
+(`macos/bundle-app.sh`) and tests it with Homebrew moved away
+(`macos/test-app.sh`), and publishes the release with the .dmg. It can also be
+started by hand for a branch (Actions > build > Run workflow): the same builds
+and tests, without a release. Its compiled dependencies
 are kept as a build cache in the GitHub container registry
 (`ghcr.io/OWNER/lilyterm-buildcache`): a run takes a few minutes, and GLib,
 GTK+ and VTE are only compiled again (about half an hour) when
