@@ -2,6 +2,28 @@
 
 ## 2026-10-19
 
+Version 0.10.1.
+
+### New Feature
+
+- LilyTerm for macOS on Apple Silicon as a .dmg:
+  `LilyTerm-VERSION-macos-arm64.dmg` on the releases page. LilyTerm.app
+  has GTK+ 3 and VTE inside, so it needs no Homebrew. It is not signed by
+  Apple: after dragging it to Applications, run once
+  `xattr -dr com.apple.quarantine /Applications/LilyTerm.app`.
+- GitHub Actions builds the app on an Apple Silicon runner and tests it
+  with Homebrew moved away (`macos/bundle-app.sh`, `macos/test-app.sh`).
+
+### FIX
+
+- A link regex in the profile that ended with a backslash made LilyTerm
+  read past the end of the string.
+- When only some of the link regexes were customized, `address_end`
+  defaulted to the body of an address, so a link took a trailing "." or
+  "," with it.
+
+## 2026-10-19
+
 Version 0.10.0.
 LilyTerm runs on macOS, from the Homebrew tap `ebal/tap`, built from the
 same code as on Linux.

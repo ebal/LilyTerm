@@ -1,6 +1,6 @@
 PACKAGE = LilyTerm
 BINARY = lilyterm
-VERSION = 0.10.0
+VERSION = 0.10.1
 
 AUTHOR = Lu, Chao-Ming (Tetralet)
 BUGREPORT = tetrlet@gmail.com
