@@ -74,7 +74,9 @@ MAGICK=$(command -v magick || command -v convert)
 
 # ---------------------------------------------------------------- build ----
 
+BUILT=
 if [ -z "$LILYTERM" ]; then
+	BUILT=1
 	note "Building $SRC in $BUILD/lilyterm"
 	mkdir -p "$BUILD/lilyterm"
 	rsync -a --delete --exclude .git --exclude test-output "$SRC"/ "$BUILD/lilyterm"/
@@ -118,6 +120,17 @@ if env -u DISPLAY -u WAYLAND_DISPLAY "$LILYTERM" --help 2>&1 | grep -q -- "--geo
 	ok "lilyterm --help works without a display"
 else
 	ng "lilyterm --help without a display"
+fi
+
+# The unit tests of src/misc.c, with the sanitizers too if SANITIZE is set.
+# Only where this script built LilyTerm: the static test image has no compiler.
+if [ -n "$BUILT" ]; then
+	if CFLAGS="-O2 -g${SAN_FLAGS:+ $SAN_FLAGS}" "$BUILD/lilyterm/tests/unit/run.sh" "$BUILD/unit" > "$OUT/unit.log" 2>&1; then
+		ok "unit tests ($(grep -c '^ok ' "$OUT/unit.log") passed)"
+	else
+		ng "unit tests (see $OUT/unit.log)"
+		grep -E '^not ok|ERROR|error:|Bail out' "$OUT/unit.log" | head -20 | sed 's/^/      /'
+	fi
 fi
 
 # ------------------------------------------------------------ GUI tests ----
