@@ -20,7 +20,7 @@ endif
 RomveFileList = $(DESTDIR)/$(ETCDIR)/$(BINARY).conf \
 		$(DESTDIR)/$(DOCDIR)/AUTHORS \
 		$(DESTDIR)/$(DOCDIR)/COPYING \
-		$(DESTDIR)/$(DOCDIR)/ChangeLog.md \
+		$(DESTDIR)/$(DOCDIR)/CHANGELOG.md \
 		$(DESTDIR)/$(MANDIR)/$(BINARY).1.gz \
 		$(DESTDIR)/$(DESKTOP_DIR)/$(BINARY).desktop \
 		$(DESTDIR)/$(ICONDIR)/$(BINARY).png \
@@ -68,9 +68,9 @@ install: all
 	$(VERBOSITY_OUTPUT) install -d $(DESTDIR)/$(ETCDIR)
 	$(VERBOSITY_OUTPUT) install -m 644 $(BINARY).conf $(DESTDIR)/$(ETCDIR)
 
-	@ $(PRINTF) "\033[1;33m** installing \033[1;32mAUTHORS COPYING ChangeLog.md\033[1;33m to \033[1;34m$(DESTDIR)/$(DOCDIR)\033[1;33m ...\033[0m\n"
+	@ $(PRINTF) "\033[1;33m** installing \033[1;32mAUTHORS COPYING CHANGELOG.md\033[1;33m to \033[1;34m$(DESTDIR)/$(DOCDIR)\033[1;33m ...\033[0m\n"
 	$(VERBOSITY_OUTPUT) install -d $(DESTDIR)/$(DOCDIR)
-	$(VERBOSITY_OUTPUT) install -m 644 ../AUTHORS ../COPYING ../ChangeLog.md $(DESTDIR)/$(DOCDIR)
+	$(VERBOSITY_OUTPUT) install -m 644 ../AUTHORS ../COPYING ../CHANGELOG.md $(DESTDIR)/$(DOCDIR)
 
 	@ $(PRINTF) "\033[1;33m** installing \033[1;32m$(BINARY).1.gz\033[1;33m to \033[1;34m$(DESTDIR)/$(MANDIR)\033[1;33m ...\033[0m\n"
 	$(VERBOSITY_OUTPUT) install -d $(DESTDIR)/$(MANDIR)
