@@ -123,7 +123,7 @@ jobs:
   # The macOS app: GTK+ 3 and VTE from Homebrew, copied into LilyTerm.app
   # (macos/bundle-app.sh), tested with Homebrew moved away (macos/test-app.sh)
   macos:
-    runs-on: macos-latest   # Apple Silicon
+    runs-on: macos-15   # Apple Silicon; macos-latest got no runner (2026-10-19)
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
