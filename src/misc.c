@@ -605,9 +605,40 @@ gchar **get_pid_stat(pid_t pid, gint max_tokens)
 
 	gsize length=0;
 	gchar *stat = get_proc_data(pid, "stat", &length);
-	gchar **stats = NULL;
-	if (stat) stats = split_string(stat, " ()", max_tokens);
+	gchar **stats = split_pid_stat(stat, max_tokens);
 	g_free(stat);
+	return stats;
+}
+
+// Split the "pid (comm) state ppid ..." of /proc/PID/stat as
+// split_string(stat, " ()", max_tokens) does: { pid, "", comm, "", state,
+// ppid, ... }. But comm, the name of the program, may hold spaces and
+// parentheses itself, which would shift every field after it: it ends at the
+// *last* ')', and stays one field.
+gchar **split_pid_stat(const gchar *stat, gint max_tokens)
+{
+#ifdef FULL
+	g_debug("! Launch split_pid_stat with stat = %s, max_tokens = %d", stat, max_tokens);
+#endif
+	if (stat==NULL) return NULL;
+
+	const gchar *comm_start = strchr(stat, '(');
+	const gchar *comm_end = strrchr(stat, ')');
+	if ((comm_start==NULL) || (comm_end==NULL) || (comm_end < comm_start))
+		return split_string(stat, " ()", max_tokens);
+
+	// split a copy whose comm has no separators left, then put the real comm back
+	gchar *plain = g_strdup(stat);
+	gchar *p;
+	for (p = plain + (comm_start - stat) + 1; p < plain + (comm_end - stat); p++)
+		if ((*p==' ') || (*p=='(') || (*p==')')) *p = '_';
+	gchar **stats = split_string(plain, " ()", max_tokens);
+	g_free(plain);
+	if (stats && stats[0] && stats[1] && stats[2])
+	{
+		g_free(stats[2]);
+		stats[2] = g_strndup(comm_start + 1, comm_end - comm_start - 1);
+	}
 	return stats;
 }
 

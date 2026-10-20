@@ -755,6 +755,7 @@ GString *get_child_process_list(GtkWidget *window, gint window_no, gint page_no,
 		pid_t entry_pid = g_array_index(pids, pid_t, n);
 		gchar **stats = NULL;
 		struct Process_Data entry_data = {0};
+		gchar *uncached_cmd = NULL;
 #ifdef SAFEMODE
 		if (entry_pid<PID_MAX_DEFAULT && process_data)
 #else
@@ -773,6 +774,8 @@ GString *get_child_process_list(GtkWidget *window, gint window_no, gint page_no,
 		{
 			stats = set_process_data (entry_pid, &(entry_data.ppid), &(entry_data.cmd));
 			exceed_PID_MAX_DEFAULT = TRUE;
+			// no cache for this pid: entry_data.cmd is ours to free
+			uncached_cmd = entry_data.cmd;
 		}
 
 		if (entry_data.ppid)
@@ -823,6 +826,7 @@ GString *get_child_process_list(GtkWidget *window, gint window_no, gint page_no,
 			}
 		}
 		g_strfreev(stats);
+		g_free(uncached_cmd);
 	}
 	g_array_free(pids, TRUE);
 	return process_list;

@@ -64,6 +64,7 @@ gboolean macos_proc_is_root(pid_t pid);
 gchar **split_string(const gchar *str, const gchar *split, gint max_tokens);
 gint count_char_in_string(const gchar *str, const gchar split);
 gchar **get_pid_stat(pid_t pid, gint max_tokens);
+gchar **split_pid_stat(const gchar *stat, gint max_tokens);
 gchar *convert_text_to_html(StrAddr **text, gboolean free_text, gchar *color, StrLists *tag, ...);
 gchar *join_strings_to_string(const gchar separator, const gint total, const StrLists *string, ...);
 gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line);

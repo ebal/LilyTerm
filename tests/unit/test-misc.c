@@ -175,6 +175,42 @@ static void test_sanitize_environs(void)
 	g_assert_null(sanitize_environs(NULL));
 }
 
+// ---- /proc/PID/stat ----
+
+static void test_split_pid_stat(void)
+{
+	const gchar *stats[] = {
+		"1234 (bash) S 1000 1234 1234 34816 5678 4194304 0\n",
+		"1234 (my prog) S 1000 1234 1234 34816 5678 4194304 0\n",
+		"1234 (a) (b)) S 1000 1234 1234 34816 5678 4194304 0\n",
+		"1234 (x(y) S 1000 1234 1234 34816 5678 4194304 0\n",
+	};
+	const gchar *comms[] = { "bash", "my prog", "a) (b)", "x(y" };
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(stats); i++)
+	{
+		gchar **fields = split_pid_stat(stats[i], 11);
+		g_assert_nonnull(fields);
+		g_assert_cmpstr(fields[0], ==, "1234");
+		g_assert_cmpstr(fields[2], ==, comms[i]);
+		g_assert_cmpstr(fields[4], ==, "S");
+		g_assert_cmpstr(fields[5], ==, "1000");	// ppid
+		g_assert_cmpstr(fields[9], ==, "5678");	// tpgid
+		g_strfreev(fields);
+
+		// 4 fields: pid, "", comm and the rest
+		fields = split_pid_stat(stats[i], 4);
+		g_assert_nonnull(fields);
+		g_assert_cmpstr(fields[2], ==, comms[i]);
+		g_assert_null(fields[4]);
+		g_strfreev(fields);
+	}
+	g_test_expect_message(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, "*can NOT splite*");
+	g_assert_null(split_pid_stat("1234 (bash) S", 11));	// too few fields
+	g_test_assert_expected_messages();
+	g_assert_null(split_pid_stat(NULL, 11));
+}
+
 // ---- the "join the lines" paste ----
 
 static void test_join_pasted_lines(void)
@@ -216,5 +252,6 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/parse-geometry", test_parse_geometry);
 	g_test_add_func("/misc/sanitize-environs", test_sanitize_environs);
 	g_test_add_func("/misc/join-pasted-lines", test_join_pasted_lines);
+	g_test_add_func("/misc/split-pid-stat", test_split_pid_stat);
 	return g_test_run();
 }
