@@ -59,7 +59,7 @@
 //						|	g_io_add_watch
 //						|		|
 //						|		`-- read_socket()
-//						|		    g_io_channel_read_line
+//						|		    g_io_channel_read_to_end
 //						|		    [READ_FUNC]
 //						|		  + clear_channel()
 //						|		    g_io_channel_shutdown
@@ -405,7 +405,13 @@ gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc r
 	{
 		gint read_fd = accept(g_io_channel_unix_get_fd(source), NULL, NULL);
 
-		if (read_fd < 0) return socket_fault(GTK_SOCKET_ERROR_CREATE_SOCKET_FILE, error, source, FALSE);
+		// A failed request must not take the socket server down with it:
+		// warn, and keep listening (source is the listening channel).
+		if (read_fd < 0)
+		{
+			socket_fault(GTK_SOCKET_ERROR_ACCEPT_REQUEST, error, NULL, FALSE);
+			return TRUE;
+		}
 
 		// The request ends up as a command line that is executed with our
 		// privileges: never take one from another user.
@@ -418,18 +424,32 @@ gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc r
 			return TRUE;
 		}
 
-		if ( ! set_fd_non_block(&read_fd)) return FALSE;
+		if ( ! set_fd_non_block(&read_fd))
+		{
+			close(read_fd);
+			return TRUE;
+		}
 
 		GIOChannel* channel = g_io_channel_unix_new(read_fd);
-		// channel is NULL, so that we don't need to launch clear_channel()
-		if (!channel) return socket_fault(GTK_SOCKET_ERROR_CREATE_CHANNEL, NULL, channel, FALSE);
+		if (!channel)
+		{
+			socket_fault(GTK_SOCKET_ERROR_CREATE_CHANNEL, NULL, NULL, FALSE);
+			close(read_fd);
+			return TRUE;
+		}
 		// set the channel to read binary file
 		if (g_io_channel_set_encoding(channel, NULL, &error) == G_IO_STATUS_ERROR)
-			return socket_fault(GTK_SOCKET_ERROR_CHANNEL_ENCODING, error, channel, TRUE);
+		{
+			socket_fault(GTK_SOCKET_ERROR_CHANNEL_ENCODING, error, channel, TRUE);
+			return TRUE;
+		}
 
 		// read the data that client sent.
 		if ( ! g_io_add_watch(channel, G_IO_HUP, (GIOFunc)read_socket, read_function))
-			return socket_fault(GTK_SOCKET_ERROR_WATCH_SOCKET, error, channel, TRUE);
+		{
+			socket_fault(GTK_SOCKET_ERROR_WATCH_SOCKET, NULL, channel, TRUE);
+			return TRUE;
+		}
 	}
 	return TRUE;
 }
@@ -446,10 +466,12 @@ gboolean read_socket(GIOChannel *channel, GIOCondition condition, GSourceFunc re
 	GError *error = NULL;
 	gchar *str = NULL;
 	gsize len = 0;
-	gsize term;
 
+	// The client hangs up once it sent everything: read it all. The request
+	// may hold newlines (in an argument, or in a variable of the environment),
+	// so reading just one line would cut it short.
 	// socket_fault() shuts the channel down and unrefs it: do not touch it again
-	if (g_io_channel_read_line (channel, &str, &len, &term, &error) == G_IO_STATUS_ERROR)
+	if (g_io_channel_read_to_end (channel, &str, &len, &error) == G_IO_STATUS_ERROR)
 	{
 		g_free(str);
 		return socket_fault(GTK_SOCKET_ERROR_RECEIVE_DATA, error, channel, TRUE);

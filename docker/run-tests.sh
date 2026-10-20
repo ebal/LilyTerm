@@ -231,7 +231,7 @@ run_gui_tests() {
 	# --- 3. a second lilyterm hands its command to the running one over the socket
 	marker="$work/first.txt"
 	local marker2="$work/second.txt"
-	timeout 40 "$LILYTERM" -E sh -c "echo \$PPID > $marker; sleep 6" > "$work/socket1.log" 2>&1 &
+	timeout 40 "$LILYTERM" -E sh -c "echo \$PPID > $marker; sleep 10" > "$work/socket1.log" 2>&1 &
 	pid=$!
 	if wait_for 15 test -s "$marker"; then
 		timeout 20 "$LILYTERM" -E sh -c "echo \$PPID > $marker2; sleep 1" > "$work/socket2.log" 2>&1
@@ -241,6 +241,20 @@ run_gui_tests() {
 		else
 			ng "[$backend] socket hand-over failed (first=$(cat "$marker" 2>/dev/null) second=$(cat "$marker2" 2>/dev/null))"
 			sed 's/^/      /' "$work/socket2.log" | head -10
+		fi
+		# The request travels as one string: a newline in the environment or in
+		# an argument cut it short before 0.11.3 (the command was lost).
+		local marker3="$work/third.txt" nl=$'\n'
+		MULTI_LINE="a${nl}b" timeout 20 "$LILYTERM" -E sh -c \
+			"printf '%s|%s|%s' \"\$PPID\" \"\$1\" \"\$MULTI_LINE\" > $marker3.tmp; mv $marker3.tmp $marker3; sleep 1" \
+			x "one${nl}two" > "$work/socket3.log" 2>&1
+		local want
+		want="$(cat "$marker")|one${nl}two|a${nl}b"
+		if wait_for 10 test -s "$marker3" && [ "$(cat "$marker3")" = "$want" ]; then
+			ok "[$backend] newlines in the environment and the arguments survive the socket"
+		else
+			ng "[$backend] socket request with newlines: got '$(cat "$marker3" 2>/dev/null)', wanted '$want'"
+			sed 's/^/      /' "$work/socket3.log" | head -10
 		fi
 	else
 		ng "[$backend] first instance for the socket test did not start"
