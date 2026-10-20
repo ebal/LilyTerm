@@ -95,7 +95,9 @@ The .dmg is built for the macOS version of the GitHub runner and later
 (`LSMinimumSystemVersion` in the app). Intel Macs are not supported.
 
 On macOS, window transparency is off (GTK+ 3 would draw the title bar
-clear as well), and the key bindings use Ctrl, not Cmd.
+clear as well). LilyTerm has a menu bar there, and its key bindings use
+the Command key (see [Key bindings](#key-bindings)); Ctrl goes to the
+programs in the terminal. Links open with `open`.
 
 #### Or with Homebrew
 
@@ -173,6 +175,28 @@ These are the defaults. You can change each of them, or disable it, with
 
 The right click menu also has [Split right], [Split down] and
 [Close pane].
+
+On macOS the defaults use the Command key instead:
+
+| Keys                    | Action                                         |
+|-------------------------|------------------------------------------------|
+| `Cmd+T` / `Cmd+N`       | New tab / new window in the current directory  |
+| `Cmd+W`                 | Close the tab                                  |
+| `Cmd+Shift+[` / `]`     | Previous / next tab                            |
+| `Cmd+1` ... `9`         | Tab 1 ... 9                                    |
+| `Cmd+D` / `Cmd+Shift+D` | Split the pane side by side / one above the other |
+| `Cmd+]` / `Cmd+Shift+W` | Next pane / close the pane                     |
+| `Cmd+C` / `Cmd+V` / `Cmd+A` | Copy / paste / select all                  |
+| `Cmd+F`                 | Find text (`Cmd+G` / `Cmd+Shift+G`: next / previous) |
+| `Cmd+K`                 | Clear the scrollback                           |
+| `Cmd++` / `-` / `0`     | Bigger / smaller / reset font                  |
+| `Cmd+Ctrl+F`            | Full screen                                    |
+| `Cmd+Q` / `Cmd+H` / `Cmd+M` | Quit / hide / minimize                     |
+
+In a profile, `Cmd` is the Command key on macOS and the Super (Win) key on
+Linux, e.g. `new_tab_key = Cmd T`. On macOS, the keys of a profile saved by
+an older LilyTerm, or on Linux, that are still the Linux defaults are read
+as the macOS ones.
 
 ### Configuration
 
