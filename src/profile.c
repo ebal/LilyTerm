@@ -607,9 +607,11 @@ static const struct
 	{ KEY_CLOSE_PANE, "Ctrl+Shift W", "Cmd+Shift W" },
 };
 
-// A key of a profile saved on Linux, or by LilyTerm before 0.12.0, that is
-// still the Linux default: take the macOS default instead. A key the user
-// changed stays as it is. It takes VALUE, and returns the value to use.
+// A key of a profile saved by LilyTerm before 0.12.0 (it has no
+// key_binding_version), on Linux or macOS, that is still the Linux default:
+// take the macOS default instead. A key the user changed stays as it is. A
+// profile saved by 0.12.0 or later is used as it is: a key cleared there
+// stays disabled. It takes VALUE, and returns the value to use.
 static gchar *macos_key_value(gint key, gchar *value)
 {
 	if (value==NULL) return NULL;
@@ -1581,11 +1583,15 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 			//		"Mod2=%x, Mod3=%x, Mod4=%x, Mod5=%x\n",
 			//		GDK_SHIFT_MASK, GDK_LOCK_MASK, GDK_CONTROL_MASK, GDK_MOD1_MASK,
 			gchar *value = NULL;
+#ifdef __APPLE__
+			// Saved before LilyTerm had macOS keys: migrate its Linux defaults
+			gboolean old_key_bindings = ! g_key_file_has_key(keyfile, "key", "key_binding_version", NULL);
+#endif
 			for (i=0; i<KEYS-FIXED_KEYS; i++)
 			{
 				value = g_key_file_get_value(keyfile, "key", system_keys[i].name, NULL);
 #ifdef __APPLE__
-				value = macos_key_value(i, value);
+				if (old_key_bindings) value = macos_key_value(i, value);
 #endif
 				convert_string_to_user_key(i, value, win_data);
 			}
@@ -2574,6 +2580,9 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 					page_color[i].comment_eng, page_color[i].name, win_data->user_page_color[i]);
 	}
 	g_string_append_printf(contents,"\n[key]\n\n");
+	// see macos_key_value()
+	g_string_append_printf(contents,"# The key bindings below were saved by %s %s: do not change this line.\n"
+					"key_binding_version = %s\n\n", PACKAGE, KEY_BINDING_VERSION, KEY_BINDING_VERSION);
 	for (i=0; i<KEYS-FIXED_KEYS; i++)
 	{
 		if (win_data->user_keys[i].value && (win_data->user_keys[i].value[0]!='\0'))

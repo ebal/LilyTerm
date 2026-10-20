@@ -117,6 +117,8 @@
 #define USER_PROFILE "default.conf"
 #define SOCKET_DATA_VERSION PACKAGE "-0.9.9~rc6"
 #define PROFILE_FORMAT_VERSION "0.9.9.3"
+// The [key] section of a profile saved since 0.12.0 says so (the Cmd keys of macOS)
+#define KEY_BINDING_VERSION "0.12.0"
 #define NOTEBOOK_GROUP 8
 #define ICON_PATH ICONDIR G_DIR_SEPARATOR_S BINARY ".png"
 #define NULL_DEVICE "/dev/null"
@@ -230,8 +232,9 @@
 // MOD2, which is NumLock on X11 (so ignored there, in DUD_MASK). Elsewhere it
 // is the Super ("Win") key, as Command is on a Mac keyboard under Linux.
 #ifdef __APPLE__
+// GTK+ adds META to every Command key press there (a virtual modifier): ignore it
 #  define COMMAND_MASK GDK_MOD2_MASK
-#  define DUD_MASK (GDK_LOCK_MASK | ( ~GDK_MODIFIER_MASK))
+#  define DUD_MASK (GDK_LOCK_MASK | GDK_META_MASK | ( ~GDK_MODIFIER_MASK))
 #else
 #  define COMMAND_MASK (GDK_MOD4_MASK | GDK_SUPER_MASK)
 #  define DUD_MASK (GDK_LOCK_MASK | GDK_MOD2_MASK | ( ~GDK_MODIFIER_MASK))

@@ -579,6 +579,19 @@ static void macos_menu_action(id self, SEL cmd, id sender)
 	g_idle_add(macos_menu_activate, GINT_TO_POINTER((gint) tag));
 }
 
+// -[LilyTermMenuTarget validateMenuItem:]: the items act on the terminal
+// window with the focus, so only while one has it (or no window has it). With
+// the About panel in front, Cmd C would copy from the terminal otherwise:
+// AppKit gives the menu the keys that GTK+ does not take.
+static BOOL macos_menu_validate(id self, SEL cmd, id item)
+{
+	id app = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
+	id key_window = ((id (*)(id, SEL))objc_msgSend)(app, sel_registerName("keyWindow"));
+	if (key_window == NULL) return (BOOL) 1;
+	// GTK+ makes its windows of class GdkQuartzNSWindow
+	return (BOOL) g_str_has_prefix(object_getClassName(key_window), "Gdk");
+}
+
 static id macos_menu_new(const gchar *title)
 {
 	id menu = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSMenu"), sel_registerName("alloc"));
@@ -657,6 +670,13 @@ static gboolean macos_create_menu_bar(gpointer data)
 	Class target_class = objc_allocateClassPair(objc_getClass("NSObject"), "LilyTermMenuTarget", 0);
 	if (target_class==NULL) return FALSE;
 	class_addMethod(target_class, sel_registerName("menuAction:"), (IMP)macos_menu_action, "v@:@");
+	// the type of BOOL: "B" on Apple Silicon, "c" on Intel
+	class_addMethod(target_class, sel_registerName("validateMenuItem:"), (IMP)macos_menu_validate,
+#  if defined(__arm64__) || defined(__aarch64__)
+			"B@:@");
+#  else
+			"c@:@");
+#  endif
 	objc_registerClassPair(target_class);
 	// it lives as long as LilyTerm
 	id target = ((id (*)(Class, SEL))objc_msgSend)(target_class, sel_registerName("new"));
@@ -1316,6 +1336,21 @@ gboolean window_option(struct Window *win_data, gchar *encoding, int argc, char 
 	return TRUE;
 }
 
+// The key binding for KEYVAL with MODS, or -1. With the key bindings off,
+// only the one that turns them on again.
+static gint find_key_binding(struct Window *win_data, gint keyval, gint mods)
+{
+	gint i;
+	for (i=0; i<KEYS; i++)
+	{
+		if ((! win_data->enable_key_binding) && (i != KEY_DISABLE_FUNCTION)) continue;
+		if ((mods==win_data->user_keys[i].mods) && (keyval==win_data->user_keys[i].key))
+			return i;
+	}
+	return -1;
+}
+
+
 gboolean window_key_press(GtkWidget *window, GdkEventKey *event, struct Window *win_data)
 {
 #ifdef FULL
@@ -1331,37 +1366,30 @@ gboolean window_key_press(GtkWidget *window, GdkEventKey *event, struct Window *
 	// FIXME: GDK_asciitilde = 0x7e, it is for some keys like <F3> only.
 	if ((event->state & SHIFT_ONLY_MASK) || (event->keyval > GDK_KEY_asciitilde))
 	{
-		gint i, keyval, mods = event->state | DUD_MASK;
+		gint keyval, mods = event->state | DUD_MASK;
 		if ((event->keyval>=GDK_KEY_a) && (event->keyval<=GDK_KEY_z))
 			keyval = event->keyval - GDK_KEY_a + GDK_KEY_A;
 		else
 			keyval = event->keyval;
 
-		if (win_data->enable_key_binding)
+		gint binding = find_key_binding(win_data, keyval, mods);
+#ifdef __APPLE__
+		// A Cmd key with another layout, or with Option: the key of a US keyboard
+		gint us_keyval = 0;
+		if (event->state & COMMAND_MASK)
 		{
-			for (i=0; i<KEYS; i++)
-			{
-				if ((mods==win_data->user_keys[i].mods) && (keyval==win_data->user_keys[i].key))
-				{
-					// deal the function key
-					return deal_key_press(window, i, win_data);
-				}
-			}
+			us_keyval = macos_us_keyval(event->hardware_keycode, (event->state & GDK_SHIFT_MASK) != 0);
+			if ((binding < 0) && us_keyval && (us_keyval != keyval))
+				binding = find_key_binding(win_data, us_keyval, mods);
 		}
-		else
-		{
-			if ((mods==win_data->user_keys[KEY_DISABLE_FUNCTION].mods) &&
-			    (keyval==win_data->user_keys[KEY_DISABLE_FUNCTION].key))
-			{
-				// deal the function key
-				return deal_key_press(window, KEY_DISABLE_FUNCTION, win_data);
-			}
-		}
+#endif
+		// deal the function key
+		if (binding >= 0) return deal_key_press(window, binding, win_data);
 #ifdef __APPLE__
 		// No key binding took it: the keys of macOS itself. And a Cmd key is
 		// never for the program in the terminal (Cmd X would type an x).
 		if (event->state & COMMAND_MASK)
-			return macos_command_key(window, keyval, event->state);
+			return macos_command_key(window, us_keyval? us_keyval: keyval, event->state);
 #endif
 	}
 	return FALSE;

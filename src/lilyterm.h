@@ -71,6 +71,7 @@ gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line);
 gchar *join_pasted_lines(const gchar *str);
 gchar *replace_xdg_open(const gchar *command);
 gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name);
+gint macos_us_keyval(guint16 hardware_keycode, gboolean shift);
 GdkRGBA convert_color_to_rgba(GdkColor color);
 gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba);
 gboolean dirty_gdk_color_parse(const gchar *spec, GdkRGBA *color);

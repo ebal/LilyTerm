@@ -248,6 +248,8 @@ static void test_get_local_dir_from_uri(void)
 		{ "file://mac/Users/me", "mac.local", "/Users/me" },
 		{ "file://server/home/me", "box", NULL },	// a shell over ssh
 		{ "file://boxer/home/me", "box", NULL },
+		{ "file://build.prod.example/srv", "build.home", NULL },	// only the first label is the same
+		{ "file://box.example/srv", "box", NULL },
 		{ "http://box/home", "box", NULL },
 		{ "/home/me", "box", NULL },
 		{ "", "box", NULL },
@@ -260,6 +262,25 @@ static void test_get_local_dir_from_uri(void)
 		g_free(dir);
 	}
 	g_assert_null(get_local_dir_from_uri(NULL, "box"));
+}
+
+// ---- the US key of a macOS key code (Cmd keys with other layouts) ----
+
+static void test_macos_us_keyval(void)
+{
+	g_assert_cmpint(macos_us_keyval(0x08, FALSE), ==, GDK_KEY_C);	// kVK_ANSI_C
+	g_assert_cmpint(macos_us_keyval(0x09, FALSE), ==, GDK_KEY_V);
+	g_assert_cmpint(macos_us_keyval(0x11, TRUE), ==, GDK_KEY_T);	// a letter stays upper case
+	g_assert_cmpint(macos_us_keyval(0x04, FALSE), ==, GDK_KEY_H);
+	g_assert_cmpint(macos_us_keyval(0x12, FALSE), ==, GDK_KEY_1);
+	g_assert_cmpint(macos_us_keyval(0x1D, FALSE), ==, GDK_KEY_0);
+	g_assert_cmpint(macos_us_keyval(0x18, FALSE), ==, GDK_KEY_equal);
+	g_assert_cmpint(macos_us_keyval(0x21, FALSE), ==, GDK_KEY_bracketleft);
+	g_assert_cmpint(macos_us_keyval(0x21, TRUE), ==, GDK_KEY_braceleft);
+	g_assert_cmpint(macos_us_keyval(0x1E, TRUE), ==, GDK_KEY_braceright);
+	g_assert_cmpint(macos_us_keyval(0x0A, FALSE), ==, 0);		// no key there
+	g_assert_cmpint(macos_us_keyval(0x24, FALSE), ==, 0);		// Return: not a key of the table
+	g_assert_cmpint(macos_us_keyval(0xFFFF, FALSE), ==, 0);
 }
 
 // ---- the "join the lines" paste ----
@@ -306,5 +327,6 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/split-pid-stat", test_split_pid_stat);
 	g_test_add_func("/misc/replace-xdg-open", test_replace_xdg_open);
 	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
+	g_test_add_func("/misc/macos-us-keyval", test_macos_us_keyval);
 	return g_test_run();
 }

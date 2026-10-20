@@ -878,8 +878,9 @@ gchar *replace_xdg_open(const gchar *command)
 
 // The directory of URI, a "file://HOST/PATH" that a shell reported with OSC 7,
 // if HOST is this machine (HOST_NAME, "localhost" or none). The one of a shell
-// on another machine (over ssh) is not a directory here. "mac" and
-// "mac.local" are the same machine. Free the returned string with g_free().
+// on another machine (over ssh) is not a directory here. The names must be
+// the same, but for a ".local" at the end ("mac" and "mac.local" are the same
+// machine on macOS). Free the returned string with g_free().
 gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name)
 {
 #ifdef DETAIL
@@ -894,14 +895,45 @@ gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name)
 	gboolean local = (host==NULL) || (host[0]=='\0') || (g_ascii_strcasecmp(host, "localhost")==0);
 	if ((! local) && host_name)
 	{
-		gsize host_len = strcspn(host, ".");
-		gsize host_name_len = strcspn(host_name, ".");
+		gsize host_len = strlen(host);
+		gsize host_name_len = strlen(host_name);
+		if ((host_len > 6) && (g_ascii_strcasecmp(host + host_len - 6, ".local")==0)) host_len -= 6;
+		if ((host_name_len > 6) && (g_ascii_strcasecmp(host_name + host_name_len - 6, ".local")==0)) host_name_len -= 6;
 		local = (host_len == host_name_len) && (g_ascii_strncasecmp(host, host_name, host_len)==0);
 	}
 	g_free(host);
 	if (local) return dir;
 	g_free(dir);
 	return NULL;
+}
+
+// The key of a US keyboard at HARDWARE_KEYCODE (a kVK_ANSI_* virtual key code
+// of macOS), as the key bindings name it. GDK reports what the current layout
+// types there: a Greek psi for the C key, and with Option an Option character,
+// but Cmd C is the key of C in every macOS application. 0: none. (It is
+// built everywhere, for the unit tests.)
+gint macos_us_keyval(guint16 hardware_keycode, gboolean shift)
+{
+	static const gint keys[] = {
+		[0x00] = GDK_KEY_A, [0x01] = GDK_KEY_S, [0x02] = GDK_KEY_D, [0x03] = GDK_KEY_F,
+		[0x04] = GDK_KEY_H, [0x05] = GDK_KEY_G, [0x06] = GDK_KEY_Z, [0x07] = GDK_KEY_X,
+		[0x08] = GDK_KEY_C, [0x09] = GDK_KEY_V, [0x0B] = GDK_KEY_B, [0x0C] = GDK_KEY_Q,
+		[0x0D] = GDK_KEY_W, [0x0E] = GDK_KEY_E, [0x0F] = GDK_KEY_R, [0x10] = GDK_KEY_Y,
+		[0x11] = GDK_KEY_T, [0x12] = GDK_KEY_1, [0x13] = GDK_KEY_2, [0x14] = GDK_KEY_3,
+		[0x15] = GDK_KEY_4, [0x16] = GDK_KEY_6, [0x17] = GDK_KEY_5, [0x18] = GDK_KEY_equal,
+		[0x19] = GDK_KEY_9, [0x1A] = GDK_KEY_7, [0x1B] = GDK_KEY_minus, [0x1C] = GDK_KEY_8,
+		[0x1D] = GDK_KEY_0, [0x1E] = GDK_KEY_bracketright, [0x1F] = GDK_KEY_O, [0x20] = GDK_KEY_U,
+		[0x21] = GDK_KEY_bracketleft, [0x22] = GDK_KEY_I, [0x23] = GDK_KEY_P, [0x25] = GDK_KEY_L,
+		[0x26] = GDK_KEY_J, [0x27] = GDK_KEY_apostrophe, [0x28] = GDK_KEY_K, [0x29] = GDK_KEY_semicolon,
+		[0x2A] = GDK_KEY_backslash, [0x2B] = GDK_KEY_comma, [0x2C] = GDK_KEY_slash, [0x2D] = GDK_KEY_N,
+		[0x2E] = GDK_KEY_M, [0x2F] = GDK_KEY_period, [0x32] = GDK_KEY_grave,
+	};
+	if (hardware_keycode >= G_N_ELEMENTS(keys)) return 0;
+	gint keyval = keys[hardware_keycode];
+	// Cmd+Shift [ and ] are the brace keys, as GDK reports them with a US layout
+	if (shift && (keyval == GDK_KEY_bracketleft)) return GDK_KEY_braceleft;
+	if (shift && (keyval == GDK_KEY_bracketright)) return GDK_KEY_braceright;
+	return keyval;
 }
 
 GdkRGBA convert_color_to_rgba(GdkColor color)
