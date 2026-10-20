@@ -9,6 +9,53 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-10-20
+
+### Added
+
+- Use the Command key on macOS: Cmd+T, Cmd+W, Cmd+N, Cmd+C / Cmd+V,
+  Cmd+1 ... 9, Cmd+F, Cmd+D and more are the default key bindings there,
+  and Cmd+Q, Cmd+H and Cmd+M quit, hide and minimize. Ctrl goes to the
+  programs in the terminal, and the Cmd keys work with any keyboard layout
+  (Greek, Russian, ...). In a profile saved by an older LilyTerm, the keys
+  that are still the Linux defaults are read as the macOS ones; profiles
+  now say `key_binding_version` in `[key]` for that.
+- Add a `Cmd` modifier for the key bindings: the Command key on macOS, the
+  Super (Win) key on Linux.
+- Add a menu bar on macOS (LilyTerm, Shell, Edit, View and Window), with
+  the keys of the key bindings.
+- Open a link with Cmd+click on macOS, where the profile asks for
+  Ctrl+click.
+- Start a new tab in the directory the shell reported (OSC 7) when the one
+  of its process is unknown, as for a root shell or a removed directory.
+  A directory reported by a shell on another machine (over ssh) is never
+  used.
+
+### Fixed
+
+- Fix a heap buffer overflow when pasting text that ends with a backslash
+  and a newline with [join the lines], and a read before the buffer when
+  nothing was left after the join.
+- Fix a second `lilyterm` losing its command: a newline in the
+  environment (an exported bash function) or in an argument cut the
+  request short, and so did a request bigger than the socket buffer
+  (8 KB on macOS). A request cut short by a client that died is no longer
+  run.
+- Fix [New window with profile] quitting a LilyTerm started with `-s`
+  (it sent the window to another LilyTerm), and losing it with a big
+  environment.
+- Fix a LilyTerm that could not send its request removing the socket of
+  the running one, and the socket server stopping after one failed
+  request.
+- Fix programs whose name holds a space or a parenthesis: their parent and
+  foreground process were read wrong (tab titles, the directory of a new
+  tab, the warning about running programs).
+- Fix the size of a window made from a dragged tab when the tabs bar is
+  hidden.
+- Open links with `open` on macOS also with a profile saved by an older
+  LilyTerm, or on Linux, that says `xdg-open`.
+- Fix memory leaks on every paste and in the list of running programs.
+
 ## [0.11.2] - 2026-10-20
 
 ### Fixed
@@ -1451,7 +1498,8 @@ Update homepage, blog, phorum, IRC information.
 
 - Initial revision.
 
-[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.11.2...HEAD
+[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/ebal/LilyTerm/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/ebal/LilyTerm/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/ebal/LilyTerm/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/ebal/LilyTerm/compare/v0.10.1...v0.11.0
