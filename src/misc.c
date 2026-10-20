@@ -775,6 +775,54 @@ gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line)
 	return NULL;
 }
 
+// The "join the lines" paste: a backslash at the end of a line (a shell line
+// continuation) joins it to the next line, any other line break becomes a space,
+// and the "> " prompt in front of a continued line is dropped. A run of spaces
+// and tabs becomes one space; leading and trailing ones are dropped.
+// The returned string should be freed when no longer needed.
+gchar *join_pasted_lines(const gchar *str)
+{
+#ifdef DETAIL
+	g_debug("! Launch join_pasted_lines() with str = %s", str);
+#endif
+	if (str==NULL) return NULL;
+
+	GString *joined = g_string_new(NULL);
+	gboolean need_space = FALSE;
+	const gchar *p = str;
+	while (*p)
+	{
+		gboolean continued = FALSE;
+		gboolean line_break = FALSE;
+		if ((p[0]=='\\') && ((p[1]=='\n') || (p[1]=='\r')))
+		{
+			continued = TRUE;
+			p++;
+		}
+		if ((*p=='\n') || (*p=='\r'))
+		{
+			line_break = TRUE;
+			// \r\n is one line break
+			if ((p[0]=='\r') && (p[1]=='\n')) p++;
+			p++;
+			if ((p[0]=='>') && (p[1]==' ')) p += 2;
+			if (! continued) need_space = TRUE;
+		}
+		if (line_break) continue;
+
+		if ((*p==' ') || (*p=='\t'))
+			need_space = TRUE;
+		else
+		{
+			if (need_space && joined->len) g_string_append_c(joined, ' ');
+			need_space = FALSE;
+			g_string_append_c(joined, *p);
+		}
+		p++;
+	}
+	return g_string_free(joined, FALSE);
+}
+
 GdkRGBA convert_color_to_rgba(GdkColor color)
 {
 	GdkRGBA rgba;

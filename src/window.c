@@ -3215,7 +3215,7 @@ gboolean show_clipboard_dialog(Clipboard_Type type, struct Window *win_data,
 #ifdef SAFEMODE
 	if (clipboard==NULL) return FALSE;
 #endif
-	gchar *clipboard_str = g_strdup(gtk_clipboard_wait_for_text(clipboard));
+	gchar *clipboard_str = gtk_clipboard_wait_for_text(clipboard);
 	gchar *old_temp_data = win_data->temp_data;
 	switch (dialog_type)
 	{
@@ -3260,82 +3260,9 @@ gboolean show_clipboard_dialog(Clipboard_Type type, struct Window *win_data,
 					}
 					else if (response==GTK_RESPONSE_YES)
 					{
-						// remove "\\\r" and "\\\n", and replease it with ' '
-						gchar *temp_clipboard_str = g_strdup(clipboard_str);
-						gint i=0, j=0;
-						while (clipboard_str[i])
-						{
-							if ((clipboard_str[i]=='\\') && ((clipboard_str[i+1]=='\n') || (clipboard_str[i+1]=='\r')))
-							{
-								i+=2;
-								if (clipboard_str[i]=='>')
-								{
-									if (clipboard_str[i+1]==' ')
-									i+=2;
-								}
-							}
-							if ((clipboard_str[i]=='\n') || (clipboard_str[i]=='\r'))
-							{
-								if (clipboard_str[i+1])
-								{
-									if (clipboard_str[i+1]=='>' && clipboard_str[i+2]==' ')
-									{
-										temp_clipboard_str[j]=' ';
-										i+=2;
-										j++;
-									}
-									else
-									{
-										temp_clipboard_str[j]=' ';
-										i++;
-										j++;
-									}
-								}
-							}
-							temp_clipboard_str[j]=clipboard_str[i];
-							i++;
-							j++;
-						}
-						temp_clipboard_str[j]='\0';
-
-						// remove '\n' and '\r'
-						gchar **old_clipboard_strs = split_string(temp_clipboard_str, "\n\r", -1);
-						gchar *new_clipboard_str = convert_array_to_string(old_clipboard_strs, '\0');
-
-						// join ' ' and '\t'
-						gchar *join_clipboard_str = g_strdup(new_clipboard_str);
-						i=0, j=0;
-						gint need_printed_space;
-						while (new_clipboard_str[i])
-						{
-							need_printed_space = 0;
-							while ((new_clipboard_str[i]==' ') || (new_clipboard_str[i]=='\t'))
-							{
-								need_printed_space = 1;
-								i++;
-							}
-							if (need_printed_space && (j!=0))
-							{
-								join_clipboard_str[j]=' ';
-								j++;
-							}
-							if (new_clipboard_str[i])
-							{
-								join_clipboard_str[j] = new_clipboard_str[i];
-								i++;
-								j++;
-							}
-						}
-						if (join_clipboard_str[j-1]==' ')
-							join_clipboard_str[j-1]='\0';
-						else
-							join_clipboard_str[j]='\0';
-
+						gchar *join_clipboard_str = join_pasted_lines(clipboard_str);
 						if (join_clipboard_str) gtk_clipboard_set_text(clipboard, join_clipboard_str, -1);
-						g_free(temp_clipboard_str);
-						g_free(new_clipboard_str);
 						g_free(join_clipboard_str);
-						g_strfreev(old_clipboard_strs);
 					}
 					switch (type)
 					{

@@ -175,6 +175,36 @@ static void test_sanitize_environs(void)
 	g_assert_null(sanitize_environs(NULL));
 }
 
+// ---- the "join the lines" paste ----
+
+static void test_join_pasted_lines(void)
+{
+	struct { const gchar *in, *out; } cases[] = {
+		{ "a\nb", "a b" },
+		{ "a\r\nb", "a b" },
+		{ "ls \\\n  -l", "ls -l" },		// a line continuation
+		{ "ls\\\n-l", "ls-l" },
+		{ "a\\\n> b", "ab" },			// the "> " prompt of a continued line
+		{ "a\n> b", "a b" },
+		{ "  a \t b  \n", "a b" },
+		{ "a\\\n", "a" },			// ends with a continuation: read past the end before 0.11.3
+		{ "a\\\n> ", "a" },
+		{ "\\\n", "" },
+		{ "\n", "" },				// nothing left: read before the start before 0.11.3
+		{ "  \n ", "" },
+		{ "", "" },
+		{ "a\\b", "a\\b" },			// a backslash in the line stays
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *out = join_pasted_lines(cases[i].in);
+		g_assert_cmpstr(out, ==, cases[i].out);
+		g_free(out);
+	}
+	g_assert_null(join_pasted_lines(NULL));
+}
+
 int main(int argc, char *argv[])
 {
 	g_test_init(&argc, &argv, NULL);
@@ -185,5 +215,6 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/count-and-compare", test_count_and_compare);
 	g_test_add_func("/misc/parse-geometry", test_parse_geometry);
 	g_test_add_func("/misc/sanitize-environs", test_sanitize_environs);
+	g_test_add_func("/misc/join-pasted-lines", test_join_pasted_lines);
 	return g_test_run();
 }

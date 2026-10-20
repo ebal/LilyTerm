@@ -95,7 +95,7 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 #ifdef SAFEMODE
 	if (selection_primary)
 #endif
-		selection_primary_str = g_strdup(gtk_clipboard_wait_for_text(selection_primary));
+		selection_primary_str = gtk_clipboard_wait_for_text(selection_primary);
 
 	GtkResponseType dialog_response = GTK_RESPONSE_NONE;
 
@@ -1673,8 +1673,10 @@ DESTROY_WINDOW:
 		if ((current_clipboard_str!=NULL) && (current_clipboard_str[0]!='\0'))
 		{
 			g_free(selection_primary_str);
-			selection_primary_str = g_strdup(current_clipboard_str);
+			selection_primary_str = current_clipboard_str;
 		}
+		else
+			g_free(current_clipboard_str);
 	}
 
 	// destroy dialog.
