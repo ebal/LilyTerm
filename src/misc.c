@@ -878,6 +878,34 @@ gchar *replace_xdg_open(const gchar *command)
 	return g_strconcat("open", args, NULL);
 }
 
+// The directory of URI, a "file://HOST/PATH" that a shell reported with OSC 7,
+// if HOST is this machine (HOST_NAME, "localhost" or none). The one of a shell
+// on another machine (over ssh) is not a directory here. "mac" and
+// "mac.local" are the same machine. Free the returned string with g_free().
+gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_local_dir_from_uri() with uri = %s, host_name = %s", uri, host_name);
+#endif
+	if ((uri==NULL) || (uri[0]=='\0')) return NULL;
+
+	gchar *host = NULL;
+	gchar *dir = g_filename_from_uri(uri, &host, NULL);
+	if (dir==NULL) return NULL;
+
+	gboolean local = (host==NULL) || (host[0]=='\0') || (g_ascii_strcasecmp(host, "localhost")==0);
+	if ((! local) && host_name)
+	{
+		gsize host_len = strcspn(host, ".");
+		gsize host_name_len = strcspn(host_name, ".");
+		local = (host_len == host_name_len) && (g_ascii_strncasecmp(host, host_name, host_len)==0);
+	}
+	g_free(host);
+	if (local) return dir;
+	g_free(dir);
+	return NULL;
+}
+
 GdkRGBA convert_color_to_rgba(GdkColor color)
 {
 	GdkRGBA rgba;

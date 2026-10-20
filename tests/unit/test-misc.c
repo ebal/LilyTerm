@@ -235,6 +235,33 @@ static void test_replace_xdg_open(void)
 	g_assert_null(replace_xdg_open(NULL));
 }
 
+// ---- the directory a shell reports with OSC 7 ----
+
+static void test_get_local_dir_from_uri(void)
+{
+	struct { const gchar *uri, *host_name, *dir; } cases[] = {
+		{ "file:///home/me", "box", "/home/me" },
+		{ "file://localhost/tmp", "box", "/tmp" },
+		{ "file://box/srv/a%20b", "box", "/srv/a b" },
+		{ "file://BOX/srv", "box", "/srv" },
+		{ "file://mac.local/Users/me", "mac", "/Users/me" },
+		{ "file://mac/Users/me", "mac.local", "/Users/me" },
+		{ "file://server/home/me", "box", NULL },	// a shell over ssh
+		{ "file://boxer/home/me", "box", NULL },
+		{ "http://box/home", "box", NULL },
+		{ "/home/me", "box", NULL },
+		{ "", "box", NULL },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *dir = get_local_dir_from_uri(cases[i].uri, cases[i].host_name);
+		g_assert_cmpstr(dir, ==, cases[i].dir);
+		g_free(dir);
+	}
+	g_assert_null(get_local_dir_from_uri(NULL, "box"));
+}
+
 // ---- the "join the lines" paste ----
 
 static void test_join_pasted_lines(void)
@@ -278,5 +305,6 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/join-pasted-lines", test_join_pasted_lines);
 	g_test_add_func("/misc/split-pid-stat", test_split_pid_stat);
 	g_test_add_func("/misc/replace-xdg-open", test_replace_xdg_open);
+	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
 	return g_test_run();
 }

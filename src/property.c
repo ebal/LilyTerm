@@ -584,6 +584,32 @@ void fake_vte_terminal_get_padding(VteTerminal *vte, gint *width, gint *height)
 	*height = 0;
 }
 
+// The directory that the shell in VTE reported with OSC 7, if it is one on
+// this machine. Free it with g_free().
+gchar *get_vte_reported_dir(GtkWidget *vte)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_vte_reported_dir() with vte = %p", vte);
+#endif
+#ifdef SAFEMODE
+	if (vte==NULL) return NULL;
+#endif
+	gchar *uri = NULL;
+#if VTE_CHECK_VERSION(0,78,0)
+	GUri *reported = vte_terminal_ref_termprop_uri_by_id(VTE_TERMINAL(vte), VTE_PROPERTY_ID_CURRENT_DIRECTORY_URI);
+	if (reported)
+	{
+		uri = g_uri_to_string(reported);
+		g_uri_unref(reported);
+	}
+#else
+	uri = g_strdup(vte_terminal_get_current_directory_uri(VTE_TERMINAL(vte)));
+#endif
+	gchar *dir = get_local_dir_from_uri(uri, g_get_host_name());
+	g_free(uri);
+	return dir;
+}
+
 // The padding around the text of a vte. VTE 0.38 dropped the "inner-border"
 // style property: the padding comes from CSS now.
 void get_vte_padding(GtkWidget *vte, GtkBorder *padding)

@@ -86,7 +86,7 @@ GtkNotebook *new_window(int argc,
 	g_object_set_data(G_OBJECT(win_data->window), "Win_Data", win_data);
 
 	win_data->home = g_strdup(HOME);
-	win_data->init_dir = get_init_dir(-1, PWD, HOME);
+	win_data->init_dir = get_init_dir(-1, NULL, PWD, HOME);
 #ifdef SAFEMODE
 	if (win_data->init_dir)
 	{
@@ -411,7 +411,9 @@ GtkNotebook *new_window(int argc,
 	return GTK_NOTEBOOK(win_data->notebook);
 }
 
-gchar *get_init_dir(pid_t pid, gchar *pwd, gchar *home)
+// The directory to start in: PWD, else the one of process PID, else the one
+// the shell in VTE reported (OSC 7), else HOME.
+gchar *get_init_dir(pid_t pid, GtkWidget *vte, gchar *pwd, gchar *home)
 {
 #ifdef DETAIL
 	g_debug("! Launch get_init_dir() with pwd = %s, home = %s", pwd, home);
@@ -421,10 +423,19 @@ gchar *get_init_dir(pid_t pid, gchar *pwd, gchar *home)
 	{
 		gchar *dir = get_tab_name_with_current_dir(pid);
 #ifdef SAFEMODE
-		if (dir && (g_file_test(dir, G_FILE_TEST_EXISTS))) return dir;
+		if (dir && (g_file_test(dir, G_FILE_TEST_IS_DIR))) return dir;
 #else
-		if (g_file_test(dir, G_FILE_TEST_EXISTS)) return dir;
+		if (g_file_test(dir, G_FILE_TEST_IS_DIR)) return dir;
 #endif
+		g_free(dir);
+	}
+	// A root shell (sudo -s), or one whose directory is gone: /proc (or
+	// libproc on macOS) does not tell. The shell may have said it.
+	if (vte)
+	{
+		gchar *dir = get_vte_reported_dir(vte);
+		if (dir && (g_file_test(dir, G_FILE_TEST_IS_DIR))) return dir;
+		g_free(dir);
 	}
 	if (home && (g_file_test(home, G_FILE_TEST_EXISTS))) return g_strdup(home);
 	gchar *dir = g_get_current_dir();

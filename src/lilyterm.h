@@ -70,6 +70,7 @@ gchar *join_strings_to_string(const gchar separator, const gint total, const Str
 gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line);
 gchar *join_pasted_lines(const gchar *str);
 gchar *replace_xdg_open(const gchar *command);
+gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name);
 GdkRGBA convert_color_to_rgba(GdkColor color);
 gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba);
 gboolean dirty_gdk_color_parse(const gchar *spec, GdkRGBA *color);
@@ -122,7 +123,7 @@ GtkNotebook *new_window(int argc,
 			gchar *lc_messages,
 			struct Window *win_data_orig,
 			struct Page *page_data_orig);
-gchar *get_init_dir(pid_t pid, gchar *pwd, gchar *home);
+gchar *get_init_dir(pid_t pid, GtkWidget *vte, gchar *pwd, gchar *home);
 void keep_gtk3_window_size(struct Window *win_data, gboolean idle);
 gboolean show_or_hide_tabs_bar_and_scroll_bar(struct Window *win_data);
 gboolean idle_set_vte_font_to_selected(struct Window *win_data);
@@ -199,6 +200,7 @@ void add_remove_window_title_changed_signal(struct Page *page_data);
 gboolean set_window_opacity (GtkRange *range, GtkScrollType scroll, gdouble value, struct Window *win_data);
 void fake_vte_terminal_get_padding(VteTerminal *vte, gint *width, gint *height);
 void get_vte_padding(GtkWidget *vte, GtkBorder *padding);
+gchar *get_vte_reported_dir(GtkWidget *vte);
 void apply_new_win_data_to_page (struct Window *win_data_orig, struct Window *win_data, struct Page *page_data);
 gboolean compare_color(GdkRGBA *a, GdkRGBA *b);
 gboolean check_show_or_hide_scroll_bar(struct Window *win_data);

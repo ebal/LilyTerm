@@ -415,11 +415,11 @@ struct Page *add_page(struct Window *win_data,
 
 	if (page_data_prev)
 	{
-		page_data->pwd = get_init_dir(get_tpgid(page_data_prev->pid), NULL, win_data->home);
+		page_data->pwd = get_init_dir(get_tpgid(page_data_prev->pid), page_data_prev->vte, NULL, win_data->home);
 	}
 	else
 	{
-		page_data->pwd = get_init_dir(-1, win_data->init_dir, win_data->home);
+		page_data->pwd = get_init_dir(-1, NULL, win_data->init_dir, win_data->home);
 	}
 
 	// extern char **environ;
@@ -1705,7 +1705,7 @@ gboolean open_url_with_external_command (gchar *url, gint tag, struct Window *wi
 							      lang, language, locale);
 			g_free(lang);
 			g_free(language);
-			gchar *pwd = get_init_dir(get_tpgid(page_data->pid), page_data->pwd, win_data->home);
+			gchar *pwd = get_init_dir(get_tpgid(page_data->pid), page_data->vte, page_data->pwd, win_data->home);
 			//GtkNotebook *new_window(int argc,
 			//			char *argv[],
 			//			gchar *shell,

@@ -297,6 +297,8 @@ run_gui_tests() {
 	run_font_tab_tests "$backend" "$work"
 	# --- 6b. a key binding with Cmd (the Super key here, Command on macOS)
 	run_cmd_key_test "$backend" "$work"
+	# --- 6c. a new tab starts in the directory the shell reported (OSC 7)
+	run_osc7_test "$backend" "$work"
 	# --- 7. the window title, word_chars, the bell and cursor_shape (X11: the
 	#        mouse, the window name, WM_HINTS and xwd)
 	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
@@ -531,6 +533,46 @@ run_cmd_key_test() {
 		sed 's/^/      /' "$work/cmdkey.log" | tail -10
 	fi
 	touch "$cdir/quit"
+	wait "$pid" 2>/dev/null
+}
+
+# The first tab reports a directory with OSC 7, then removes the one it is in:
+# /proc/PID/cwd is no directory then, and the new tab starts in the reported one.
+run_osc7_test() {
+	local backend=$1 work=$2
+	local odir="$work/osc7"
+	mkdir -p "$odir/reported" "$odir/gone"
+	cat > "$odir/shell" <<-'EOF'
+		#!/bin/sh
+		n=1
+		while ! mkdir "$TAB_DIR/tab-$n" 2>/dev/null; do n=$((n+1)); done
+		if [ "$n" = 1 ]; then
+			cd "$TAB_DIR/gone" || exit 1
+			printf '\033]7;file://%s%s\033\\' "$(hostname)" "$TAB_DIR/reported"
+			rmdir "$TAB_DIR/gone"
+		fi
+		pwd > "$TAB_DIR/tab-$n/pwd.tmp" && mv "$TAB_DIR/tab-$n/pwd.tmp" "$TAB_DIR/tab-$n/pwd"
+		while [ ! -e "$TAB_DIR/quit" ]; do sleep 0.2; done
+	EOF
+	chmod +x "$odir/shell"
+	"$LILYTERM" -p | sed -e 's/^confirm_to_kill_running_command = .*/confirm_to_kill_running_command = 0/' \
+		> "$odir/profile"
+	SHELL="$odir/shell" TAB_DIR="$odir" timeout 60 "$LILYTERM" -s -u "$odir/profile" -g 80x24 \
+		> "$work/osc7.log" 2>&1 &
+	local pid=$!
+	if ! wait_for 15 test -s "$odir/tab-1/pwd"; then
+		ng "[$backend] OSC 7: the first tab did not start"
+		kill "$pid" 2>/dev/null; return
+	fi
+	sleep 1
+	if press_until "$backend" ctrl+t test -s "$odir/tab-2/pwd" &&
+	   [ "$(cat "$odir/tab-2/pwd")" = "$odir/reported" ]; then
+		ok "[$backend] a new tab starts in the directory the shell reported (OSC 7)"
+	else
+		ng "[$backend] OSC 7: the new tab started in '$(cat "$odir/tab-2/pwd" 2>/dev/null)', wanted '$odir/reported'"
+		sed 's/^/      /' "$work/osc7.log" | tail -10
+	fi
+	touch "$odir/quit"
 	wait "$pid" 2>/dev/null
 }
 
