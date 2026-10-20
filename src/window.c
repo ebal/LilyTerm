@@ -513,6 +513,212 @@ static gboolean macos_command_key(GtkWidget *window, gint keyval, guint state)
 	return TRUE;
 }
 
+// ---- The menu bar of macOS ----
+//
+// GTK+ 3 shows none for an application without GtkApplication. Its items do
+// what the key bindings do (deal_key_press()); they show the key of the
+// binding, but GTK+ handles the keys itself and never passes them to the menu:
+// the key binding stays the one that acts on a key press.
+
+// tags for the items that are no key binding
+#  define MACOS_MENU_QUIT -1
+
+#  define MACOS_EVENT_MODIFIER_SHIFT (1 << 17)
+#  define MACOS_EVENT_MODIFIER_CONTROL (1 << 18)
+#  define MACOS_EVENT_MODIFIER_OPTION (1 << 19)
+#  define MACOS_EVENT_MODIFIER_COMMAND (1 << 20)
+
+static id macos_string(const gchar *string)
+{
+	return ((id (*)(Class, SEL, const char *))objc_msgSend)
+		(objc_getClass("NSString"), sel_registerName("stringWithUTF8String:"), string? string: "");
+}
+
+// The window an item of the menu bar acts on: the one with the focus
+static struct Window *macos_menu_window(void)
+{
+	GtkWidget *window = active_window? active_window: last_active_window;
+	struct Window *win_data = NULL;
+	if (window) win_data = (struct Window *)g_object_get_data(G_OBJECT(window), "Win_Data");
+	if ((win_data==NULL) && window_list) win_data = window_list->data;
+	return win_data;
+}
+
+// Run from the main loop: AppKit calls the action while it tracks the menu.
+static gboolean macos_menu_activate(gpointer data)
+{
+	gint tag = GPOINTER_TO_INT(data);
+	if (tag == MACOS_MENU_QUIT) return macos_quit(NULL);
+
+	struct Window *win_data = macos_menu_window();
+	if (win_data && win_data->window && (tag >= 0) && (tag < KEYS))
+	{
+		GtkWidget *menu_active_window_orig = menu_active_window;
+		menu_active_window = win_data->window;
+		deal_key_press(win_data->window, tag, win_data);
+		menu_active_window = menu_active_window_orig;
+	}
+	return FALSE;
+}
+
+// the action of the items: -[LilyTermMenuTarget menuAction:sender]
+static void macos_menu_action(id self, SEL cmd, id sender)
+{
+	glong tag = ((glong (*)(id, SEL))objc_msgSend)(sender, sel_registerName("tag"));
+	g_idle_add(macos_menu_activate, GINT_TO_POINTER((gint) tag));
+}
+
+static id macos_menu_new(const gchar *title)
+{
+	id menu = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSMenu"), sel_registerName("alloc"));
+	return ((id (*)(id, SEL, id))objc_msgSend)(menu, sel_registerName("initWithTitle:"), macos_string(title));
+}
+
+static void macos_menu_add_separator(id menu)
+{
+	id item = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSMenuItem"), sel_registerName("separatorItem"));
+	((void (*)(id, SEL, id))objc_msgSend)(menu, sel_registerName("addItem:"), item);
+}
+
+// An item with ACTION for the responder chain (target nil: NSApp, the window).
+// ACTION NULL: an item that only holds a submenu.
+static id macos_menu_add_item(id menu, const gchar *title, const gchar *action, const gchar *key, gulong mask)
+{
+	id item = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSMenuItem"), sel_registerName("alloc"));
+	item = ((id (*)(id, SEL, id, SEL, id))objc_msgSend)
+		(item, sel_registerName("initWithTitle:action:keyEquivalent:"),
+		 macos_string(title), action? sel_registerName(action): (SEL) NULL, macos_string(key));
+	if (key && key[0])
+		((void (*)(id, SEL, gulong))objc_msgSend)(item, sel_registerName("setKeyEquivalentModifierMask:"), mask);
+	((void (*)(id, SEL, id))objc_msgSend)(menu, sel_registerName("addItem:"), item);
+	((void (*)(id, SEL))objc_msgSend)(item, sel_registerName("release"));
+	return item;
+}
+
+// The key equivalent (as AppKit shows it) of key binding TYPE, if it is a Cmd key
+static void macos_key_equivalent(struct Window *win_data, gint type, gchar key[8], gulong *mask)
+{
+	key[0] = '\0';
+	*mask = 0;
+	if ((type < 0) || (type >= KEYS)) return;
+	guint mods = win_data->user_keys[type].mods;
+	guint keyval = win_data->user_keys[type].key;
+	if ((! (mods & COMMAND_MASK)) || (keyval == 0)) return;
+
+	gunichar c = gdk_keyval_to_unicode(gdk_keyval_to_lower(keyval));
+	if ((c <= ' ') || (c >= 0x7f)) return;
+	key[0] = (gchar) c;
+	key[1] = '\0';
+	*mask = MACOS_EVENT_MODIFIER_COMMAND;
+	if (mods & GDK_CONTROL_MASK) *mask |= MACOS_EVENT_MODIFIER_CONTROL;
+	if (mods & GDK_MOD1_MASK) *mask |= MACOS_EVENT_MODIFIER_OPTION;
+	// "{" is a shifted key already; only a letter needs Shift
+	if ((mods & GDK_SHIFT_MASK) && g_ascii_isalpha(c)) *mask |= MACOS_EVENT_MODIFIER_SHIFT;
+}
+
+// An item that does what key binding TYPE does
+static void macos_menu_add_key(id menu, id target, struct Window *win_data, const gchar *title, gint type)
+{
+	gchar key[8];
+	gulong mask;
+	macos_key_equivalent(win_data, type, key, &mask);
+	id item = macos_menu_add_item(menu, title, "menuAction:", key, mask);
+	((void (*)(id, SEL, id))objc_msgSend)(item, sel_registerName("setTarget:"), target);
+	((void (*)(id, SEL, glong))objc_msgSend)(item, sel_registerName("setTag:"), (glong) type);
+}
+
+// A menu of the menu bar
+static id macos_menu_bar_add(id menu_bar, const gchar *title)
+{
+	id menu = macos_menu_new(title);
+	id item = macos_menu_add_item(menu_bar, title, NULL, "", 0);
+	((void (*)(id, SEL, id))objc_msgSend)(item, sel_registerName("setSubmenu:"), menu);
+	((void (*)(id, SEL))objc_msgSend)(menu, sel_registerName("release"));
+	return menu;
+}
+
+// After the first window is up: the key equivalents come from its profile.
+static gboolean macos_create_menu_bar(gpointer data)
+{
+	struct Window *win_data = macos_menu_window();
+	if (win_data==NULL) return FALSE;
+
+	Class target_class = objc_allocateClassPair(objc_getClass("NSObject"), "LilyTermMenuTarget", 0);
+	if (target_class==NULL) return FALSE;
+	class_addMethod(target_class, sel_registerName("menuAction:"), (IMP)macos_menu_action, "v@:@");
+	objc_registerClassPair(target_class);
+	// it lives as long as LilyTerm
+	id target = ((id (*)(Class, SEL))objc_msgSend)(target_class, sel_registerName("new"));
+
+	id menu_bar = macos_menu_new("");
+	gchar *title;
+
+	// the application menu: its title is the name of the application anyway
+	id menu = macos_menu_bar_add(menu_bar, PACKAGE);
+	title = g_strdup_printf(_("About %s"), PACKAGE);
+	macos_menu_add_item(menu, title, "orderFrontStandardAboutPanel:", "", 0);
+	g_free(title);
+	macos_menu_add_separator(menu);
+	title = g_strdup_printf(_("Hide %s"), PACKAGE);
+	macos_menu_add_item(menu, title, "hide:", "h", MACOS_EVENT_MODIFIER_COMMAND);
+	g_free(title);
+	macos_menu_add_item(menu, _("Hide Others"), "hideOtherApplications:", "h",
+			    MACOS_EVENT_MODIFIER_COMMAND | MACOS_EVENT_MODIFIER_OPTION);
+	macos_menu_add_item(menu, _("Show All"), "unhideAllApplications:", "", 0);
+	macos_menu_add_separator(menu);
+	title = g_strdup_printf(_("Quit %s"), PACKAGE);
+	id quit = macos_menu_add_item(menu, title, "menuAction:", "q", MACOS_EVENT_MODIFIER_COMMAND);
+	g_free(title);
+	((void (*)(id, SEL, id))objc_msgSend)(quit, sel_registerName("setTarget:"), target);
+	((void (*)(id, SEL, glong))objc_msgSend)(quit, sel_registerName("setTag:"), (glong) MACOS_MENU_QUIT);
+
+	menu = macos_menu_bar_add(menu_bar, _("Shell"));
+	macos_menu_add_key(menu, target, win_data, _("New Window"), KEY_NEW_WINDOW);
+	macos_menu_add_key(menu, target, win_data, _("New Tab"), KEY_NEW_TAB);
+	macos_menu_add_separator(menu);
+	macos_menu_add_key(menu, target, win_data, _("Split Right"), KEY_SPLIT_RIGHT);
+	macos_menu_add_key(menu, target, win_data, _("Split Down"), KEY_SPLIT_DOWN);
+	macos_menu_add_key(menu, target, win_data, _("Next Pane"), KEY_NEXT_PANE);
+	macos_menu_add_key(menu, target, win_data, _("Close Pane"), KEY_CLOSE_PANE);
+	macos_menu_add_separator(menu);
+	macos_menu_add_key(menu, target, win_data, _("Rename Tab..."), KEY_EDIT_LABEL);
+	macos_menu_add_key(menu, target, win_data, _("Close Tab"), KEY_CLOSE_TAB);
+
+	menu = macos_menu_bar_add(menu_bar, _("Edit"));
+	macos_menu_add_key(menu, target, win_data, _("Copy"), KEY_COPY_CLIPBOARD);
+	macos_menu_add_key(menu, target, win_data, _("Paste"), KEY_PASTE_CLIPBOARD);
+	macos_menu_add_key(menu, target, win_data, _("Select All"), KEY_SELECT_ALL);
+	macos_menu_add_separator(menu);
+	macos_menu_add_key(menu, target, win_data, _("Find..."), KEY_FIND);
+	macos_menu_add_key(menu, target, win_data, _("Find Next"), KEY_FIND_NEXT);
+	macos_menu_add_key(menu, target, win_data, _("Find Previous"), KEY_FIND_PREV);
+	macos_menu_add_separator(menu);
+	macos_menu_add_key(menu, target, win_data, _("Clear Scrollback"), KEY_CLEAN_SCROLLBACK_LINES);
+
+	menu = macos_menu_bar_add(menu_bar, _("View"));
+	macos_menu_add_key(menu, target, win_data, _("Bigger"), KEY_INCREASE_FONT_SIZE);
+	macos_menu_add_key(menu, target, win_data, _("Smaller"), KEY_DECREASE_FONT_SIZE);
+	macos_menu_add_key(menu, target, win_data, _("Default Size"), KEY_RESET_FONT_SIZE);
+	macos_menu_add_separator(menu);
+	macos_menu_add_key(menu, target, win_data, _("Full Screen"), KEY_FULL_SCREEN);
+
+	// AppKit adds the list of the windows to the Window menu
+	id window_menu = macos_menu_bar_add(menu_bar, _("Window"));
+	macos_menu_add_item(window_menu, _("Minimize"), "performMiniaturize:", "m", MACOS_EVENT_MODIFIER_COMMAND);
+	macos_menu_add_item(window_menu, _("Zoom"), "performZoom:", "", 0);
+	macos_menu_add_separator(window_menu);
+	macos_menu_add_key(window_menu, target, win_data, _("Show Previous Tab"), KEY_PREV_TAB);
+	macos_menu_add_key(window_menu, target, win_data, _("Show Next Tab"), KEY_NEXT_TAB);
+	macos_menu_add_separator(window_menu);
+	macos_menu_add_item(window_menu, _("Bring All to Front"), "arrangeInFront:", "", 0);
+
+	id app = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
+	((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName("setMainMenu:"), menu_bar);
+	((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName("setWindowsMenu:"), window_menu);
+	((void (*)(id, SEL))objc_msgSend)(menu_bar, sel_registerName("release"));
+	return FALSE;
+}
+
 // GTK+ 3 only activates the application on a click, so the first window
 // would open behind the terminal LilyTerm was started from.
 static gboolean macos_activate(gpointer data)
@@ -534,6 +740,7 @@ void init_macos(void)
 	g_debug("! Launch init_macos()");
 #endif
 	g_idle_add(macos_activate, NULL);
+	g_idle_add(macos_create_menu_bar, NULL);
 
 	Class handler_class = objc_allocateClassPair(objc_getClass("NSObject"), "LilyTermQuitHandler", 0);
 	Class manager_class = objc_getClass("NSAppleEventManager");
