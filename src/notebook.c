@@ -1782,7 +1782,23 @@ gchar *get_url(GdkEventButton *event, struct Page *page_data, gint *tag)
 #ifdef SAFEMODE
 	if ((page_data==NULL) || (event==NULL)) return NULL;
 #endif
-	return vte_terminal_match_check_event (VTE_TERMINAL(page_data->vte), (GdkEvent*)event, tag);
+	gint vte_tag = -1;
+	gchar *url = vte_terminal_match_check_event (VTE_TERMINAL(page_data->vte), (GdkEvent*)event, &vte_tag);
+	if (url==NULL) return NULL;
+
+	// VTE numbers the regexes of a terminal on, also after vte_terminal_match_remove_all():
+	// find which command (TAG_WWW, ...) the matched regex belongs to.
+	gint i;
+	for (i=0; i<COMMAND; i++)
+	{
+		if (page_data->tag[i]==vte_tag)
+		{
+			if (tag) *tag = i;
+			return url;
+		}
+	}
+	g_free(url);
+	return NULL;
 }
 
 void page_data_dup(struct Page *page_data_prev, struct Page *page_data)

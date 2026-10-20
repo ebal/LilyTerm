@@ -267,6 +267,8 @@ run_gui_tests() {
 	# --- 7. the window title, word_chars, the bell and cursor_shape (X11: the
 	#        mouse, the window name, WM_HINTS and xwd)
 	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
+	# --- 8. a click on a link (X11: the mouse)
+	[ "$backend" = x11 ] && run_url_click_tests "$work"
 }
 
 # A double click selects a word by word_chars, a bell sets the urgency hint,
@@ -359,6 +361,52 @@ run_word_and_bell_tests() {
 	else
 		ng "[x11] cursor_shape: the window looks the same with a block and an underline cursor (see cursor-*.png)"
 	fi
+}
+
+# A click on a link runs web_browser with it. Every press and release of Ctrl
+# drops and adds the link regexes again (disable_url_when_ctrl_pressed), and
+# VTE numbers them on: LilyTerm used to take that number for the index of the
+# command, which ran past the end of the list and crashed.
+run_url_click_tests() {
+	local work=$1 udir="$1/url" id url=https://example.com/lilyterm-test
+	mkdir -p "$udir"
+	cat > "$udir/shell" <<-EOF
+		#!/bin/sh
+		printf '\033[H\033[2J$url\n'
+		while [ ! -e "$udir/quit" ]; do sleep 0.2; done
+	EOF
+	printf '#!/bin/sh\nprintf "%%s\\n" "$@" > "%s/opened.tmp" && mv "%s/opened.tmp" "%s/opened"\n' \
+		"$udir" "$udir" "$udir" > "$udir/browser"
+	chmod +x "$udir/shell" "$udir/browser"
+	"$LILYTERM" -p | sed -e "s|^web_browser = .*|web_browser = $udir/browser|" \
+		-e 's/^web_method = .*/web_method = 1/' > "$udir/profile"
+	if ! grep -q "^web_browser = $udir/browser" "$udir/profile" || ! grep -q '^web_method = 1' "$udir/profile"; then
+		ng "[x11] links: lilyterm -p does not list web_browser and web_method"; return
+	fi
+	SHELL="$udir/shell" timeout 40 "$LILYTERM" -s -u "$udir/profile" -g 80x5 > "$work/url.log" 2>&1 &
+	local pid=$!
+	if ! wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+		ng "[x11] links: no LilyTerm window"; kill "$pid" 2>/dev/null; return
+	fi
+	sleep 1
+	for _ in 1 2 3; do send_keys x11 Control_L; done
+	sleep 0.5
+	# set by xdotool getwindowgeometry --shell
+	# shellcheck disable=SC2034
+	local WIDTH HEIGHT X Y SCREEN WINDOW
+	eval "$(xdotool getwindowgeometry --shell "$id")"
+	# the link is at the start of the first line
+	xdotool mousemove --window "$id" $((WIDTH * 10 / 80)) $((HEIGHT / 10)) click 1
+	if wait_for 5 test -s "$udir/opened" && [ "$(cat "$udir/opened")" = "$url" ]; then
+		ok "[x11] a click on a link runs web_browser with it, also after Ctrl was pressed"
+	elif ! kill -0 "$pid" 2>/dev/null; then
+		ng "[x11] LilyTerm died on a click on a link after Ctrl was pressed"
+		sed 's/^/      /' "$work/url.log" | tail -10
+	else
+		ng "[x11] links: web_browser got '$(cat "$udir/opened" 2>/dev/null)', expected '$url'"
+	fi
+	touch "$udir/quit"
+	wait "$pid" 2>/dev/null
 }
 
 # When the tabs of a window use different font sizes, the window is resized
