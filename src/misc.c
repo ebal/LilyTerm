@@ -854,6 +854,30 @@ gchar *join_pasted_lines(const gchar *str)
 	return g_string_free(joined, FALSE);
 }
 
+// The command that opens a link, for macOS: a profile saved on Linux, or by
+// LilyTerm before 0.11.2, says xdg-open, which macOS does not have; open(1)
+// does the same there. COMMAND is the program and its arguments, separated by
+// tabs. Returns the command with open(1) instead of xdg-open as a new string,
+// or NULL when COMMAND does not run xdg-open.
+gchar *replace_xdg_open(const gchar *command)
+{
+#ifdef DETAIL
+	g_debug("! Launch replace_xdg_open() with command = %s", command);
+#endif
+	if (command==NULL) return NULL;
+
+	const gchar *args = strchr(command, '\t');
+	if (args==NULL) args = command + strlen(command);
+	gchar *program = g_strndup(command, args - command);
+	gchar *name = g_path_get_basename(program);
+	gboolean is_xdg_open = (strcmp(name, "xdg-open") == 0);
+	g_free(name);
+	g_free(program);
+
+	if (! is_xdg_open) return NULL;
+	return g_strconcat("open", args, NULL);
+}
+
 GdkRGBA convert_color_to_rgba(GdkColor color)
 {
 	GdkRGBA rgba;

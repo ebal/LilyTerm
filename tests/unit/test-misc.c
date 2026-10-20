@@ -211,6 +211,30 @@ static void test_split_pid_stat(void)
 	g_assert_null(split_pid_stat(NULL, 11));
 }
 
+// ---- xdg-open -> open(1) on macOS ----
+
+static void test_replace_xdg_open(void)
+{
+	struct { const gchar *in, *out; } cases[] = {
+		{ "xdg-open", "open" },
+		{ "/usr/bin/xdg-open", "open" },
+		{ "xdg-open\t--some-flag", "open\t--some-flag" },
+		{ "open", NULL },
+		{ "firefox", NULL },
+		{ "xdg-openx", NULL },
+		{ "my-xdg-open", NULL },
+		{ "", NULL },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *out = replace_xdg_open(cases[i].in);
+		g_assert_cmpstr(out, ==, cases[i].out);
+		g_free(out);
+	}
+	g_assert_null(replace_xdg_open(NULL));
+}
+
 // ---- the "join the lines" paste ----
 
 static void test_join_pasted_lines(void)
@@ -253,5 +277,6 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/sanitize-environs", test_sanitize_environs);
 	g_test_add_func("/misc/join-pasted-lines", test_join_pasted_lines);
 	g_test_add_func("/misc/split-pid-stat", test_split_pid_stat);
+	g_test_add_func("/misc/replace-xdg-open", test_replace_xdg_open);
 	return g_test_run();
 }

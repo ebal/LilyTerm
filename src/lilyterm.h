@@ -69,6 +69,7 @@ gchar *convert_text_to_html(StrAddr **text, gboolean free_text, gchar *color, St
 gchar *join_strings_to_string(const gchar separator, const gint total, const StrLists *string, ...);
 gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line);
 gchar *join_pasted_lines(const gchar *str);
+gchar *replace_xdg_open(const gchar *command);
 GdkRGBA convert_color_to_rgba(GdkColor color);
 gchar *dirty_gdk_rgba_to_string(GdkRGBA *rgba);
 gboolean dirty_gdk_color_parse(const gchar *spec, GdkRGBA *color);
