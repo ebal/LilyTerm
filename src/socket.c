@@ -533,7 +533,7 @@ gboolean read_socket(GIOChannel *channel, GIOCondition condition, struct Socket_
 		return TRUE;
 
 	// read_socket_functions... A request ends with a NUL: without it, the
-	// client went away before it sent all (or is a LilyTerm before 0.11.3).
+	// client went away before it sent all (or is a LilyTerm before 0.12.0).
 	// Do not run what is left of it: a command line that is cut short.
 	if (request->data->len == 0)
 		socket_fault(GTK_SOCKET_ERROR_GOT_NULL_STRING, NULL, NULL, FALSE);

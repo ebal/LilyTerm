@@ -295,10 +295,10 @@ static void test_join_pasted_lines(void)
 		{ "a\\\n> b", "ab" },			// the "> " prompt of a continued line
 		{ "a\n> b", "a b" },
 		{ "  a \t b  \n", "a b" },
-		{ "a\\\n", "a" },			// ends with a continuation: read past the end before 0.11.3
+		{ "a\\\n", "a" },			// ends with a continuation: read past the end before 0.12.0
 		{ "a\\\n> ", "a" },
 		{ "\\\n", "" },
-		{ "\n", "" },				// nothing left: read before the start before 0.11.3
+		{ "\n", "" },				// nothing left: read before the start before 0.12.0
 		{ "  \n ", "" },
 		{ "", "" },
 		{ "a\\b", "a\\b" },			// a backslash in the line stays

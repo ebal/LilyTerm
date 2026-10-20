@@ -583,6 +583,13 @@ static const struct
 	{ KEY_FIND_PREV, "Shift F3", "Cmd+Shift G" },
 	{ KEY_PREV_TAB, "Ctrl Page_Up", "Cmd+Shift braceleft" },
 	{ KEY_NEXT_TAB, "Ctrl Page_Down", "Cmd+Shift braceright" },
+	{ KEY_FIRST_TAB, "Ctrl Home", "Cmd Home" },
+	{ KEY_LAST_TAB, "Ctrl End", "Cmd End" },
+	// Ctrl [ is Esc in the terminal (vim)
+	{ KEY_MOVE_TAB_FORWARD, "Ctrl bracketleft", "Cmd+Alt bracketleft" },
+	{ KEY_MOVE_TAB_BACKWARD, "Ctrl bracketright", "Cmd+Alt bracketright" },
+	{ KEY_MOVE_TAB_FIRST, "Ctrl Up", "Cmd+Alt Up" },
+	{ KEY_MOVE_TAB_LAST, "Ctrl Down", "Cmd+Alt Down" },
 	{ KEY_SWITCH_TO_TAB_1, "Ctrl F1", "Cmd 1" },
 	{ KEY_SWITCH_TO_TAB_2, "Ctrl F2", "Cmd 2" },
 	{ KEY_SWITCH_TO_TAB_3, "Ctrl F3", "Cmd 3" },
@@ -2581,7 +2588,7 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 	}
 	g_string_append_printf(contents,"\n[key]\n\n");
 	// see macos_key_value()
-	g_string_append_printf(contents,"# The key bindings below were saved by %s %s: do not change this line.\n"
+	g_string_append_printf(contents,"# The key bindings below use the format of %s %s: do not change this line.\n"
 					"key_binding_version = %s\n\n", PACKAGE, KEY_BINDING_VERSION, KEY_BINDING_VERSION);
 	for (i=0; i<KEYS-FIXED_KEYS; i++)
 	{

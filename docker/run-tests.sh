@@ -243,7 +243,7 @@ run_gui_tests() {
 			sed 's/^/      /' "$work/socket2.log" | head -10
 		fi
 		# The request travels as one string: a newline in the environment or in
-		# an argument cut it short before 0.11.3 (the command was lost).
+		# an argument cut it short before 0.12.0 (the command was lost).
 		local marker3="$work/third.txt" nl=$'\n'
 		MULTI_LINE="a${nl}b" timeout 20 "$LILYTERM" -E sh -c \
 			"printf '%s|%s|%s' \"\$PPID\" \"\$1\" \"\$MULTI_LINE\" > $marker3.tmp; mv $marker3.tmp $marker3; sleep 1" \
@@ -257,7 +257,7 @@ run_gui_tests() {
 			sed 's/^/      /' "$work/socket3.log" | head -10
 		fi
 		# A request bigger than the socket buffer (8 KB on macOS, ~200 KB here):
-		# it was cut short before 0.11.3, as the server read only after the
+		# it was cut short before 0.12.0, as the server read only after the
 		# client hung up, and the client did not wait to send the rest.
 		local marker4="$work/fourth.txt" big
 		big=$(head -c 100000 /dev/zero | tr '\0' x)
