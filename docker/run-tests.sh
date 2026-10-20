@@ -46,7 +46,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# wait_for SECONDS COMMAND...: poll until COMMAND succeeds
+# wait_for SECONDS COMMAND...: poll until COMMAND succeeds. The CI runner
+# shares the host's Docker with other jobs: the first start of a display server
+# or of a sanitized lilyterm can take a lot longer there than on an idle host.
 wait_for() {
 	local tries=$(($1 * 10)); shift
 	while [ $tries -gt 0 ]; do
@@ -160,7 +162,7 @@ run_gui_tests() {
 		sleep 12" > "$work/run1.log" 2>&1 &
 	local pid=$!
 
-	if wait_for 15 test -s "$marker"; then
+	if wait_for 30 test -s "$marker"; then
 		ok "[$backend] command runs in a pty ($(tr '\n' ' ' < "$marker"))"
 	else
 		ng "[$backend] command did not run in the terminal"; sed 's/^/      /' "$work/run1.log" | head -20
@@ -647,8 +649,8 @@ for backend in $BACKENDS; do
 		note "X11 (Xvfb)"
 		Xvfb :99 -screen 0 1920x1200x24 -nolisten tcp > "$OUT/xvfb.log" 2>&1 &
 		PIDS+=($!)
-		if ! wait_for 10 test -S /tmp/.X11-unix/X99; then
-			ng "Xvfb did not start"; continue
+		if ! wait_for 30 test -S /tmp/.X11-unix/X99; then
+			ng "Xvfb did not start"; sed 's/^/      /' "$OUT/xvfb.log" | tail -20; continue
 		fi
 		rm -f "$OUT/.count"
 		( export DISPLAY=:99 GDK_BACKEND=x11; unset WAYLAND_DISPLAY; run_gui_tests x11; echo "$PASS $FAIL" > "$OUT/.count" )
@@ -665,7 +667,7 @@ for backend in $BACKENDS; do
 		WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 LIBSEAT_BACKEND=noop \
 			sway-headless -c "$OUT/sway.conf" > "$OUT/sway.log" 2>&1 &
 		PIDS+=($!)
-		if ! wait_for 10 test -S "$XDG_RUNTIME_DIR/wayland-1"; then
+		if ! wait_for 30 test -S "$XDG_RUNTIME_DIR/wayland-1"; then
 			ng "sway did not start"; sed 's/^/      /' "$OUT/sway.log" | tail -20; continue
 		fi
 		# swaymsg (send_keys) talks to sway over this socket
