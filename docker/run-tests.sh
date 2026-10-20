@@ -231,7 +231,7 @@ run_gui_tests() {
 	# --- 3. a second lilyterm hands its command to the running one over the socket
 	marker="$work/first.txt"
 	local marker2="$work/second.txt"
-	timeout 40 "$LILYTERM" -E sh -c "echo \$PPID > $marker; sleep 10" > "$work/socket1.log" 2>&1 &
+	timeout 40 "$LILYTERM" -E sh -c "echo \$PPID > $marker; sleep 14" > "$work/socket1.log" 2>&1 &
 	pid=$!
 	if wait_for 15 test -s "$marker"; then
 		timeout 20 "$LILYTERM" -E sh -c "echo \$PPID > $marker2; sleep 1" > "$work/socket2.log" 2>&1
@@ -255,6 +255,21 @@ run_gui_tests() {
 		else
 			ng "[$backend] socket request with newlines: got '$(cat "$marker3" 2>/dev/null)', wanted '$want'"
 			sed 's/^/      /' "$work/socket3.log" | head -10
+		fi
+		# A request bigger than the socket buffer (8 KB on macOS, ~200 KB here):
+		# it was cut short before 0.11.3, as the server read only after the
+		# client hung up, and the client did not wait to send the rest.
+		local marker4="$work/fourth.txt" big
+		big=$(head -c 100000 /dev/zero | tr '\0' x)
+		BIG1=$big BIG2=$big BIG3=$big timeout 30 "$LILYTERM" -E sh -c \
+			"echo \"\$PPID \${#BIG1} \${#BIG2} \${#BIG3}\" > $marker4.tmp; mv $marker4.tmp $marker4; sleep 1" \
+			> "$work/socket4.log" 2>&1
+		want="$(cat "$marker") 100000 100000 100000"
+		if wait_for 10 test -s "$marker4" && [ "$(cat "$marker4")" = "$want" ]; then
+			ok "[$backend] a 300 KB request goes through the socket whole"
+		else
+			ng "[$backend] big socket request: got '$(cat "$marker4" 2>/dev/null)', wanted '$want'"
+			sed 's/^/      /' "$work/socket4.log" | head -10
 		fi
 	else
 		ng "[$backend] first instance for the socket test did not start"

@@ -45,21 +45,21 @@
 //   connect ---------------------(N)-------> init_socket_server()--------------|
 //	|				^	unlink				|
 //   send_socket()			|	bind -----------------------(N)-|
-// * g_io_channel_unix_new -------(N)---|	listen ---------------------(N)-|
-//   g_io_channel_set_encoding ---(N)---|     * g_io_channel_unix_new ------(N)-|
-//   g_io_channel_set_buffered		|	g_io_channel_set_encoding --(N)-|
-//   g_io_channel_write_chars ----(N)---|	g_io_add_watch -------------(N)-/
-//   g_io_channel_flush ----------(N)---/	|
-// + clear_channel()				|---- accept_socket()
-//     g_io_channel_shutdown			|	(condition)
-//     (g_io_channel_unref)			|	accept
+//   (blocking, 10 s timeout)		|	listen ---------------------(N)-|
+//   send, until all is sent -----(N)---/     * g_io_channel_unix_new ------(N)-|
+//   close (EOF: request complete)		g_io_channel_set_encoding --(N)-|
+//      |					g_io_add_watch -------------(N)-/
+//      |					|
+//      |					|---- accept_socket()
+//      |					|	(condition)
+//      |					|	accept
 //      |					|	set_fd_non_block
 //   exit()					|     * g_io_channel_unix_new
 //						|	g_io_channel_set_encoding
-//						|	g_io_add_watch
+//						|	g_io_add_watch_full (IN, HUP)
 //						|		|
 //						|		`-- read_socket()
-//						|		    g_io_channel_read_to_end
+//						|		    g_io_channel_read_chars, until EOF
 //						|		    [READ_FUNC]
 //						|		  + clear_channel()
 //						|		    g_io_channel_shutdown
@@ -83,10 +83,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <string.h>
+#include <sys/time.h>
 
 #include "socket.h"
 
 # define MAX_BACKLOG 100
+// A request is a command line and an environment: far below this
+# define MAX_REQUEST_SIZE (16 * 1024 * 1024)
 
 typedef enum {
 	GTK_SOCKET_ERROR_CREATE_SOCKET_FILE,
@@ -114,7 +118,14 @@ gboolean send_socket(gchar *socket_str);
 gboolean clear_channel(GIOChannel *channel, gboolean unref);
 gboolean init_socket_server(GSourceFunc read_function);
 gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc read_function);
-gboolean read_socket(GIOChannel *channel, GIOCondition condition, GSourceFunc read_function);
+// a request that is still coming in
+struct Socket_Request
+{
+	GString *data;
+	GSourceFunc read_function;
+};
+gboolean read_socket(GIOChannel *channel, GIOCondition condition, struct Socket_Request *request);
+static void free_socket_request(struct Socket_Request *request);
 gint shutdown_socket_server(gpointer data);
 static void shutdown_socket_server_at_exit(void);
 gboolean socket_fault(Unix_Socket_Error type, GError *error, GIOChannel *channel, gboolean unref);
@@ -289,41 +300,45 @@ gboolean send_socket(gchar *socket_str)
 #endif
 	// write data!
 #ifdef SAFEMODE
+	if (socket_str==NULL) return FALSE;
 	if (fcntl(socket_fd, F_GETFL) < 0) return FALSE;
 #endif
-	GError *error = NULL;
-	GIOChannel *channel = g_io_channel_unix_new(socket_fd);
-	gsize len;
+	// Block until all of it is sent: a request with a big environment does
+	// not fit in the socket buffer (8 KB on macOS), and the server reads it
+	// meanwhile. But give up on a server that does not read at all.
+	gint flags = fcntl(socket_fd, F_GETFL, 0);
+	if (flags >= 0) fcntl(socket_fd, F_SETFL, flags & ~O_NONBLOCK);
+	struct timeval timeout = { 10, 0 };
+	setsockopt(socket_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+	// a server that went away must not kill us with SIGPIPE
+#ifdef SO_NOSIGPIPE
+	gint on = 1;
+	setsockopt(socket_fd, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
+#endif
+#ifndef MSG_NOSIGNAL
+#  define MSG_NOSIGNAL 0
+#endif
 
-	// main_channel is NULL, so that we don't need to launch clear_channel()
-	if (!channel) return socket_fault(GTK_SOCKET_ERROR_CREATE_CHANNEL, NULL, NULL, FALSE);
+	gsize total = strlen(socket_str);
+	gsize sent = 0;
+	while (sent < total)
+	{
+		ssize_t len = send(socket_fd, socket_str + sent, total - sent, MSG_NOSIGNAL);
+		if (len < 0)
+		{
+			if (errno == EINTR) continue;
+			GError *error = g_error_new_literal(G_FILE_ERROR, g_file_error_from_errno(errno),
+							    g_strerror(errno));
+			close(socket_fd);
+			socket_fd = -1;
+			return socket_fault(GTK_SOCKET_ERROR_WRITE_CHANNEL, error, NULL, FALSE);
+		}
+		sent += len;
+	}
 
-	// set the channel to read binary file
-	if (g_io_channel_set_encoding(channel, NULL, &error) == G_IO_STATUS_ERROR)
-		return socket_fault(GTK_SOCKET_ERROR_CHANNEL_ENCODING, error, channel, TRUE);
-
-	g_io_channel_set_buffered (channel, FALSE);
-
-	if (g_io_channel_write_chars(channel, socket_str, -1, &len, &error)==G_IO_STATUS_ERROR)
-		// main_channel is NULL, so that we don't need to launch clear_channel()
-		return socket_fault(GTK_SOCKET_ERROR_WRITE_CHANNEL, error, channel, TRUE);
-
-	// flush writing datas
-	// there are three results:
-	//   G_IO_STATUS_AGAIN  this means temporarily anvailable, so try again
-	//   G_IO_STATUS_NORMAL
-	//   G_IO_STATUS_ERROR
-	GIOStatus ioStatus;
-	do ioStatus = g_io_channel_flush(channel, &error);
-	while (ioStatus == G_IO_STATUS_AGAIN);
-
-	if (ioStatus == G_IO_STATUS_ERROR)
-		// main_channel is NULL, so that we don't need to launch clear_channel()
-		return socket_fault(GTK_SOCKET_ERROR_WRITE_BUFFER, error, channel, TRUE);
-
-	// So far so good. shutdown and clear channel! The data stays in the
-	// socket for the server to read after we hung up: no need to wait for it.
-	clear_channel(channel, TRUE);
+	// So far so good. Hang up: that tells the server the request is complete.
+	close(socket_fd);
+	socket_fd = -1;
 
 	return TRUE;
 }
@@ -444,9 +459,14 @@ gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc r
 			return TRUE;
 		}
 
-		// read the data that client sent.
-		if ( ! g_io_add_watch(channel, G_IO_HUP, (GIOFunc)read_socket, read_function))
+		// read the data that client sent, as it comes in.
+		struct Socket_Request *request = g_new0(struct Socket_Request, 1);
+		request->data = g_string_new(NULL);
+		request->read_function = read_function;
+		if ( ! g_io_add_watch_full(channel, G_PRIORITY_DEFAULT, G_IO_IN|G_IO_HUP|G_IO_ERR,
+					   (GIOFunc)read_socket, request, (GDestroyNotify)free_socket_request))
 		{
+			// (it never fails: GLib aborts first)
 			socket_fault(GTK_SOCKET_ERROR_WATCH_SOCKET, NULL, channel, TRUE);
 			return TRUE;
 		}
@@ -454,41 +474,62 @@ gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc r
 	return TRUE;
 }
 
-// it will return TRUE if succeed
-gboolean read_socket(GIOChannel *channel, GIOCondition condition, GSourceFunc read_function)
+// It returns TRUE while the request is still coming in.
+gboolean read_socket(GIOChannel *channel, GIOCondition condition, struct Socket_Request *request)
 {
 #ifdef DETAIL
 	g_debug("! Launch read_socket() to read data !");
 #endif
 #ifdef SAFEMODE
-	if (channel==NULL) return FALSE;
+	if ((channel==NULL) || (request==NULL)) return FALSE;
 #endif
 	GError *error = NULL;
-	gchar *str = NULL;
+	gchar buffer[4096];
 	gsize len = 0;
+	GIOStatus status;
 
-	// The client hangs up once it sent everything: read it all. The request
-	// may hold newlines (in an argument, or in a variable of the environment),
-	// so reading just one line would cut it short.
-	// socket_fault() shuts the channel down and unrefs it: do not touch it again
-	if (g_io_channel_read_to_end (channel, &str, &len, &error) == G_IO_STATUS_ERROR)
+	// Read what is there now. The client hangs up once everything is sent
+	// (EOF): only then the request is complete. It may hold newlines (in an
+	// argument, or in a variable of the environment).
+	do
 	{
-		g_free(str);
+		status = g_io_channel_read_chars(channel, buffer, sizeof(buffer), &len, &error);
+		if (len) g_string_append_len(request->data, buffer, len);
+	}
+	while ((status == G_IO_STATUS_NORMAL) && (request->data->len <= MAX_REQUEST_SIZE));
+
+	if (status == G_IO_STATUS_ERROR)
+		// socket_fault() shuts the channel down and unrefs it: do not touch it again
 		return socket_fault(GTK_SOCKET_ERROR_RECEIVE_DATA, error, channel, TRUE);
+
+	if (request->data->len > MAX_REQUEST_SIZE)
+	{
+		g_warning("Refused a request of more than %d bytes on the %s socket.", MAX_REQUEST_SIZE, PACKAGE);
+		clear_channel(channel, TRUE);
+		return FALSE;
 	}
 
+	// nothing more for now, and the client is still there: wait for the rest
+	if ((status == G_IO_STATUS_AGAIN) && (! (condition & (G_IO_HUP|G_IO_ERR))))
+		return TRUE;
+
 	// read_socket_functions...
-	if ((len == 0) || (str==NULL))
+	if (request->data->len == 0)
 		socket_fault(GTK_SOCKET_ERROR_GOT_NULL_STRING, NULL, NULL, FALSE);
 	else
-		read_function(str);
-
-	g_free(str);
+		request->read_function(request->data->str);
 
 	clear_channel(channel, TRUE);
 
 	// return FALSE means this connection is finished.
 	return FALSE;
+}
+
+static void free_socket_request(struct Socket_Request *request)
+{
+	if (request==NULL) return;
+	g_string_free(request->data, TRUE);
+	g_free(request);
 }
 
 // g_atexit() is gone, and atexit() wants a real void (*)(void).
