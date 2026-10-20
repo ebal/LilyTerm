@@ -2154,7 +2154,7 @@ void resize_to_exist_widget(struct Window *win_data)
 #  endif
 		struct Page *page_data = get_page_data_from_vte(win_data->current_vte, win_data, -1);
 #  ifdef SAFEMODE
-		if (page_data) return;
+		if (page_data==NULL) return;
 #  endif
 			widget = page_data->tab_box;
 	}

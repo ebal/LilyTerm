@@ -550,7 +550,7 @@ void get_hint_min_size(GtkWidget *notebook, GtkWidget *scrollbar, gint *min_widt
 	g_debug("! Launch get_hint_min_size() with notebook = %p, scrollbar = %p", notebook, scrollbar);
 #endif
 #ifdef SAFEMODE
-	if ((scrollbar==NULL) || (scrollbar==NULL) || (min_width==NULL) || (min_height==NULL)) return;
+	if ((notebook==NULL) || (scrollbar==NULL) || (min_width==NULL) || (min_height==NULL)) return;
 #endif
 	gtk_widget_get_preferred_width(GTK_WIDGET(notebook), min_width, NULL);
 	gtk_widget_get_preferred_height(GTK_WIDGET(notebook), min_height, NULL);

@@ -129,7 +129,7 @@ void recover_page_colors(GtkWidget *dialog, GtkWidget *window, GtkWidget *notebo
 gboolean set_ansi_color(GtkRange *range, GtkScrollType scroll, gdouble value, GtkWidget *vte);
 void adjust_vte_color_sample(GtkColorButton* color_button, gint color_index);
 void adjust_vte_color(GtkColorChooser *colorselection, GdkRGBA *color, GtkWidget *vte);
-void set_new_ansi_color(GtkWidget *vte, GdkRGBA color_orig[COLOR], GdkRGBA color[COLOR], gdouble color_brightness, gboolean invert_color,
+void set_new_ansi_color(GtkWidget *vte, GdkRGBA color[COLOR], GdkRGBA color_orig[COLOR], gdouble color_brightness, gboolean invert_color,
 			gboolean default_vte_color, gboolean custom_cursor_color, GdkRGBA cursor_color, gboolean dim_fg_color);
 void update_key_info (GtkTreeSelection *treeselection, struct Dialog *dialog_data);
 void clear_key_group(GtkButton *button, struct Dialog *dialog_data);
