@@ -1950,6 +1950,9 @@ struct Page *get_page_data_from_vte(GtkWidget *vte, struct Window *win_data, gin
 			page_no = gtk_notebook_get_current_page(GTK_NOTEBOOK(win_data->notebook));
 
 		page_data = get_page_data_from_nth_page(win_data, page_no);
+#ifdef SAFEMODE
+		if (page_data==NULL) return NULL;
+#endif
 		win_data->current_vte = page_data->vte;
 	}
 
