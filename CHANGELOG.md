@@ -9,6 +9,8 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-10-20
+
 ### Fixed
 
 - Fix a crash, or the wrong program being run, on a click on a link after
@@ -1449,7 +1451,8 @@ Update homepage, blog, phorum, IRC information.
 
 - Initial revision.
 
-[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.11.1...HEAD
+[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.11.2...HEAD
+[0.11.2]: https://github.com/ebal/LilyTerm/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/ebal/LilyTerm/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/ebal/LilyTerm/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/ebal/LilyTerm/compare/v0.10.0...v0.10.1
