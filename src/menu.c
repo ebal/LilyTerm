@@ -1937,8 +1937,10 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 
 		gchar **argv = split_string(argv_str, SEPARATE_STR, -1);
 
+		// The same as a request on the socket, without the socket: this
+		// LilyTerm may be the socket server itself, or not use one at all.
 		gchar *socket_str = convert_socket_data_to_string(argv);
-		init_gtk_socket(PACKAGE, socket_str, (GSourceFunc)convert_string_to_socket_data);
+		convert_string_to_socket_data(socket_str);
 		g_free (socket_str);
 		g_free (argv_str);
 		g_strfreev(argv);

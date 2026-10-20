@@ -84,7 +84,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/time.h>
+#include <poll.h>
 
 #include "socket.h"
 
@@ -130,6 +130,7 @@ gint shutdown_socket_server(gpointer data);
 static void shutdown_socket_server_at_exit(void);
 gboolean socket_fault(Unix_Socket_Error type, GError *error, GIOChannel *channel, gboolean unref);
 static gboolean peer_is_same_user(gint fd);
+static gboolean watch_socket_server(GSourceFunc read_function);
 
 // for unix socket
 gint socket_fd = 0;
@@ -146,12 +147,6 @@ Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSour
 #ifdef DETAIL
 	g_debug("! Launch init_gtk_socket() with package_name = %s, socket_str = %s", package_name, socket_str);
 #endif
-	if (address_len > 0)
-	{
-		if (init_socket_fd() && query_socket() && (send_socket(socket_str)))
-			return UNIX_SOCKET_DATA_SENT;
-	}
-
 	// init socket data
 	if (init_socket_data(package_name))
 	{
@@ -164,6 +159,9 @@ Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSour
 				exit (0);
 				return UNIX_SOCKET_DATA_SENT;
 			}
+			// A server is there, but did not take the request: run on our
+			// own. Becoming the server would take the socket away from it.
+			return UNIX_SOCKET_ERROR;
 		}
 
 		// no socket server exist. create a socket server
@@ -303,14 +301,10 @@ gboolean send_socket(gchar *socket_str)
 	if (socket_str==NULL) return FALSE;
 	if (fcntl(socket_fd, F_GETFL) < 0) return FALSE;
 #endif
-	// Block until all of it is sent: a request with a big environment does
-	// not fit in the socket buffer (8 KB on macOS), and the server reads it
-	// meanwhile. But give up on a server that does not read at all.
-	gint flags = fcntl(socket_fd, F_GETFL, 0);
-	if (flags >= 0) fcntl(socket_fd, F_SETFL, flags & ~O_NONBLOCK);
-	struct timeval timeout = { 10, 0 };
-	setsockopt(socket_fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-	// a server that went away must not kill us with SIGPIPE
+	// A request with a big environment does not fit in the socket buffer
+	// (8 KB on macOS): wait for the server to read it, but not for longer
+	// than 10 s in all. The NUL at the end tells the server it got all of it.
+	// A server that went away must not kill us with SIGPIPE.
 #ifdef SO_NOSIGPIPE
 	gint on = 1;
 	setsockopt(socket_fd, SOL_SOCKET, SO_NOSIGPIPE, &on, sizeof(on));
@@ -318,22 +312,34 @@ gboolean send_socket(gchar *socket_str)
 #ifndef MSG_NOSIGNAL
 #  define MSG_NOSIGNAL 0
 #endif
-
-	gsize total = strlen(socket_str);
+	gint64 deadline = g_get_monotonic_time() + 10 * G_USEC_PER_SEC;
+	gsize total = strlen(socket_str) + 1;
 	gsize sent = 0;
 	while (sent < total)
 	{
 		ssize_t len = send(socket_fd, socket_str + sent, total - sent, MSG_NOSIGNAL);
-		if (len < 0)
+		if (len >= 0)
 		{
-			if (errno == EINTR) continue;
-			GError *error = g_error_new_literal(G_FILE_ERROR, g_file_error_from_errno(errno),
-							    g_strerror(errno));
-			close(socket_fd);
-			socket_fd = -1;
-			return socket_fault(GTK_SOCKET_ERROR_WRITE_CHANNEL, error, NULL, FALSE);
+			sent += len;
+			continue;
 		}
-		sent += len;
+		if (errno == EINTR) continue;
+		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+		{
+			gint64 timeout = (deadline - g_get_monotonic_time()) / 1000;
+			if (timeout > 0)
+			{
+				struct pollfd writable = { socket_fd, POLLOUT, 0 };
+				poll(&writable, 1, (gint) timeout);
+				continue;
+			}
+			errno = ETIMEDOUT;
+		}
+		GError *error = g_error_new_literal(G_FILE_ERROR, g_file_error_from_errno(errno),
+						    g_strerror(errno));
+		close(socket_fd);
+		socket_fd = -1;
+		return socket_fault(GTK_SOCKET_ERROR_WRITE_CHANNEL, error, NULL, FALSE);
 	}
 
 	// So far so good. Hang up: that tells the server the request is complete.
@@ -397,10 +403,18 @@ gboolean init_socket_server(GSourceFunc read_function)
 		return socket_fault(GTK_SOCKET_ERROR_CHANNEL_ENCODING, error, main_channel, TRUE);
 
 	// the channel will be clean when shutdown_socket_server()
-	if ( ! g_io_add_watch(main_channel, G_IO_IN|G_IO_HUP, (GIOFunc)accept_socket, (GSourceFunc)read_function))
-		return socket_fault(GTK_SOCKET_ERROR_WATCH_SOCKET, error, NULL, TRUE);
+	watch_socket_server(read_function);
 
 	return TRUE;
+}
+
+// (again) accept the requests on the listening channel. Returns FALSE, so that
+// it can be a timeout function too.
+static gboolean watch_socket_server(GSourceFunc read_function)
+{
+	if (main_channel==NULL) return FALSE;
+	g_io_add_watch(main_channel, G_IO_IN|G_IO_HUP, (GIOFunc)accept_socket, read_function);
+	return FALSE;
 }
 
 // it will return TRUE if succeed
@@ -420,12 +434,17 @@ gboolean accept_socket(GIOChannel *source, GIOCondition condition, GSourceFunc r
 	{
 		gint read_fd = accept(g_io_channel_unix_get_fd(source), NULL, NULL);
 
-		// A failed request must not take the socket server down with it:
-		// warn, and keep listening (source is the listening channel).
+		// A failed request must not take the socket server down with it
+		// (source is the listening channel).
 		if (read_fd < 0)
 		{
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR) || (errno == ECONNABORTED))
+				return TRUE;
+			// Out of file descriptors (EMFILE, ENFILE): the request stays in
+			// the queue, and the watch would fire again at once. Pause.
 			socket_fault(GTK_SOCKET_ERROR_ACCEPT_REQUEST, error, NULL, FALSE);
-			return TRUE;
+			g_timeout_add_seconds(1, (GSourceFunc)watch_socket_server, read_function);
+			return FALSE;
 		}
 
 		// The request ends up as a command line that is executed with our
@@ -513,9 +532,15 @@ gboolean read_socket(GIOChannel *channel, GIOCondition condition, struct Socket_
 	if ((status == G_IO_STATUS_AGAIN) && (! (condition & (G_IO_HUP|G_IO_ERR))))
 		return TRUE;
 
-	// read_socket_functions...
+	// read_socket_functions... A request ends with a NUL: without it, the
+	// client went away before it sent all (or is a LilyTerm before 0.11.3).
+	// Do not run what is left of it: a command line that is cut short.
 	if (request->data->len == 0)
 		socket_fault(GTK_SOCKET_ERROR_GOT_NULL_STRING, NULL, NULL, FALSE);
+	else if (request->data->str[request->data->len - 1] != '\0')
+		g_warning("Dropped an incomplete request on the %s socket (%lu bytes). "
+			  "If it came from an older %s, please restart %s.",
+			  PACKAGE, (gulong) request->data->len, PACKAGE, PACKAGE);
 	else
 		request->read_function(request->data->str);
 

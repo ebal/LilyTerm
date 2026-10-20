@@ -471,8 +471,6 @@ static gchar *macos_proc_stat(pid_t pid, gsize *length)
 
 	gchar comm[MAXCOMLEN + 1] = {0};
 	memcpy(comm, kp.kp_proc.p_comm, MAXCOMLEN);
-	// split_string() splits at these, as it does with /proc
-	g_strdelimit(comm, " ()", '_');
 	pid_t session = getsid(pid);
 	gchar *stat = g_strdup_printf("%d (%s) S %d %d %d %d %d 0 0 0 0\n",
 				      (gint) pid, comm, (gint) kp.kp_eproc.e_ppid, (gint) kp.kp_eproc.e_pgid,
