@@ -945,7 +945,6 @@ struct Page
 	// It holds a single pane, or a tree of GtkPaned with the panes as leaves.
 	GtkWidget *tab_box;
 	GtkWidget *vte;
-	GtkBorder *border;
 	GtkAdjustment *adjustment;
 	GtkWidget *scroll_bar;
 

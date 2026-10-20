@@ -195,6 +195,7 @@ void add_remove_page_timeout_id(struct Window *win_data, struct Page *page_data)
 void add_remove_window_title_changed_signal(struct Page *page_data);
 gboolean set_window_opacity (GtkRange *range, GtkScrollType scroll, gdouble value, struct Window *win_data);
 void fake_vte_terminal_get_padding(VteTerminal *vte, gint *width, gint *height);
+void get_vte_padding(GtkWidget *vte, GtkBorder *padding);
 void apply_new_win_data_to_page (struct Window *win_data_orig, struct Window *win_data, struct Page *page_data);
 gboolean compare_color(GdkRGBA *a, GdkRGBA *b);
 gboolean check_show_or_hide_scroll_bar(struct Window *win_data);

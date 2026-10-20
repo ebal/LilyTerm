@@ -2094,7 +2094,8 @@ void keep_gtk3_window_size(struct Window *win_data, gboolean idle)
 			// find the current vte size
 			GtkAllocation vte_size = {0};
 			gtk_widget_get_allocation(win_data->current_vte, &vte_size);
-			struct Page *page_data = get_page_data_from_vte(win_data->current_vte, win_data, -1);
+			GtkBorder padding;
+			get_vte_padding(win_data->current_vte, &padding);
 #  ifdef GEOMETRY
 			gint ansi_color = ANSI_COLOR_MAGENTA;
 			if ((vte_size.width==0) || (vte_size.height==0) || (vte_size.width< 200) || (vte_size.height<239))
@@ -2108,12 +2109,12 @@ void keep_gtk3_window_size(struct Window *win_data, gboolean idle)
 				vte_terminal_get_row_count(VTE_TERMINAL(win_data->current_vte)),
 				vte_terminal_get_char_width(VTE_TERMINAL(win_data->current_vte)),
 				vte_terminal_get_char_height(VTE_TERMINAL(win_data->current_vte)),
-				page_data->border->left, page_data->border->right, page_data->border->top, page_data->border->bottom);
+				padding.left, padding.right, padding.top, padding.bottom);
 #  endif
 			if (win_data->resize_type == GEOMETRY_AUTOMATIC)
 			{
-				win_data->geometry_width = vte_size.width - page_data->border->left - page_data->border->right;
-				win_data->geometry_height = vte_size.height - page_data->border->top - page_data->border->bottom;
+				win_data->geometry_width = vte_size.width - padding.left - padding.right;
+				win_data->geometry_height = vte_size.height - padding.top - padding.bottom;
 			}
 			break;
 		}

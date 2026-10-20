@@ -9,6 +9,12 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix a crash when the tabs of a window use different font sizes, for
+  example after Ctrl+= in one tab, and another tab is chosen or a tab
+  changes its size. It happened since VTE 0.38, on Linux and on macOS.
+
 ## [0.11.0] - 2026-10-19
 
 ### Added

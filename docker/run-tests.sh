@@ -262,7 +262,9 @@ run_gui_tests() {
 	fi
 	# --- 5. split panes: split right, split down, close panes again
 	run_pane_tests "$backend" "$work"
-	# --- 6. the window title, word_chars, the bell and cursor_shape (X11: the
+	# --- 6. tabs with different font sizes
+	run_font_tab_tests "$backend" "$work"
+	# --- 7. the window title, word_chars, the bell and cursor_shape (X11: the
 	#        mouse, the window name, WM_HINTS and xwd)
 	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
 }
@@ -357,6 +359,59 @@ run_word_and_bell_tests() {
 	else
 		ng "[x11] cursor_shape: the window looks the same with a block and an underline cursor (see cursor-*.png)"
 	fi
+}
+
+# When the tabs of a window use different font sizes, the window is resized
+# in pixels instead of in characters. That used to crash LilyTerm as soon as
+# the size of a tab changed, or another tab was chosen. Every tab runs a
+# script that reports its terminal size in fonts/tab-N/size.
+run_font_tab_tests() {
+	local backend=$1 work=$2
+	local fdir="$work/fonts"
+	mkdir -p "$fdir"
+	cat > "$fdir/shell" <<-'EOF'
+		#!/bin/sh
+		n=1
+		while ! mkdir "$TAB_DIR/tab-$n" 2>/dev/null; do n=$((n+1)); done
+		while [ ! -e "$TAB_DIR/quit" ]; do
+			stty size > "$TAB_DIR/tab-$n/size.tmp" && mv "$TAB_DIR/tab-$n/size.tmp" "$TAB_DIR/tab-$n/size"
+			sleep 0.2
+		done
+	EOF
+	chmod +x "$fdir/shell"
+	"$LILYTERM" -p | sed -e 's/^confirm_to_kill_running_command = .*/confirm_to_kill_running_command = 0/' \
+		> "$fdir/profile"
+	SHELL="$fdir/shell" TAB_DIR="$fdir" timeout 90 "$LILYTERM" -s -u "$fdir/profile" -g 80x24 \
+		> "$work/fonts.log" 2>&1 &
+	local pid=$!
+	if ! wait_for 15 test -s "$fdir/tab-1/size"; then
+		ng "[$backend] font sizes: the first tab did not start"
+		kill "$pid" 2>/dev/null; return
+	fi
+	sleep 1
+	if ! press_until "$backend" ctrl+t test -s "$fdir/tab-2/size"; then
+		ng "[$backend] font sizes: Ctrl+T did not open a second tab"
+		touch "$fdir/quit"; kill "$pid" 2>/dev/null; return
+	fi
+	sleep 1
+	# A bigger font in the second tab only, then back and forth between the tabs
+	local before
+	before=$(cat "$fdir/tab-2/size")
+	send_keys "$backend" ctrl+equal
+	send_keys "$backend" ctrl+equal
+	sleep 1
+	for _ in 1 2 3; do
+		send_keys "$backend" ctrl+Page_Up; sleep 0.5
+		send_keys "$backend" ctrl+Page_Down; sleep 0.5
+	done
+	if kill -0 "$pid" 2>/dev/null; then
+		ok "[$backend] tabs with different font sizes: switching tabs works (tab 2: $before -> $(cat "$fdir/tab-2/size"))"
+	else
+		ng "[$backend] LilyTerm died after a font size change in one of two tabs"
+		sed 's/^/      /' "$work/fonts.log" | tail -10
+	fi
+	touch "$fdir/quit"
+	wait "$pid" 2>/dev/null
 }
 
 has_x11_focus() { [ "$(xdotool getwindowfocus 2>/dev/null)" = "$1" ]; }

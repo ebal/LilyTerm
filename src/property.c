@@ -584,6 +584,21 @@ void fake_vte_terminal_get_padding(VteTerminal *vte, gint *width, gint *height)
 	*height = 0;
 }
 
+// The padding around the text of a vte. VTE 0.38 dropped the "inner-border"
+// style property: the padding comes from CSS now.
+void get_vte_padding(GtkWidget *vte, GtkBorder *padding)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_vte_padding() with vte = %p", vte);
+#endif
+	*padding = (GtkBorder){0};
+#ifdef SAFEMODE
+	if (vte==NULL) return;
+#endif
+	GtkStyleContext *context = gtk_widget_get_style_context(vte);
+	gtk_style_context_get_padding(context, gtk_style_context_get_state(context), padding);
+}
+
 void apply_new_win_data_to_page (struct Window *win_data_orig,
 				 struct Window *win_data,
 				 struct Page *page_data)

@@ -841,8 +841,10 @@ void vte_size_allocate (GtkWidget *vte, GtkAllocation *allocation, struct Page *
 
 	if (win_data->hints_type==HINTS_NONE)
 	{
-		column = vte_terminal_get_char_width(VTE_TERMINAL(vte))*column + page_data->border->left + page_data->border->right;
-		row = vte_terminal_get_char_height(VTE_TERMINAL(vte))*row + page_data->border->top + page_data->border->bottom;
+		GtkBorder padding;
+		get_vte_padding(vte, &padding);
+		column = vte_terminal_get_char_width(VTE_TERMINAL(vte))*column + padding.left + padding.right;
+		row = vte_terminal_get_char_height(VTE_TERMINAL(vte))*row + padding.top + padding.bottom;
 	}
 	check_col_row |= (column != win_data->geometry_width);
 	check_col_row |= (row != win_data->geometry_height);
@@ -1020,7 +1022,6 @@ gboolean close_page(GtkWidget *vte, gint close_type)
 	// One pane of a split tab: only that pane goes away, the tab stays.
 	if (page_is_split(page_data))
 	{
-		gtk_border_free(page_data->border);
 		remove_split_pane(win_data, page_data);
 		g_free(page_data->page_name);
 		g_free(page_data->pid_cmdline);
@@ -1046,7 +1047,6 @@ gboolean close_page(GtkWidget *vte, gint close_type)
 			gtk_notebook_set_current_page(GTK_NOTEBOOK(page_data->notebook), page_data->page_no+1);
 	}
 
-	gtk_border_free(page_data->border);
 	g_free(page_data->page_name);
 
 	// Note that due to historical reasons,
