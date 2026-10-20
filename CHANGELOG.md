@@ -13,13 +13,10 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ### Added
 
-- Use the Command key on macOS: Cmd+T, Cmd+W, Cmd+N, Cmd+C / Cmd+V,
-  Cmd+1 ... 9, Cmd+F, Cmd+D and more are the default key bindings there,
-  and Cmd+Q, Cmd+H and Cmd+M quit, hide and minimize. Ctrl goes to the
-  programs in the terminal, and the Cmd keys work with any keyboard layout
-  (Greek, Russian, ...). In a profile saved by an older LilyTerm, the keys
-  that are still the Linux defaults are read as the macOS ones; profiles
-  now say `key_binding_version` in `[key]` for that.
+- Add Command key shortcuts on macOS: Cmd+T, Cmd+W, Cmd+N, Cmd+C /
+  Cmd+V, Cmd+1 ... 9, Cmd+F, Cmd+D and more, and Cmd+Q, Cmd+H and Cmd+M to
+  quit, hide and minimize. They work with any keyboard layout (Greek,
+  Russian, ...).
 - Add a `Cmd` modifier for the key bindings: the Command key on macOS, the
   Super (Win) key on Linux.
 - Add a menu bar on macOS (LilyTerm, Shell, Edit, View and Window), with
@@ -30,6 +27,18 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
   of its process is unknown, as for a root shell or a removed directory.
   A directory reported by a shell on another machine (over ssh) is never
   used.
+
+### Changed
+
+- Change the default key bindings on macOS from Ctrl to Cmd, so most Ctrl
+  keys go to the programs in the terminal (Ctrl+[ is Esc in vim again).
+  A profile saved before 0.12.0 gets the new keys too, for every key that
+  is still its Linux default; profiles now say `key_binding_version` in
+  `[key]`. To keep a Ctrl key, set it again with [Set key binding] and
+  save the profile.
+- Ignore a request from a `lilyterm` older than 0.12.0 in a running
+  LilyTerm 0.12.0: it cannot tell a complete one from one cut short.
+  Restart LilyTerm after upgrading.
 
 ### Fixed
 

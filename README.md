@@ -96,8 +96,8 @@ The .dmg is built for the macOS version of the GitHub runner and later
 
 On macOS, window transparency is off (GTK+ 3 would draw the title bar
 clear as well). LilyTerm has a menu bar there, and its key bindings use
-the Command key (see [Key bindings](#key-bindings)); Ctrl goes to the
-programs in the terminal. Links open with `open`.
+the Command key (see [Key bindings](#key-bindings)), so most Ctrl keys go
+to the programs in the terminal. Links open with `open`.
 
 #### Or with Homebrew
 
@@ -169,34 +169,40 @@ These are the defaults. You can change each of them, or disable it, with
 | `Ctrl+F`                | Find text (`F3` / `Shift+F3`: next / previous) |
 | `Ctrl+Delete` / `Insert`| Copy / paste with the clipboard                |
 | `Shift+Delete` / `Insert`| Copy / paste with the primary selection       |
-| `Ctrl++` / `-` / `Enter`| Bigger / smaller / reset font                  |
+| `Ctrl+=` / `-` / `Enter`| Bigger / smaller / reset font                  |
 | `Alt+F11` / `Alt+Enter` | Full window / full screen                      |
 | ``Ctrl+` ``             | Disable or enable hyperlinks, function keys and the menu |
 
 The right click menu also has [Split right], [Split down] and
 [Close pane].
 
-On macOS the defaults use the Command key instead:
+On macOS the defaults use the Command key instead. The keys not listed
+here stay as in the table above.
 
 | Keys                    | Action                                         |
 |-------------------------|------------------------------------------------|
 | `Cmd+T` / `Cmd+N`       | New tab / new window in the current directory  |
 | `Cmd+W`                 | Close the tab                                  |
 | `Cmd+Shift+[` / `]`     | Previous / next tab                            |
+| `Cmd+Home` / `End`      | First / last tab                               |
+| `Cmd+Alt+[` / `]`       | Move the tab forward / backward                |
+| `Cmd+Alt+Up` / `Down`   | Move the tab to first / last                   |
+| `Cmd+Shift+I`           | Rename the tab                                 |
 | `Cmd+1` ... `9`         | Tab 1 ... 9                                    |
 | `Cmd+D` / `Cmd+Shift+D` | Split the pane side by side / one above the other |
 | `Cmd+]` / `Cmd+Shift+W` | Next pane / close the pane                     |
 | `Cmd+C` / `Cmd+V` / `Cmd+A` | Copy / paste / select all                  |
 | `Cmd+F`                 | Find text (`Cmd+G` / `Cmd+Shift+G`: next / previous) |
 | `Cmd+K`                 | Clear the scrollback                           |
-| `Cmd++` / `-` / `0`     | Bigger / smaller / reset font                  |
+| `Cmd+=` / `-` / `0`     | Bigger / smaller / reset font                  |
 | `Cmd+Ctrl+F`            | Full screen                                    |
 | `Cmd+Q` / `Cmd+H` / `Cmd+M` | Quit / hide / minimize                     |
 
 In a profile, `Cmd` is the Command key on macOS and the Super (Win) key on
-Linux, e.g. `new_tab_key = Cmd T`. On macOS, the keys of a profile saved by
-an older LilyTerm, or on Linux, that are still the Linux defaults are read
-as the macOS ones.
+Linux, e.g. `new_tab_key = Cmd T`. On macOS, a profile saved before 0.12.0
+(on macOS or Linux) has its keys that are still the Linux defaults read as
+the macOS ones. A profile saved by 0.12.0 or later is used as it is. To
+keep a Ctrl key, set it again with [Set key binding] and save the profile.
 
 ### Configuration
 
