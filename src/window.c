@@ -480,6 +480,39 @@ static void macos_quit_event(id self, SEL cmd, id event, id reply)
 	g_idle_add(macos_quit, NULL);
 }
 
+// [NSApp hide:nil] and the like
+static void macos_app_send(const gchar *selector)
+{
+	id app = ((id (*)(Class, SEL))objc_msgSend)(objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
+	((void (*)(id, SEL, id))objc_msgSend)(app, sel_registerName(selector), (id)NULL);
+}
+
+// The Cmd keys of every macOS application, for the ones no key binding took:
+// Cmd Q quits, Cmd H hides LilyTerm, Cmd+Alt H the other applications, Cmd M
+// minimizes the window. It always takes the key.
+static gboolean macos_command_key(GtkWidget *window, gint keyval, guint state)
+{
+	guint mods = state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK | COMMAND_MASK);
+	if (mods == COMMAND_MASK)
+	{
+		switch (keyval)
+		{
+			case GDK_KEY_Q:
+				g_idle_add(macos_quit, NULL);
+				break;
+			case GDK_KEY_H:
+				macos_app_send("hide:");
+				break;
+			case GDK_KEY_M:
+				gtk_window_iconify(GTK_WINDOW(window));
+				break;
+		}
+	}
+	else if ((mods == (COMMAND_MASK | GDK_MOD1_MASK)) && (keyval == GDK_KEY_H))
+		macos_app_send("hideOtherApplications:");
+	return TRUE;
+}
+
 // GTK+ 3 only activates the application on a click, so the first window
 // would open behind the terminal LilyTerm was started from.
 static gboolean macos_activate(gpointer data)
@@ -1106,6 +1139,12 @@ gboolean window_key_press(GtkWidget *window, GdkEventKey *event, struct Window *
 				return deal_key_press(window, KEY_DISABLE_FUNCTION, win_data);
 			}
 		}
+#ifdef __APPLE__
+		// No key binding took it: the keys of macOS itself. And a Cmd key is
+		// never for the program in the terminal (Cmd X would type an x).
+		if (event->state & COMMAND_MASK)
+			return macos_command_key(window, keyval, event->state);
+#endif
 	}
 	return FALSE;
 }

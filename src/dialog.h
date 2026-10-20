@@ -122,6 +122,7 @@ void create_scale_widget(struct Dialog *dialog_data, gdouble min, gdouble max, g
 void create_SIGKILL_and_EXIT_widget(struct Dialog *dialog_data, gboolean create_entry_hbox,
 				    gboolean create_force_kill_hbox, gchar *count_str);
 gboolean grab_key_press (GtkWidget *window, GdkEventKey *event, struct Dialog *dialog_data);
+gchar *join_mod_key_names(gchar *key_value, guint state);
 gboolean deal_dialog_key_press(GtkWidget *widget, GdkEventKey *event, struct Dialog *dialog_data);
 gchar *deal_dialog_key_press_join_string(StrAddr **value, gchar *separator, gchar *mask);
 gboolean clean_model_foreach(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer userdata);

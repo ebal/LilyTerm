@@ -226,9 +226,18 @@
 	#define PCRE2_CODE_UNIT_WIDTH 0
 	#include <pcre2.h>
 
-#define ALL_ACCELS_MASK (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK | GDK_SUPER_MASK)
-#define SHIFT_ONLY_MASK (GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK | GDK_SUPER_MASK)
-#define DUD_MASK (GDK_LOCK_MASK | GDK_MOD2_MASK | ( ~GDK_MODIFIER_MASK))
+// The "Cmd" of the key bindings. GTK+ 3 on macOS reports the Command key as
+// MOD2, which is NumLock on X11 (so ignored there, in DUD_MASK). Elsewhere it
+// is the Super ("Win") key, as Command is on a Mac keyboard under Linux.
+#ifdef __APPLE__
+#  define COMMAND_MASK GDK_MOD2_MASK
+#  define DUD_MASK (GDK_LOCK_MASK | ( ~GDK_MODIFIER_MASK))
+#else
+#  define COMMAND_MASK (GDK_MOD4_MASK | GDK_SUPER_MASK)
+#  define DUD_MASK (GDK_LOCK_MASK | GDK_MOD2_MASK | ( ~GDK_MODIFIER_MASK))
+#endif
+#define ALL_ACCELS_MASK (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK | GDK_SUPER_MASK | COMMAND_MASK)
+#define SHIFT_ONLY_MASK (GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_MOD4_MASK | GDK_SUPER_MASK | COMMAND_MASK)
 
 #define KEY_GROUP 10
 typedef enum {
@@ -1093,7 +1102,7 @@ struct Page
 // **************************** profile.c ****************************
 //
 
-#define MOD 4
+#define MOD 5
 struct ModKey
 {
 	gchar *name;

@@ -644,6 +644,49 @@ void init_user_keys(struct Window *win_data)
 	win_data->user_keys[KEY_CLOSE_PANE].value = g_strdup("Ctrl+Shift W");
 	win_data->user_keys[KEY_DISABLE_URL_L].value = g_strdup("Control_L");
 	win_data->user_keys[KEY_DISABLE_URL_R].value = g_strdup("Control_R");
+#ifdef __APPLE__
+	// The Command key, as macOS users expect it. Ctrl stays for the programs
+	// in the terminal (Ctrl C, Ctrl T, ...); the Linux keys above that need an
+	// Insert key, which a Mac does not have, get one with Cmd.
+	struct { Key_Bindings key; const gchar *value; } macos_keys[] = {
+		{ KEY_NEW_TAB, "Cmd T" },
+		{ KEY_CLOSE_TAB, "Cmd W" },
+		{ KEY_EDIT_LABEL, "Cmd+Shift I" },
+		{ KEY_FIND, "Cmd F" },
+		{ KEY_FIND_NEXT, "Cmd G" },
+		{ KEY_FIND_PREV, "Cmd+Shift G" },
+		{ KEY_PREV_TAB, "Cmd+Shift braceleft" },
+		{ KEY_NEXT_TAB, "Cmd+Shift braceright" },
+		{ KEY_SWITCH_TO_TAB_1, "Cmd 1" },
+		{ KEY_SWITCH_TO_TAB_2, "Cmd 2" },
+		{ KEY_SWITCH_TO_TAB_3, "Cmd 3" },
+		{ KEY_SWITCH_TO_TAB_4, "Cmd 4" },
+		{ KEY_SWITCH_TO_TAB_5, "Cmd 5" },
+		{ KEY_SWITCH_TO_TAB_6, "Cmd 6" },
+		{ KEY_SWITCH_TO_TAB_7, "Cmd 7" },
+		{ KEY_SWITCH_TO_TAB_8, "Cmd 8" },
+		{ KEY_SWITCH_TO_TAB_9, "Cmd 9" },
+		{ KEY_NEW_WINDOW, "Cmd N" },
+		{ KEY_SELECT_ALL, "Cmd A" },
+		{ KEY_COPY_CLIPBOARD, "Cmd C" },
+		{ KEY_PASTE_CLIPBOARD, "Cmd V" },
+		{ KEY_INCREASE_FONT_SIZE, "Cmd equal" },
+		{ KEY_DECREASE_FONT_SIZE, "Cmd minus" },
+		{ KEY_RESET_FONT_SIZE, "Cmd 0" },
+		{ KEY_FULL_SCREEN, "Cmd+Ctrl F" },
+		{ KEY_CLEAN_SCROLLBACK_LINES, "Cmd K" },
+		{ KEY_SPLIT_RIGHT, "Cmd D" },
+		{ KEY_SPLIT_DOWN, "Cmd+Shift D" },
+		{ KEY_NEXT_PANE, "Cmd bracketright" },
+		{ KEY_CLOSE_PANE, "Cmd+Shift W" },
+	};
+	guint macos_key;
+	for (macos_key=0; macos_key<G_N_ELEMENTS(macos_keys); macos_key++)
+	{
+		g_free(win_data->user_keys[macos_keys[macos_key].key].value);
+		win_data->user_keys[macos_keys[macos_key].key].value = g_strdup(macos_keys[macos_key].value);
+	}
+#endif
 #ifdef FATAL
 	// dump_data
 	win_data->user_keys[KEY_DUMP_DATA].value = g_strdup("Ctrl Print");
@@ -987,6 +1030,9 @@ void init_mod_keys(void)
 	// Mod2 = NumLock. We won't check it.
 	modkeys[3].name = _("Win");
 	modkeys[3].mod = GDK_MOD4_MASK | GDK_SUPER_MASK;
+	// Command on macOS; the same as Win elsewhere (see COMMAND_MASK)
+	modkeys[4].name = "Cmd";
+	modkeys[4].mod = COMMAND_MASK;
 }
 
 void init_colors(void)

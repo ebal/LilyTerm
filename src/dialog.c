@@ -2410,6 +2410,21 @@ gchar *get_colorful_profile(struct Window *win_data)
 	return convert_text_to_html(&utf8_profile, TRUE, "blue", "b", NULL);
 }
 
+// "Ctrl+Shift" for the modifiers in STATE. Each modifier once: on Linux, Cmd
+// is the same key as Win, and shows as Win.
+gchar *join_mod_key_names(gchar *key_value, guint state)
+{
+	guint shown = 0;
+	gint i;
+	for (i=0; i<MOD; i++)
+	{
+		if ((state & modkeys[i].mod) && (! (shown & modkeys[i].mod)))
+			key_value = deal_dialog_key_press_join_string(&key_value, "+", modkeys[i].name);
+		if (state & modkeys[i].mod) shown |= modkeys[i].mod;
+	}
+	return key_value;
+}
+
 gboolean grab_key_press (GtkWidget *window, GdkEventKey *event, struct Dialog *dialog_data)
 {
 #ifdef DETAIL
@@ -2422,9 +2437,7 @@ gboolean grab_key_press (GtkWidget *window, GdkEventKey *event, struct Dialog *d
 	gint i=0;
 
 	// FIXME: Be careful for the setted key value (GDK_Shift_L abd GDK_Hyper_R) here...
-	for (i=0; i<MOD; i++)
-		if (event->state & modkeys[i].mod)
-			key_value = deal_dialog_key_press_join_string(&key_value, "+", modkeys[i].name);
+	key_value = join_mod_key_names(key_value, event->state);
 	key_value = deal_dialog_key_press_join_string(&key_value, " ", gdk_keyval_name(event->keyval));
 	set_markup_key_value(TRUE, "blue", key_value, dialog_data->operate[0]);
 
@@ -2464,9 +2477,7 @@ gboolean deal_dialog_key_press(GtkWidget *window, GdkEventKey *event, struct Dia
 	if (((event->state & SHIFT_ONLY_MASK) || (event->keyval > GDK_KEY_asciitilde)) &&
 	    ((event->keyval < GDK_KEY_Shift_L) || (event->keyval > GDK_KEY_Hyper_R)))
 	{
-		for (i=0; i<MOD; i++)
-			if (event->state & modkeys[i].mod)
-				key_value = deal_dialog_key_press_join_string(&key_value, "+", modkeys[i].name);
+		key_value = join_mod_key_names(key_value, event->state);
 	}
 
 	g_free(dialog_data->user_key_value[dialog_data->current_key_index]);

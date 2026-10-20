@@ -295,6 +295,8 @@ run_gui_tests() {
 	run_pane_tests "$backend" "$work"
 	# --- 6. tabs with different font sizes
 	run_font_tab_tests "$backend" "$work"
+	# --- 6b. a key binding with Cmd (the Super key here, Command on macOS)
+	run_cmd_key_test "$backend" "$work"
 	# --- 7. the window title, word_chars, the bell and cursor_shape (X11: the
 	#        mouse, the window name, WM_HINTS and xwd)
 	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
@@ -490,6 +492,45 @@ run_font_tab_tests() {
 		sed 's/^/      /' "$work/fonts.log" | tail -10
 	fi
 	touch "$fdir/quit"
+	wait "$pid" 2>/dev/null
+}
+
+# "Cmd T" in the profile: on Linux, Cmd is the Super key. Ctrl T, the default,
+# must not open a tab then.
+run_cmd_key_test() {
+	local backend=$1 work=$2
+	local cdir="$work/cmdkey"
+	mkdir -p "$cdir"
+	cat > "$cdir/shell" <<-'EOF'
+		#!/bin/sh
+		n=1
+		while ! mkdir "$TAB_DIR/tab-$n" 2>/dev/null; do n=$((n+1)); done
+		while [ ! -e "$TAB_DIR/quit" ]; do sleep 0.2; done
+	EOF
+	chmod +x "$cdir/shell"
+	"$LILYTERM" -p | sed -e 's/^confirm_to_kill_running_command = .*/confirm_to_kill_running_command = 0/' \
+		-e 's/^new_tab_key = .*/new_tab_key = Cmd T/' > "$cdir/profile"
+	SHELL="$cdir/shell" TAB_DIR="$cdir" timeout 60 "$LILYTERM" -s -u "$cdir/profile" -g 80x24 \
+		> "$work/cmdkey.log" 2>&1 &
+	local pid=$!
+	if ! wait_for 15 test -d "$cdir/tab-1"; then
+		ng "[$backend] Cmd key: the first tab did not start"
+		kill "$pid" 2>/dev/null; return
+	fi
+	sleep 1
+	local super=super+t
+	[ "$backend" = wayland ] && super=logo+t
+	send_keys "$backend" ctrl+t
+	sleep 1
+	if [ -d "$cdir/tab-2" ]; then
+		ng "[$backend] Ctrl+T opened a tab, though new_tab_key is Cmd T"
+	elif press_until "$backend" "$super" test -d "$cdir/tab-2"; then
+		ok "[$backend] new_tab_key = Cmd T: Super+T opens a tab, Ctrl+T does not"
+	else
+		ng "[$backend] new_tab_key = Cmd T: Super+T did not open a tab"
+		sed 's/^/      /' "$work/cmdkey.log" | tail -10
+	fi
+	touch "$cdir/quit"
 	wait "$pid" 2>/dev/null
 }
 

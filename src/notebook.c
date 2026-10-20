@@ -1475,7 +1475,12 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 		// return if hyperlink is disabled.
 		if (! win_data->enable_hyperlink) return FALSE;
 
+#ifdef __APPLE__
+		// Cmd click, as in the other terminals on macOS, or Ctrl click
+		if (win_data->open_url_with_ctrl_pressed && ((event->state & (GDK_CONTROL_MASK | COMMAND_MASK))==0))
+#else
 		if (win_data->open_url_with_ctrl_pressed && ((event->state & GDK_CONTROL_MASK)==0))
+#endif
 		{
 			// clean the url first...
 			clean_hyperlink(win_data, page_data);
