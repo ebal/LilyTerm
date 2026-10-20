@@ -9,6 +9,14 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix a crash, or the wrong program being run, on a click on a link after
+  Ctrl was pressed: each press of Ctrl renumbers the link patterns in
+  current VTE releases, and LilyTerm took the new number for the kind of
+  link.
+- Open links with `open` on macOS, which has no `xdg-open`.
+
 ## [0.11.1] - 2026-10-20
 
 ### Fixed

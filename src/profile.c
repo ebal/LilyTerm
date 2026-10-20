@@ -322,10 +322,16 @@ void init_user_command(struct Window *win_data)
 		if (win_data==NULL) return;
 #endif
 
-	win_data->user_command[TAG_WWW].command = g_strdup("xdg-open");
-	win_data->user_command[TAG_FTP].command = g_strdup("xdg-open");
-	win_data->user_command[TAG_FILE].command = g_strdup("xdg-open");
-	win_data->user_command[TAG_MAIL].command = g_strdup("xdg-open");
+	// macOS has no xdg-open: open(1) does the same there
+#ifdef __APPLE__
+	const gchar *open_command = "open";
+#else
+	const gchar *open_command = "xdg-open";
+#endif
+	win_data->user_command[TAG_WWW].command = g_strdup(open_command);
+	win_data->user_command[TAG_FTP].command = g_strdup(open_command);
+	win_data->user_command[TAG_FILE].command = g_strdup(open_command);
+	win_data->user_command[TAG_MAIL].command = g_strdup(open_command);
 
 	gint i;
 
