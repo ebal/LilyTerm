@@ -564,6 +564,71 @@ void init_page_parameters(struct Window *win_data, struct Page *page_data)
 //
 }
 
+#ifdef __APPLE__
+// The default keys on macOS that differ from the ones on Linux (above, in
+// init_user_keys()): the Command key, as macOS users expect it. Ctrl stays for
+// the programs in the terminal (Ctrl C, Ctrl T, ...); copy and paste on Linux
+// need an Insert key, which a Mac does not have.
+static const struct
+{
+	Key_Bindings key;
+	const gchar *linux_value;	// NULL: disabled on Linux
+	const gchar *value;
+} macos_keys[] = {
+	{ KEY_NEW_TAB, "Ctrl T", "Cmd T" },
+	{ KEY_CLOSE_TAB, NULL, "Cmd W" },
+	{ KEY_EDIT_LABEL, NULL, "Cmd+Shift I" },
+	{ KEY_FIND, "Ctrl F", "Cmd F" },
+	{ KEY_FIND_NEXT, "F3", "Cmd G" },
+	{ KEY_FIND_PREV, "Shift F3", "Cmd+Shift G" },
+	{ KEY_PREV_TAB, "Ctrl Page_Up", "Cmd+Shift braceleft" },
+	{ KEY_NEXT_TAB, "Ctrl Page_Down", "Cmd+Shift braceright" },
+	{ KEY_SWITCH_TO_TAB_1, "Ctrl F1", "Cmd 1" },
+	{ KEY_SWITCH_TO_TAB_2, "Ctrl F2", "Cmd 2" },
+	{ KEY_SWITCH_TO_TAB_3, "Ctrl F3", "Cmd 3" },
+	{ KEY_SWITCH_TO_TAB_4, "Ctrl F4", "Cmd 4" },
+	{ KEY_SWITCH_TO_TAB_5, "Ctrl F5", "Cmd 5" },
+	{ KEY_SWITCH_TO_TAB_6, "Ctrl F6", "Cmd 6" },
+	{ KEY_SWITCH_TO_TAB_7, "Ctrl F7", "Cmd 7" },
+	{ KEY_SWITCH_TO_TAB_8, "Ctrl F8", "Cmd 8" },
+	{ KEY_SWITCH_TO_TAB_9, "Ctrl F9", "Cmd 9" },
+	{ KEY_NEW_WINDOW, NULL, "Cmd N" },
+	{ KEY_SELECT_ALL, "Ctrl O", "Cmd A" },
+	{ KEY_COPY_CLIPBOARD, "Ctrl Delete", "Cmd C" },
+	{ KEY_PASTE_CLIPBOARD, "Ctrl Insert", "Cmd V" },
+	{ KEY_INCREASE_FONT_SIZE, "Ctrl equal", "Cmd equal" },
+	{ KEY_DECREASE_FONT_SIZE, "Ctrl minus", "Cmd minus" },
+	{ KEY_RESET_FONT_SIZE, "Ctrl Return", "Cmd 0" },
+	{ KEY_FULL_SCREEN, "Alt Return", "Cmd+Ctrl F" },
+	{ KEY_CLEAN_SCROLLBACK_LINES, "Ctrl H", "Cmd K" },
+	{ KEY_SPLIT_RIGHT, "Ctrl+Shift E", "Cmd D" },
+	{ KEY_SPLIT_DOWN, "Ctrl+Shift O", "Cmd+Shift D" },
+	{ KEY_NEXT_PANE, "Ctrl+Shift N", "Cmd bracketright" },
+	{ KEY_CLOSE_PANE, "Ctrl+Shift W", "Cmd+Shift W" },
+};
+
+// A key of a profile saved on Linux, or by LilyTerm before 0.12.0, that is
+// still the Linux default: take the macOS default instead. A key the user
+// changed stays as it is. It takes VALUE, and returns the value to use.
+static gchar *macos_key_value(gint key, gchar *value)
+{
+	if (value==NULL) return NULL;
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(macos_keys); i++)
+	{
+		if ((gint) macos_keys[i].key != key) continue;
+		const gchar *linux_value = macos_keys[i].linux_value? macos_keys[i].linux_value: "";
+		if (strcmp(value, linux_value) == 0)
+		{
+			g_free(value);
+			return g_strdup(macos_keys[i].value);
+		}
+		break;
+	}
+	return value;
+}
+#endif
+
 void init_user_keys(struct Window *win_data)
 {
 #ifdef DETAIL
@@ -645,41 +710,6 @@ void init_user_keys(struct Window *win_data)
 	win_data->user_keys[KEY_DISABLE_URL_L].value = g_strdup("Control_L");
 	win_data->user_keys[KEY_DISABLE_URL_R].value = g_strdup("Control_R");
 #ifdef __APPLE__
-	// The Command key, as macOS users expect it. Ctrl stays for the programs
-	// in the terminal (Ctrl C, Ctrl T, ...); the Linux keys above that need an
-	// Insert key, which a Mac does not have, get one with Cmd.
-	struct { Key_Bindings key; const gchar *value; } macos_keys[] = {
-		{ KEY_NEW_TAB, "Cmd T" },
-		{ KEY_CLOSE_TAB, "Cmd W" },
-		{ KEY_EDIT_LABEL, "Cmd+Shift I" },
-		{ KEY_FIND, "Cmd F" },
-		{ KEY_FIND_NEXT, "Cmd G" },
-		{ KEY_FIND_PREV, "Cmd+Shift G" },
-		{ KEY_PREV_TAB, "Cmd+Shift braceleft" },
-		{ KEY_NEXT_TAB, "Cmd+Shift braceright" },
-		{ KEY_SWITCH_TO_TAB_1, "Cmd 1" },
-		{ KEY_SWITCH_TO_TAB_2, "Cmd 2" },
-		{ KEY_SWITCH_TO_TAB_3, "Cmd 3" },
-		{ KEY_SWITCH_TO_TAB_4, "Cmd 4" },
-		{ KEY_SWITCH_TO_TAB_5, "Cmd 5" },
-		{ KEY_SWITCH_TO_TAB_6, "Cmd 6" },
-		{ KEY_SWITCH_TO_TAB_7, "Cmd 7" },
-		{ KEY_SWITCH_TO_TAB_8, "Cmd 8" },
-		{ KEY_SWITCH_TO_TAB_9, "Cmd 9" },
-		{ KEY_NEW_WINDOW, "Cmd N" },
-		{ KEY_SELECT_ALL, "Cmd A" },
-		{ KEY_COPY_CLIPBOARD, "Cmd C" },
-		{ KEY_PASTE_CLIPBOARD, "Cmd V" },
-		{ KEY_INCREASE_FONT_SIZE, "Cmd equal" },
-		{ KEY_DECREASE_FONT_SIZE, "Cmd minus" },
-		{ KEY_RESET_FONT_SIZE, "Cmd 0" },
-		{ KEY_FULL_SCREEN, "Cmd+Ctrl F" },
-		{ KEY_CLEAN_SCROLLBACK_LINES, "Cmd K" },
-		{ KEY_SPLIT_RIGHT, "Cmd D" },
-		{ KEY_SPLIT_DOWN, "Cmd+Shift D" },
-		{ KEY_NEXT_PANE, "Cmd bracketright" },
-		{ KEY_CLOSE_PANE, "Cmd+Shift W" },
-	};
 	guint macos_key;
 	for (macos_key=0; macos_key<G_N_ELEMENTS(macos_keys); macos_key++)
 	{
@@ -1554,6 +1584,9 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 			for (i=0; i<KEYS-FIXED_KEYS; i++)
 			{
 				value = g_key_file_get_value(keyfile, "key", system_keys[i].name, NULL);
+#ifdef __APPLE__
+				value = macos_key_value(i, value);
+#endif
 				convert_string_to_user_key(i, value, win_data);
 			}
 
