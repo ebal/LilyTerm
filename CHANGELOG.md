@@ -9,6 +9,8 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-10-20
+
 ### Fixed
 
 - Fix a crash when the tabs of a window use different font sizes, for
@@ -1439,7 +1441,8 @@ Update homepage, blog, phorum, IRC information.
 
 - Initial revision.
 
-[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.11.0...HEAD
+[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/ebal/LilyTerm/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/ebal/LilyTerm/compare/v0.10.1...v0.11.0
 [0.10.1]: https://github.com/ebal/LilyTerm/compare/v0.10.0...v0.10.1
 [0.10.0]: https://github.com/ebal/LilyTerm/compare/v0.9.10...v0.10.0
