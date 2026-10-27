@@ -9,6 +9,8 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-10-27
+
 ### Added
 
 - Add [Copy selected text to clipboard] to the right click menu
@@ -1570,7 +1572,8 @@ Update homepage, blog, phorum, IRC information.
 
 - Initial revision.
 
-[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.13.0...HEAD
+[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/ebal/LilyTerm/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/ebal/LilyTerm/compare/v0.12.1...v0.13.0
 [0.12.1]: https://github.com/ebal/LilyTerm/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/ebal/LilyTerm/compare/v0.11.2...v0.12.0
