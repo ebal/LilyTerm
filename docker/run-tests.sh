@@ -345,6 +345,8 @@ run_gui_tests() {
 	run_osc7_test "$backend" "$work"
 	# --- 6d. the search bar finds text in the scrollback
 	run_search_bar_test "$backend" "$work"
+	# --- 6e. a tab in the home shows ~/... as its name (and the window title)
+	run_tab_title_test "$backend" "$work"
 	# --- 7. the window title, word_chars, the bell and cursor_shape (X11: the
 	#        mouse, the window name, WM_HINTS and xwd)
 	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
@@ -489,6 +491,43 @@ run_osc8_tests() {
 	fi
 	touch "$odir/quit"
 	wait "$pid" 2>/dev/null
+}
+
+# A tab shows the directory of the shell, and the window title the name of
+# the tab: ~/proj/LilyTerm for a directory in the home, as shells say it, not
+# the whole /path/of/the/home/proj/LilyTerm.
+run_tab_title_test() {
+	local backend=$1 work=$2 tdir="$HOME/proj/LilyTerm" pid title=''
+	mkdir -p "$tdir"
+	cat > "$work/title-shell" <<-EOF
+		#!/bin/sh
+		cd "$tdir" || exit 1
+		while [ ! -e "$work/title-quit" ]; do sleep 0.2; done
+	EOF
+	chmod +x "$work/title-shell"
+	rm -f "$work/title-quit"
+	SHELL="$work/title-shell" timeout 40 "$LILYTERM" -s -g 80x5 > "$work/title.log" 2>&1 &
+	pid=$!
+	window_title() {
+		if [ "$backend" = x11 ]; then
+			xdotool search --onlyvisible --class lilyterm getwindowname 2>/dev/null | tail -n1
+		else
+			# JSON: "/" comes as "\/"
+			swaymsg -t get_tree 2>/dev/null | grep -o '"name": "[^"]*LilyTerm[^"]*"' | grep -v '"LilyTerm"' |
+				tail -n1 | sed -e 's|\\/|/|g' -e 's|^"name": "||' -e 's|"$||'
+		fi
+	}
+	if wait_for 15 eval 'title=$(window_title); case "$title" in *"~/proj/LilyTerm"*) true;; *) false;; esac'; then
+		ok "[$backend] a tab in the home is named ~/proj/LilyTerm ($title)"
+	else
+		ng "[$backend] tab title: '$title', expected ~/proj/LilyTerm"
+	fi
+	case "$title" in
+		*"$HOME"*) ng "[$backend] tab title still has the home in it: '$title'";;
+	esac
+	touch "$work/title-quit"
+	wait "$pid" 2>/dev/null
+	rm -rf "$HOME/proj"
 }
 
 # type_text BACKEND TEXT: type TEXT into the focused widget of LilyTerm

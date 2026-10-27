@@ -75,6 +75,7 @@ gchar *get_search_pattern(const gchar *text, gboolean use_regex);
 gint get_hyperlink_tag(const gchar *uri, const gchar *host_name, gchar **url);
 const gchar *get_path_regex(void);
 gchar *get_clicked_path(const gchar *text, const gchar *dir, const gchar *home);
+gchar *get_short_dir_name(const gchar *dir, const gchar *home);
 gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name);
 gint macos_us_keyval(guint16 hardware_keycode, gboolean shift);
 GdkRGBA convert_color_to_rgba(GdkColor color);

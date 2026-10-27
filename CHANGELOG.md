@@ -20,13 +20,19 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
   first used. In the bar, copy, paste and select all are for its text.
 - Add OSC 8 hyperlinks: a link that a program marks (`ls --hyperlink`,
   `gcc`, `git`, `systemctl`, ...) opens with a click like a URL, and its
-  target is shown in the corner of the window when the mouse is over it. Only `http(s)`, `ftp(s)`,
-  `mailto:` and `file://` links open, and a `file://` link only to a file
-  on this machine.
+  target is shown in the corner of the window when the mouse is over it.
+  Only `http(s)`, `ftp(s)`, `mailto:` and `file://` links open, and a
+  `file://` link only to a file on this machine.
 - Add clickable paths: a click on `/etc/hosts`, `~/notes.txt`, `./build`,
   `src/main.c` or `main.c:42:5` (as compilers and grep print them) opens
   the file with the file manager command, if it exists. A relative path
   is taken in the directory of the shell.
+
+### Changed
+
+- Show a directory in the home as `~/src/LilyTerm` in the name of a tab
+  and in the window title, not as `/home/USER/src/LilyTerm`, so the part
+  that tells the tabs apart fits.
 
 ### Fixed
 

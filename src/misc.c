@@ -985,6 +985,29 @@ gchar *get_clicked_path(const gchar *text, const gchar *dir, const gchar *home)
 	return NULL;
 }
 
+// DIR as a tab shows it: ~ for HOME, and ~/REST for a directory in it, as
+// shells say it; any other DIR as it is. A HOME of / stays /. Free it with
+// g_free().
+gchar *get_short_dir_name(const gchar *dir, const gchar *home)
+{
+	if (dir==NULL) return NULL;
+	if ((home==NULL) || (home[0]!='/')) return g_strdup(dir);
+
+	gsize home_len = strlen(home);
+	while ((home_len > 1) && (home[home_len-1]=='/')) home_len--;
+	// a home of "/" would make every directory ~/...
+	if (home_len <= 1) return g_strdup(dir);
+
+	if (strncmp(dir, home, home_len)==0)
+	{
+		const gchar *rest = dir + home_len;
+		while (rest[0]=='/' && rest[1]=='/') rest++;
+		if ((rest[0]=='\0') || ((rest[0]=='/') && (rest[1]=='\0'))) return g_strdup("~");
+		if (rest[0]=='/') return g_strconcat("~", rest, NULL);
+	}
+	return g_strdup(dir);
+}
+
 // The regex that finds TEXT: TEXT itself with USE_REGEX, else TEXT with its
 // special characters escaped. NULL when there is nothing to find. TEXT stays
 // as it is: the search bar escaped the text of the search in place before,

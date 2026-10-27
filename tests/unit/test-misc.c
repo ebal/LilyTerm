@@ -390,6 +390,36 @@ static void test_get_clicked_path(void)
 	g_free(top);
 }
 
+// ---- the directory as a tab shows it ----
+
+static void test_get_short_dir_name(void)
+{
+	struct { const gchar *dir, *home, *want; } cases[] = {
+		{ "/home/lily", "/home/lily", "~" },
+		{ "/home/lily/", "/home/lily", "~" },
+		{ "/home/lily/src/LilyTerm", "/home/lily", "~/src/LilyTerm" },
+		{ "/home/lily/src", "/home/lily/", "~/src" },
+		{ "/Users/lily/Documents", "/Users/lily", "~/Documents" },
+		// not in the home
+		{ "/home/lilyterm", "/home/lily", "/home/lilyterm" },
+		{ "/home", "/home/lily", "/home" },
+		{ "/etc", "/home/lily", "/etc" },
+		// no usable home
+		{ "/etc", "/", "/etc" },
+		{ "/home/lily", NULL, "/home/lily" },
+		{ "/home/lily", "", "/home/lily" },
+		{ "/home/lily", "relative", "/home/lily" },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *name = get_short_dir_name(cases[i].dir, cases[i].home);
+		g_assert_cmpstr(name, ==, cases[i].want);
+		g_free(name);
+	}
+	g_assert_null(get_short_dir_name(NULL, "/home/lily"));
+}
+
 // ---- the regex of the search bar ----
 
 static void test_get_search_pattern(void)
@@ -520,6 +550,7 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/hyperlink-tag", test_get_hyperlink_tag);
 	g_test_add_func("/misc/path-regex", test_path_regex);
 	g_test_add_func("/misc/clicked-path", test_get_clicked_path);
+	g_test_add_func("/misc/short-dir-name", test_get_short_dir_name);
 	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
 	g_test_add_func("/misc/macos-us-keyval", test_macos_us_keyval);
 	return g_test_run();

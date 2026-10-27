@@ -558,12 +558,10 @@ void update_page_name_pwd(StrAddr **page_name,
 #endif
 	if (win_data->page_shows_current_dir && (*page_name==NULL))
 	{
-		if (lost_focus)
-			*page_name = g_strdup(page_data->window_title_pwd);
-		else
-		{
-			*page_name = g_strdup(page_data->pwd);
-		}
+		// ~/src/LilyTerm, not /home/lily/src/LilyTerm: page_data->pwd
+		// keeps the real one, for new tabs
+		*page_name = get_short_dir_name(lost_focus ? page_data->window_title_pwd : page_data->pwd,
+						win_data->home);
 
 		if (*page_name)
 		{

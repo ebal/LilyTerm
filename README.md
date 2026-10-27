@@ -44,6 +44,9 @@ with everything inside, or installed with Homebrew.
   `src/main.c` and, with a line number as compilers print them,
   `main.c:42:5`. A relative path is taken in the directory of the shell.
   Only a file or directory that exists opens.
+- Tab names: a tab shows what runs in it, or the directory of the shell,
+  as `~/src/LilyTerm` for a directory in your home. The whole name is in
+  its tooltip.
 - One running LilyTerm for all windows: a second `lilyterm` command opens
   its window in the process that already runs, over a socket. Start
   LilyTerm with `-s` to run a window in its own process.
