@@ -30,7 +30,8 @@ with everything inside, or installed with Homebrew.
 - Hyperlinks: click a web or `file://` URL, or an email address, to open
   it. An email address opens as a `mailto:` URL in your mail client.
 - One running LilyTerm for all windows: a second `lilyterm` command opens
-  its window in the process that already runs, over a socket.
+  its window in the process that already runs, over a socket. Start
+  LilyTerm with `-s` to run a window in its own process.
 - Wayland and X11, with the same binary.
 
 ## Installation
@@ -214,6 +215,11 @@ keep a Ctrl key, set it again with [Set key binding] and save the profile.
 
 `lilyterm -p` prints a sample profile with every setting and its
 description. `lilyterm -u FILE` starts LilyTerm with another profile.
+
+The running LilyTerm listens on a socket in `$XDG_RUNTIME_DIR` (or in
+`/tmp` without one), `.LilyTerm_USER` followed by the display name. It holds a
+lock on the `.lock` file next to it for as long as it runs, so the next
+`lilyterm` knows that it is there even when it is busy.
 
 ## Development
 

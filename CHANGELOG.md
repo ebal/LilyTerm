@@ -16,6 +16,10 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 - Fix a click on an email address without `mailto:`: `open` and
   `xdg-open` took it for a file name. The email client now always gets a
   `mailto:` URL.
+- Fix a second `lilyterm` taking the socket away from the running one
+  when that one was busy, or when both started at the same moment. The
+  running LilyTerm now holds a lock on a `.lock` file next to its socket,
+  and the socket is only replaced when no LilyTerm holds the lock.
 - Fix a possible crash when a dialog opens for a window without a tab.
 
 ## [0.12.0] - 2026-10-20

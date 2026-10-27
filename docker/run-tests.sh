@@ -277,6 +277,50 @@ run_gui_tests() {
 	wait "$pid" && ok "[$backend] socket server instance exits cleanly" ||
 		ng "[$backend] socket server instance exit status $?"
 
+	# --- 3b. a server killed with -9 leaves its socket file behind: the next
+	#         lilyterm takes it over (no server holds the lock any more), and
+	#         serves the one after it
+	marker="$work/stale1.txt"
+	timeout 40 "$LILYTERM" -E sh -c "echo \$PPID > $marker; sleep 30" > "$work/stale1.log" 2>&1 &
+	pid=$!
+	if wait_for 15 test -s "$marker"; then
+		kill -9 "$(cat "$marker")"
+		wait "$pid" 2>/dev/null
+		local stale2="$work/stale2.txt" stale3="$work/stale3.txt"
+		timeout 40 "$LILYTERM" -E sh -c "echo \$PPID > $stale2; sleep 8" > "$work/stale2.log" 2>&1 &
+		pid=$!
+		if wait_for 15 test -s "$stale2"; then
+			timeout 20 "$LILYTERM" -E sh -c "echo \$PPID > $stale3; sleep 1" > "$work/stale3.log" 2>&1
+			if wait_for 10 test -s "$stale3" && [ "$(cat "$stale2")" = "$(cat "$stale3")" ]; then
+				ok "[$backend] the socket of a killed server is taken over, and serves the next lilyterm"
+			else
+				ng "[$backend] after a killed server: second=$(cat "$stale2") third=$(cat "$stale3" 2>/dev/null)"
+				sed 's/^/      /' "$work/stale3.log" | head -10
+			fi
+		else
+			ng "[$backend] no lilyterm started after the server was killed"
+			sed 's/^/      /' "$work/stale2.log" | head -10
+		fi
+		wait "$pid" 2>/dev/null
+	else
+		ng "[$backend] the server to kill did not start"
+	fi
+
+	# --- 3c. two lilyterms started at the same moment: one becomes the server
+	#         and the other one hands its command over. Both could become a
+	#         server before, and the second took the socket of the first.
+	local race1="$work/race1.txt" race2="$work/race2.txt" pid2
+	timeout 40 "$LILYTERM" -E sh -c "echo \$PPID > $race1; sleep 5" > "$work/race1.log" 2>&1 &
+	pid=$!
+	timeout 40 "$LILYTERM" -E sh -c "echo \$PPID > $race2; sleep 5" > "$work/race2.log" 2>&1 &
+	pid2=$!
+	if wait_for 20 eval 'test -s "$race1" && test -s "$race2"' && [ "$(cat "$race1")" = "$(cat "$race2")" ]; then
+		ok "[$backend] two lilyterms started at once share one server (pid $(cat "$race1"))"
+	else
+		ng "[$backend] two lilyterms started at once: pids $(cat "$race1" 2>/dev/null) and $(cat "$race2" 2>/dev/null)"
+	fi
+	wait "$pid" "$pid2" 2>/dev/null
+
 	# --- 4. the sample profile from `lilyterm -p` is accepted with -u
 	local profile="$work/sample.conf"
 	if "$LILYTERM" -p > "$profile" 2> "$work/profile-dump.log" && grep -q '^\[main\]' "$profile"; then

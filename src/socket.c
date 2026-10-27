@@ -41,8 +41,12 @@
 //   socket_fd -------------------(N)---|					|
 //   set_fd_non_block ------------(N)---/					|
 //	|									|
-// query_socket()								|
+// open_socket_lock(), flock: a running server holds the lock		|
+//	|									|
+// query_socket() (waits up to 5 s when a server runs)				|
 //   connect ---------------------(N)-------> init_socket_server()--------------|
+//					(only when no server runs, and	|
+//					 the socket is gone or stale)	|
 //	|				^	unlink				|
 //   send_socket()			|	bind -----------------------(N)-|
 //   (blocking, 10 s timeout)		|	listen ---------------------(N)-|
@@ -85,6 +89,8 @@
 #include <errno.h>
 #include <string.h>
 #include <poll.h>
+#include <sys/file.h>
+#include <sys/stat.h>
 
 #include "socket.h"
 
@@ -113,7 +119,9 @@ typedef enum {
 gboolean init_socket_fd();
 gboolean init_socket_data(gchar *package_name);
 gboolean set_fd_non_block(gint *fd);
-gboolean query_socket();
+gboolean query_socket(gint64 wait);
+static gint open_socket_lock(void);
+static void release_socket_lock(void);
 gboolean send_socket(gchar *socket_str);
 gboolean clear_channel(GIOChannel *channel, gboolean unref);
 gboolean init_socket_server(GSourceFunc read_function);
@@ -137,6 +145,10 @@ gint socket_fd = 0;
 struct sockaddr_un address = {0};
 int address_len = -1;
 GIOChannel *main_channel = NULL;
+// the lock of the socket server, held as long as it runs
+static gint lock_fd = -1;
+// why query_socket() failed: the errno of connect(), EPERM for another user
+static gint connect_errno = 0;
 
 	// END: glib-2.31.2/glib/gutils.h: g_atexit () GLIB_DEPRECATED
 	#define g_atexit atexit
@@ -150,9 +162,24 @@ Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSour
 	// init socket data
 	if (init_socket_data(package_name))
 	{
-		// trying to connect to an existing Socket Server
-		if (query_socket())
+		// A running socket server holds the lock. It may have just started
+		// and not listen yet: then give it a few seconds.
+		lock_fd = open_socket_lock();
+		gboolean server_runs = FALSE;
+		if ((lock_fd >= 0) && (flock(lock_fd, LOCK_EX | LOCK_NB) < 0))
 		{
+			if (errno == EWOULDBLOCK)
+				server_runs = TRUE;
+			else
+				// no locks here (NFS?): do without
+				release_socket_lock();
+		}
+
+		// trying to connect to an existing Socket Server
+		if (query_socket(server_runs ? 5 * G_USEC_PER_SEC : 0))
+		{
+			// (a LilyTerm before 0.12.1 serves without the lock)
+			release_socket_lock();
 			// success, sent the socket_str then quit
 			if (send_socket(socket_str))
 			{
@@ -164,12 +191,16 @@ Unix_Socket_States init_gtk_socket(gchar *package_name, gchar *socket_str, GSour
 			return UNIX_SOCKET_ERROR;
 		}
 
-		// no socket server exist. create a socket server
-		if (init_socket_server(read_function))
+		// Replace the socket file only when no server is behind it: not the
+		// one of a server that runs but is busy (EAGAIN), nor another user's.
+		if ((! server_runs) && ((connect_errno == ENOENT) || (connect_errno == ECONNREFUSED)) &&
+		    init_socket_server(read_function))
 		{
+			// the lock stays ours until we exit
 			atexit(shutdown_socket_server_at_exit);
 			return UNIX_SOCKET_SERVER_INITED;
 		}
+		release_socket_lock();
 	}
 
 	return UNIX_SOCKET_ERROR;
@@ -247,17 +278,59 @@ gboolean set_fd_non_block(gint *fd)
 	return TRUE;
 }
 
-// it will return TRUE if scucceed
-gboolean query_socket(void)
+// The socket server holds an flock() on SOCKET.lock as long as it runs, and
+// the kernel drops it when the server dies. So a server that runs is known
+// for sure, also when it cannot take a connection at once. Returns the open
+// lock file, or -1 when there is none to use.
+static gint open_socket_lock(void)
+{
+	gchar *lock_path = g_strdup_printf("%s.lock", address.sun_path);
+	gint fd = open(lock_path, O_RDWR | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0600);
+	g_free(lock_path);
+	if (fd < 0) return -1;
+
+	// in /tmp, another user may have made it first
+	struct stat lock_stat;
+	if ((fstat(fd, &lock_stat) < 0) || (! S_ISREG(lock_stat.st_mode)) || (lock_stat.st_uid != getuid()))
+	{
+		close(fd);
+		return -1;
+	}
+	return fd;
+}
+
+static void release_socket_lock(void)
+{
+	if (lock_fd >= 0) close(lock_fd);
+	lock_fd = -1;
+}
+
+// it will return TRUE if scucceed. A server that runs may not listen yet, or
+// have a full backlog (EAGAIN on Linux, ECONNREFUSED on macOS): try again for
+// up to WAIT microseconds. connect_errno says why it failed.
+gboolean query_socket(gint64 wait)
 {
 #ifdef DETAIL
 	g_debug("! Launch query_socket() to connect to an existing %s !", PACKAGE);
 #endif
 	GError *error = NULL;
+	gint64 deadline = g_get_monotonic_time() + wait;
 
-	if (connect(socket_fd, (struct sockaddr *)&address, address_len) < 0)
-		// main_channel is NULL, so that we don't need to launch clear_channel()
-		return socket_fault(GTK_SOCKET_ERROR_CONNECT_SOCKET, error, NULL, FALSE);
+	while (connect(socket_fd, (struct sockaddr *)&address, address_len) < 0)
+	{
+		connect_errno = errno;
+		if ((g_get_monotonic_time() >= deadline) ||
+		    ((errno != ENOENT) && (errno != ECONNREFUSED) && (errno != EAGAIN)))
+			// main_channel is NULL, so that we don't need to launch clear_channel()
+			return socket_fault(GTK_SOCKET_ERROR_CONNECT_SOCKET, error, NULL, FALSE);
+
+		// the socket is unspecified after a failed connect(): use a new one
+		close(socket_fd);
+		g_usleep(50000);
+		if ((! init_socket_fd()) || (! set_fd_non_block(&socket_fd)))
+			return FALSE;
+	}
+	connect_errno = 0;
 
 	// The request carries our whole environment: hand it only to a server of
 	// our own user, not to whoever created the socket first (in /tmp, without
@@ -266,6 +339,7 @@ gboolean query_socket(void)
 	{
 		g_warning("The %s socket \"%s\" does not belong to uid %d: not using it.",
 			  PACKAGE, address.sun_path, (gint) getuid());
+		connect_errno = EPERM;
 		close(socket_fd);
 		socket_fd = -1;
 		address_len = -1;
