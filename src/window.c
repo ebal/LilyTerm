@@ -295,7 +295,7 @@ GtkNotebook *new_window(int argc,
 			 G_CALLBACK(notebook_page_added), win_data);
 	if (win_data->tabs_bar_position)
 		gtk_notebook_set_tab_pos(GTK_NOTEBOOK(win_data->notebook), GTK_POS_BOTTOM);
-	gtk_container_add(GTK_CONTAINER(win_data->window), win_data->notebook);
+	gtk_container_add(GTK_CONTAINER(win_data->window), search_overlay_new(win_data));
 	g_signal_connect(G_OBJECT(win_data->notebook), "page-reordered", G_CALLBACK(reorder_page_number), win_data->window);
 	g_signal_connect(G_OBJECT(win_data->notebook), "create-window", G_CALLBACK(create_window), win_data);
 #ifdef GEOMETRY
@@ -1383,13 +1383,23 @@ gboolean window_key_press(GtkWidget *window, GdkEventKey *event, struct Window *
 				binding = find_key_binding(win_data, us_keyval, mods);
 		}
 #endif
+		// In the search bar, the keys of text editing are for its entry
+		gboolean in_search_bar = search_bar_has_focus(win_data);
+		if (in_search_bar && search_bar_key(binding)) return FALSE;
 		// deal the function key
 		if (binding >= 0) return deal_key_press(window, binding, win_data);
 #ifdef __APPLE__
 		// No key binding took it: the keys of macOS itself. And a Cmd key is
-		// never for the program in the terminal (Cmd X would type an x).
+		// never for the program in the terminal (Cmd X would type an x), but
+		// Cmd X, Cmd Z, ... are for the search bar.
 		if (event->state & COMMAND_MASK)
-			return macos_command_key(window, us_keyval? us_keyval: keyval, event->state);
+		{
+			gint command_keyval = us_keyval? us_keyval: keyval;
+			if (in_search_bar && (command_keyval != GDK_KEY_Q) &&
+			    (command_keyval != GDK_KEY_H) && (command_keyval != GDK_KEY_M))
+				return FALSE;
+			return macos_command_key(window, command_keyval, event->state);
+		}
 #endif
 	}
 	return FALSE;
@@ -1484,19 +1494,15 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			dialog(NULL, EDIT_LABEL);
 			break;
 		case KEY_FIND:
-			dialog(NULL, FIND_STRING);
+			search_bar_show(win_data);
 			break;
 		case KEY_FIND_PREV:
-			if (win_data->find_string && (win_data->find_string[0]!=0))
-				find_str_in_vte (win_data->current_vte, FIND_PREV);
-			else
-				dialog(NULL, FIND_STRING);
-			break;
 		case KEY_FIND_NEXT:
-			if (win_data->find_string && (win_data->find_string[0]!=0))
-				find_str_in_vte (win_data->current_vte, FIND_NEXT);
+			// with nothing to find yet: ask for it
+			if ((win_data->find_string==NULL) || (win_data->find_string[0]=='\0'))
+				search_bar_show(win_data);
 			else
-				dialog(NULL, FIND_STRING);
+				search_find(win_data, (type==KEY_FIND_NEXT) ? FIND_NEXT : FIND_PREV);
 			break;
 		case KEY_PREV_TAB:
 #ifdef SAFEMODE
@@ -2789,8 +2795,6 @@ void dump_data (struct Window *win_data, struct Page *page_data)
 	g_debug("- win_data->find_string = %s", win_data->find_string);
 	g_debug("- win_data->find_case_sensitive = %d", win_data->find_case_sensitive);
 	g_debug("- win_data->find_use_perl_regular_expressions = %d", win_data->find_use_perl_regular_expressions);
-	print_color(-1, "win_data->find_entry_bg_color", win_data->find_entry_bg_color);
-	print_color(-1, "win_data->find_entry_current_bg_color", win_data->find_entry_current_bg_color);
 
 	g_debug("- win_data->checking_menu_item = %d", win_data->checking_menu_item);
 	g_debug("- win_data->kill_color_demo_vte = %d", win_data->kill_color_demo_vte);
@@ -3204,8 +3208,13 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 	win_data->find_string = g_strdup(win_data_orig->find_string);
 	// win_data->find_case_sensitive;
 	// win_data->find_use_perl_regular_expressions;
-	// win_data->find_entry_bg_color;
-	// win_data->find_entry_current_bg_color;
+	// the new window makes its own (search.c)
+	win_data->overlay = NULL;
+	win_data->search_bar = NULL;
+	win_data->search_entry = NULL;
+	win_data->search_status = NULL;
+	win_data->search_case_button = NULL;
+	win_data->search_regex_button = NULL;
 
 	// win_data->checking_menu_item;
 	// win_data->dialog_activated;

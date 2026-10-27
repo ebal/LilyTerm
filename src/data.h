@@ -924,8 +924,14 @@ struct Window
 	gchar *find_string;
 	gboolean find_case_sensitive;
 	gboolean find_use_perl_regular_expressions;
-	GdkRGBA find_entry_bg_color;
-	GdkRGBA find_entry_current_bg_color;
+	// search.c: the overlay holds the notebook, and the search bar once it
+	// was shown
+	GtkWidget *overlay;
+	GtkWidget *search_bar;
+	GtkWidget *search_entry;
+	GtkWidget *search_status;
+	GtkWidget *search_case_button;
+	GtkWidget *search_regex_button;
 
 	gboolean checking_menu_item;
 	gboolean kill_color_demo_vte;
@@ -1118,7 +1124,6 @@ struct ModKey
 
 typedef enum {
 	EDIT_LABEL,
-	FIND_STRING,
 	ADD_NEW_LOCALES,
 	CHANGE_THE_FOREGROUND_COLOR,
 	CHANGE_THE_ANSI_COLORS,

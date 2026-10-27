@@ -343,6 +343,8 @@ run_gui_tests() {
 	run_cmd_key_test "$backend" "$work"
 	# --- 6c. a new tab starts in the directory the shell reported (OSC 7)
 	run_osc7_test "$backend" "$work"
+	# --- 6d. the search bar finds text in the scrollback
+	run_search_bar_test "$backend" "$work"
 	# --- 7. the window title, word_chars, the bell and cursor_shape (X11: the
 	#        mouse, the window name, WM_HINTS and xwd)
 	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
@@ -350,6 +352,74 @@ run_gui_tests() {
 	[ "$backend" = x11 ] && run_url_click_tests "$work"
 	# --- 9. -e asks before it runs a command (X11: the window name)
 	[ "$backend" = x11 ] && run_execute_confirm_test "$work"
+}
+
+# type_text BACKEND TEXT: type TEXT into the focused widget of LilyTerm
+type_text() {
+	if [ "$1" = x11 ]; then
+		xdotool type --delay 60 "$2"
+	else
+		wtype -s 100 "$2"
+	fi
+}
+
+# Ctrl F opens the search bar; the text typed there is found as it is typed,
+# the "." taken as it is (it matches any character in a regex, and the newer
+# needleXone would be found then). Esc gives the focus back to the terminal,
+# where Ctrl Delete copies the match and Ctrl Insert pastes it into the
+# shell, which saves it in search/line. Had the bar not opened, the shell
+# would have got the typed text and an Esc; had the focus stayed in the bar,
+# the paste and the Return would have gone there.
+run_search_bar_test() {
+	local backend=$1 work=$2 sdir="$2/search" pid id='' before='' after=''
+	mkdir -p "$sdir"
+	cat > "$sdir/shell" <<-EOF
+		#!/bin/sh
+		printf '\033[H\033[2J'
+		printf 'first line\nneedle.one\nfiller\nneedleXone\nlast line\n'
+		IFS= read -r line && printf '%s\n' "\$line" > "$sdir/line.tmp" && mv "$sdir/line.tmp" "$sdir/line"
+		while [ ! -e "$sdir/quit" ]; do sleep 0.2; done
+	EOF
+	chmod +x "$sdir/shell"
+	SHELL="$sdir/shell" timeout 60 "$LILYTERM" -s -g 80x10 > "$work/search.log" 2>&1 &
+	pid=$!
+	if [ "$backend" = x11 ]; then
+		if ! wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+			ng "[x11] search bar: no LilyTerm window"; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; return
+		fi
+		before=$(xdotool getwindowgeometry "$id" 2>/dev/null | grep Geometry)
+	fi
+	sleep 1.5
+	send_keys "$backend" ctrl+f
+	sleep 0.5
+	type_text "$backend" needle.one
+	sleep 0.5
+	[ "$backend" = x11 ] && after=$(xdotool getwindowgeometry "$id" 2>/dev/null | grep Geometry)
+	send_keys "$backend" Escape
+	sleep 0.3
+	send_keys "$backend" ctrl+Delete
+	sleep 0.3
+	send_keys "$backend" ctrl+Insert
+	sleep 0.3
+	send_keys "$backend" Return
+	if wait_for 5 test -s "$sdir/line" && [ "$(cat "$sdir/line")" = needle.one ]; then
+		ok "[$backend] the search bar finds 'needle.one' as typed, and Esc gives the focus back"
+	else
+		ng "[$backend] search bar: the shell got '$(cat -v "$sdir/line" 2>/dev/null)', expected 'needle.one'"
+		sed 's/^/      /' "$work/search.log" | head -10
+	fi
+	if [ "$backend" = x11 ]; then
+		if [ -n "$before" ] && [ "$before" = "$after" ]; then
+			ok "[x11] the window keeps its size with the search bar open (${before##* })"
+		else
+			ng "[x11] the search bar changed the window: '$before' -> '$after'"
+		fi
+	fi
+	if grep -E 'CRITICAL|WARNING \*\*.*(VTE|Gtk|Gdk|GLib)|-WARNING|Segmentation|assertion' "$work/search.log" > "$work/search.bad"; then
+		ng "[$backend] criticals with the search bar:"; sort "$work/search.bad" | uniq -c | sed 's/^/      /' | head -10
+	fi
+	touch "$sdir/quit"
+	wait "$pid" 2>/dev/null
 }
 
 # lilyterm -e asks before it runs its command, in a dialog that comes before

@@ -891,6 +891,18 @@ gchar *get_mailto_url(const gchar *address)
 	return g_strconcat("mailto:", address, NULL);
 }
 
+// The regex that finds TEXT: TEXT itself with USE_REGEX, else TEXT with its
+// special characters escaped. NULL when there is nothing to find. TEXT stays
+// as it is: the search bar escaped the text of the search in place before,
+// again with each search ("a.b", "a\.b", "a\\\.b", ...).
+// Free the returned string with g_free().
+gchar *get_search_pattern(const gchar *text, gboolean use_regex)
+{
+	if ((text==NULL) || (text[0]=='\0')) return NULL;
+	if (use_regex) return g_strdup(text);
+	return g_regex_escape_string(text, -1);
+}
+
 // The directory of URI, a "file://HOST/PATH" that a shell reported with OSC 7,
 // if HOST is this machine (HOST_NAME, "localhost" or none). The one of a shell
 // on another machine (over ssh) is not a directory here. The names must be

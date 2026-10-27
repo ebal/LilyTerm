@@ -71,6 +71,7 @@ gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line);
 gchar *join_pasted_lines(const gchar *str);
 gchar *replace_xdg_open(const gchar *command);
 gchar *get_mailto_url(const gchar *address);
+gchar *get_search_pattern(const gchar *text, gboolean use_regex);
 gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name);
 gint macos_us_keyval(guint16 hardware_keycode, gboolean shift);
 GdkRGBA convert_color_to_rgba(GdkColor color);
@@ -291,7 +292,6 @@ void update_page_name_normal(StrAddr **page_name,
 
 GtkResponseType dialog(GtkWidget *widget, gsize style);
 gint get_color_index(gboolean invert_color, gint index);
-gboolean find_str_in_vte(GtkWidget *vte, Dialog_Find_Type type);
 void set_markup_key_value(gboolean bold, gchar *color, gchar *key_value, GtkWidget *label);
 gboolean check_and_add_locale_to_warned_locale_list(struct Window *win_data, gchar *new_locale);
 void create_invalid_locale_error_message(gchar *locale);
@@ -301,6 +301,17 @@ void error_dialog(GtkWidget *window, gchar *title_translation, gchar *title,
 void print_switch_out_of_range_error_dialog(gchar *function, gchar *var, gint value);
 #endif
 gchar *get_colorful_profile(struct Window *win_data);
+
+//
+// **************************** search.c ****************************
+//
+
+GtkWidget *search_overlay_new(struct Window *win_data);
+void search_bar_show(struct Window *win_data);
+void search_bar_hide(struct Window *win_data);
+gboolean search_bar_has_focus(struct Window *win_data);
+gboolean search_bar_key(gint binding);
+gboolean search_find(struct Window *win_data, Dialog_Find_Type type);
 
 //
 // **************************** menu.c ****************************

@@ -529,8 +529,6 @@ void init_window_parameters(struct Window *win_data)
 	win_data->find_string = g_strdup("");
 	// win_data->find_case_sensitive;
 	// win_data->find_use_perl_regular_expressions;
-	// win_data->find_entry_bg_color;
-	// win_data->find_entry_current_bg_color;
 	// win_data->checking_menu_item;
 	// win_data->dialog_activated;
 	// win_data->kill_color_demo_vte;

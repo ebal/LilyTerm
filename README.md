@@ -27,6 +27,11 @@ with everything inside, or installed with Homebrew.
   in the right click menu.
 - Key bindings: change or disable every key binding with [Set key binding]
   in the right click menu.
+- Search: `Ctrl+F` (`Cmd+F` on macOS) opens a search bar over the top
+  right corner, which finds text in the scrollback as you type. `Enter`
+  goes to the match before, `Shift+Enter` to the one after, `Esc` closes
+  it. `Aa` makes it case sensitive, `.*` takes the text as a regular
+  expression.
 - Hyperlinks: click a web or `file://` URL, or an email address, to open
   it. An email address opens as a `mailto:` URL in your mail client.
 - One running LilyTerm for all windows: a second `lilyterm` command opens
@@ -168,7 +173,7 @@ These are the defaults. You can change each of them, or disable it, with
 | `Ctrl+Shift+O`          | Split the pane one above the other             |
 | `Ctrl+Shift+N`          | Move the focus to the next pane                |
 | `Ctrl+Shift+W`          | Close the pane (the last pane closes the tab)  |
-| `Ctrl+F`                | Find text (`F3` / `Shift+F3`: next / previous) |
+| `Ctrl+F`                | Search bar (`F3` / `Shift+F3`: next / previous match) |
 | `Ctrl+Delete` / `Insert`| Copy / paste with the clipboard                |
 | `Shift+Delete` / `Insert`| Copy / paste with the primary selection       |
 | `Ctrl+=` / `-` / `Enter`| Bigger / smaller / reset font                  |
@@ -194,7 +199,7 @@ here stay as in the table above.
 | `Cmd+D` / `Cmd+Shift+D` | Split the pane side by side / one above the other |
 | `Cmd+]` / `Cmd+Shift+W` | Next pane / close the pane                     |
 | `Cmd+C` / `Cmd+V` / `Cmd+A` | Copy / paste / select all                  |
-| `Cmd+F`                 | Find text (`Cmd+G` / `Cmd+Shift+G`: next / previous) |
+| `Cmd+F`                 | Search bar (`Cmd+G` / `Cmd+Shift+G`: next / previous match) |
 | `Cmd+K`                 | Clear the scrollback                           |
 | `Cmd+=` / `-` / `0`     | Bigger / smaller / reset font                  |
 | `Cmd+Ctrl+F`            | Full screen                                    |

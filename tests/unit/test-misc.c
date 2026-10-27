@@ -256,6 +256,40 @@ static void test_get_mailto_url(void)
 	g_assert_null(get_mailto_url(NULL));
 }
 
+// ---- the regex of the search bar ----
+
+static void test_get_search_pattern(void)
+{
+	struct { const gchar *in; gboolean regex; const gchar *out; } cases[] = {
+		{ "needle", FALSE, "needle" },
+		{ "a.b", FALSE, "a\\.b" },
+		{ "(x)*[y]?", FALSE, "\\(x\\)\\*\\[y\\]\\?" },
+		{ "a.b", TRUE, "a.b" },
+		{ "", FALSE, NULL },
+		{ "", TRUE, NULL },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *out = get_search_pattern(cases[i].in, cases[i].regex);
+		g_assert_cmpstr(out, ==, cases[i].out);
+		g_free(out);
+	}
+	g_assert_null(get_search_pattern(NULL, FALSE));
+
+	// The text of the search stays as it is: each search escapes it once
+	// (it was escaped in place before, again with every search)
+	gchar text[] = "a.b";
+	gint n;
+	for (n=0; n<3; n++)
+	{
+		gchar *out = get_search_pattern(text, FALSE);
+		g_assert_cmpstr(out, ==, "a\\.b");
+		g_free(out);
+	}
+	g_assert_cmpstr(text, ==, "a.b");
+}
+
 // ---- the directory a shell reports with OSC 7 ----
 
 static void test_get_local_dir_from_uri(void)
@@ -348,6 +382,7 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/split-pid-stat", test_split_pid_stat);
 	g_test_add_func("/misc/replace-xdg-open", test_replace_xdg_open);
 	g_test_add_func("/misc/mailto-url", test_get_mailto_url);
+	g_test_add_func("/misc/search-pattern", test_get_search_pattern);
 	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
 	g_test_add_func("/misc/macos-us-keyval", test_macos_us_keyval);
 	return g_test_run();

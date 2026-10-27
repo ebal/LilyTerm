@@ -2093,8 +2093,6 @@ void apply_profile_from_file(const gchar *path, Apply_Profile_Type type)
 		}
 		win_data->find_case_sensitive = win_data_backup->find_case_sensitive;
 		win_data->find_use_perl_regular_expressions = win_data_backup->find_use_perl_regular_expressions;
-		win_data->find_entry_bg_color = win_data_backup->find_entry_bg_color;
-		win_data->find_entry_current_bg_color = win_data_backup->find_entry_current_bg_color;
 
 #  ifdef SAFEMODE
 		if (invild_settings && invild_settings->len)

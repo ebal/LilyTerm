@@ -9,6 +9,23 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Added
+
+- Add a search bar instead of the Find dialog: `Ctrl+F` (`Cmd+F` on
+  macOS) opens it over the top right corner of the window, and it finds
+  text in the scrollback as you type. `Enter` / `Shift+Enter` (or `Up` /
+  `Down`) go to the match before / after, `Esc` closes it, `Aa` and `.*`
+  turn on case sensitive and regular expression search. It floats over the
+  terminal, so the window keeps its size, and it is only made when it is
+  first used. In the bar, copy, paste and select all are for its text.
+
+### Fixed
+
+- Fix a search for a text with `.`, `*`, `(` and the like failing from the
+  second time on: the text was escaped once more with every search.
+- Fix `F3` / `Shift+F3` finding nothing in a tab where the Find dialog was
+  never open.
+
 ## [0.12.1] - 2026-10-27
 
 ### Fixed

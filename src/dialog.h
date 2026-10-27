@@ -107,9 +107,6 @@ void create_dialog(gchar *dialog_title_translation, gchar *dialog_title,  Dialog
 		   gint response, gchar *icon, gchar *title, gboolean selectable, gint max_width_chars,
 		   gboolean state_bottom, gint create_entry_hbox, gint entry_hbox_spacing,
 		   struct Dialog *dialog_data);
-void refresh_regex_settings(GtkWidget *widget, struct Window *win_data);
-void refresh_regex(struct Window *win_data, struct Dialog *dialog_data);
-void find_str(GtkWidget *widget, Dialog_Find_Type type);
 GtkWidget *create_entry_widget (GtkWidget *box, gchar *contents, gchar *name, gchar *default_value, gboolean activates_default);
 GtkWidget *create_frame_widget( struct Dialog *dialog_data, gchar *label,
 				GtkWidget *label_widget, GtkWidget *child, guint padding);

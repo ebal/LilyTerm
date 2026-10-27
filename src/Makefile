@@ -49,7 +49,7 @@ CFLAGS ?= -Wall -Werror -Os
 #	 -DGTK_DISABLE_SINGLE_INCLUDES -DGSEAL_ENABLE
 OBJ_PKG_CMD = $(PKGCONFIG) $(PKG_CONFIG_FLAGS) --cflags $(GTK) $(VTE)
 BINARY_PKG_CMD = $(PKGCONFIG) $(PKG_CONFIG_FLAGS) --cflags --libs $(GTK) $(VTE)
-SOURCE_FILES = socket.c menu.c profile.c dialog.c pagename.c notebook.c font.c \
+SOURCE_FILES = socket.c menu.c profile.c dialog.c pagename.c notebook.c font.c search.c \
 	       property.c window.c misc.c console.c main.c
 OBJ = $(SOURCE_FILES:.c=.o)
 
