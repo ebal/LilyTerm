@@ -1,0 +1,44 @@
+# Re-run a release once when its macOS job never got a runner.
+#
+# GitHub sometimes has no macos-15 runner for a job: it waits in the queue,
+# is cancelled (15 min for v0.14.1), and the release job is skipped. The
+# fix was to re-run the failed jobs, by hand. This does that once, for a
+# tag run whose macos job was cancelled before a runner took it, and for
+# nothing else: a job that failed (a build or a test) is not retried.
+
+name: retry
+
+on:
+  workflow_run:
+    workflows: [build]
+    types: [completed]
+
+permissions:
+  actions: write
+
+jobs:
+  retry:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1 &&
+      github.event.workflow_run.event == 'push' &&
+      startsWith(github.event.workflow_run.head_branch, 'v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Re-run the failed jobs if the macos job got no runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN: ${{ github.event.workflow_run.id }}
+        run: |
+          jobs=$(gh api "repos/$REPO/actions/runs/$RUN/attempts/1/jobs")
+          # cancelled, and no runner ever took it: it did not run at all
+          no_runner='.jobs[] | select(.name == "macos" and .conclusion == "cancelled"
+                                      and (.runner_name // "") == "")'
+          if echo "$jobs" | jq -e "$no_runner" > /dev/null; then
+            echo "The macos job got no runner: re-running the failed jobs of run $RUN"
+            gh api -X POST "repos/$REPO/actions/runs/$RUN/rerun-failed-jobs"
+          else
+            echo "The run failed for another reason: no retry"
+          fi

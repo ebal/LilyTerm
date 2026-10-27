@@ -9,6 +9,14 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Changed
+
+- Build LilyTerm with a parallel `make` in the test suite and in the
+  static build (3.4 s instead of 12.9 s on 8 cores), and run the test
+  script of the source tree in the test image, so that a change of the
+  script needs no new image. A release whose macOS job got no runner on
+  GitHub is re-run once by itself (`.github/workflows/retry.yml`).
+
 ## [0.14.1] - 2026-10-27
 
 ### Fixed

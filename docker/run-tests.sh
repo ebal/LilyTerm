@@ -6,6 +6,9 @@
 #   run-tests                 build /src out-of-tree in /build, then test it
 #   LILYTERM=/path/to/binary run-tests     only test an already built binary
 #
+# The dev image runs the copy in /src (docker/Dockerfile.dev); the static
+# test image has its own copy in /usr/local/bin/run-tests.
+#
 # Environment:
 #   SRC       source tree                      [/src]
 #   BUILD     scratch build directory          [/build]
@@ -92,7 +95,7 @@ if [ -z "$LILYTERM" ]; then
 	fi
 
 	# A sanitizer report is only readable with the symbols: no strip then
-	if make ${SANITIZE:+STRIP=true} > "$OUT/make.log" 2>&1; then
+	if make -j"$(nproc)" ${SANITIZE:+STRIP=true} > "$OUT/make.log" 2>&1; then
 		ok "make ($(grep -c 'warning:' "$OUT/make.log") compiler warnings)"
 	else
 		ng "make (see $OUT/make.log)"; grep -E 'error|Error' "$OUT/make.log" | head -40; exit 1
@@ -182,7 +185,8 @@ run_gui_tests() {
 
 	# The terminal must really draw text: the 3 colored words and the
 	# antialiased glyphs give far more than a handful of distinct colors.
-	local shot="$work/screenshot.png" colors=0 tries=50
+	# up to 30 s: other jobs of the runner may load the host at the same time
+	local shot="$work/screenshot.png" colors=0 tries=150
 	while [ $tries -gt 0 ]; do
 		if [ "$backend" = x11 ]; then
 			xwd -root -silent 2>/dev/null | $MAGICK xwd:- "$shot" 2>/dev/null

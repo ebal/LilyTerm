@@ -208,7 +208,7 @@ COPY . /build/lilyterm
 RUN set -eu; cd /build/lilyterm; \
     make distclean >/dev/null 2>&1 || true; \
     CFLAGS="$CFLAGS -Wall" ./configure --prefix=/usr --sysconfdir=/etc/xdg; \
-    make PKG_CONFIG_FLAGS=--static \
+    make -j"$(nproc)" PKG_CONFIG_FLAGS=--static \
          LDFLAGS="-static-pie -Wl,--gc-sections -Wl,--as-needed" \
          LIBS="-lstdc++ -lm"; \
     make install DESTDIR=/build/dist; \

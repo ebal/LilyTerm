@@ -23,6 +23,9 @@ so nothing is written to your checkout. To keep the logs and screenshots:
 docker run --rm -v "$PWD":/src:ro -v /tmp/lilyterm-test:/build/test-output lilyterm-dev
 ```
 
+The image runs `docker/run-tests.sh` of the source in `/src`, not a copy of
+its own: a change of the script needs no new image.
+
 ## The test suite (`run-tests.sh`)
 
 `run-tests.sh` configures, builds and installs LilyTerm, runs the unit

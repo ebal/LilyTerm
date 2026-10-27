@@ -23,6 +23,8 @@ ENV LANG=C.UTF-8 \
     NO_AT_BRIDGE=1 \
     XDG_RUNTIME_DIR=/tmp/xdg-runtime
 
-COPY docker/run-tests.sh /usr/local/bin/run-tests
+# The test script is the one of the source in /src, not a copy in the image:
+# a change of it does not make a new image (CI copies the source to /src,
+# docker run mounts it there).
 WORKDIR /build
-CMD ["run-tests"]
+CMD ["bash", "/src/docker/run-tests.sh"]
