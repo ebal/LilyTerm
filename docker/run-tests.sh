@@ -352,6 +352,78 @@ run_gui_tests() {
 	[ "$backend" = x11 ] && run_url_click_tests "$work"
 	# --- 9. -e asks before it runs a command (X11: the window name)
 	[ "$backend" = x11 ] && run_execute_confirm_test "$work"
+	# --- 10. a click on an OSC 8 hyperlink (X11: the mouse)
+	[ "$backend" = x11 ] && run_osc8_tests "$work"
+}
+
+# Links that the program marks with OSC 8: their text says nothing of where
+# they go, so no pattern finds them. A web link runs web_browser, a file on
+# this machine runs file_manager with file:///PATH; a file on another machine
+# (ls --hyperlink over ssh) and another scheme run nothing. The target of the
+# link under the mouse shows up in a corner by the time of the next click
+# (after the 2 s of a link that runs nothing): the click must go through it.
+# (A tooltip did not let it: the ssh: link was never clicked.)
+run_osc8_tests() {
+	local work=$1 odir="$1/osc8" id pid host
+	host=$(hostname)
+	mkdir -p "$odir"
+	cat > "$odir/shell" <<-EOF
+		#!/bin/sh
+		link() { printf '\033]8;;%s\033\\\\%s\033]8;;\033\\\\\n' "\$1" "\$2"; }
+		printf '\033[H\033[2J'
+		link https://example.com/osc8-test 'click here'
+		link 'file://$host/etc/hosts' 'local file'
+		link file://some-other-host/etc/hosts 'remote file'
+		link ssh://example.com 'ssh link'
+		while [ ! -e "$odir/quit" ]; do sleep 0.2; done
+	EOF
+	printf '#!/bin/sh\nprintf "%%s\\n" "$@" > "%s/opened.tmp" && mv "%s/opened.tmp" "%s/opened"\n' \
+		"$odir" "$odir" "$odir" > "$odir/open"
+	chmod +x "$odir/shell" "$odir/open"
+	"$LILYTERM" -p | sed -e "s|^web_browser = .*|web_browser = $odir/open|" \
+		-e 's/^web_method = .*/web_method = 1/' \
+		-e "s|^file_manager = .*|file_manager = $odir/open|" \
+		-e 's/^file_method = .*/file_method = 1/' > "$odir/profile"
+	SHELL="$odir/shell" timeout 60 "$LILYTERM" -s -u "$odir/profile" -g 80x6 > "$work/osc8.log" 2>&1 &
+	pid=$!
+	if ! wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+		ng "[x11] OSC 8: no LilyTerm window"; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; return
+	fi
+	sleep 1.5
+	# set by xdotool getwindowgeometry --shell
+	# shellcheck disable=SC2034
+	local WIDTH HEIGHT X Y SCREEN WINDOW line want what
+	eval "$(xdotool getwindowgeometry --shell "$id")"
+	# click LINE (1 ... 6) at its 5th column; WANT: what open got, '' for nothing
+	for line in 1 2 3 4; do
+		case $line in
+			1) want=https://example.com/osc8-test; what='a web link runs web_browser';;
+			2) want=file:///etc/hosts; what='a file on this machine runs file_manager with file:///PATH';;
+			3) want=''; what='a file on another machine runs nothing';;
+			4) want=''; what='an ssh: link runs nothing';;
+		esac
+		rm -f "$odir/opened"
+		xdotool mousemove --window "$id" $((WIDTH * 9 / 160)) $((HEIGHT * (2 * line - 1) / 12)) click 1
+		if [ -n "$want" ]; then
+			if wait_for 5 test -s "$odir/opened" && [ "$(cat "$odir/opened")" = "$want" ]; then
+				ok "[x11] OSC 8: $what ($want)"
+			else
+				ng "[x11] OSC 8: $what: got '$(cat "$odir/opened" 2>/dev/null)', expected '$want'"
+			fi
+		else
+			sleep 2
+			if [ -e "$odir/opened" ]; then
+				ng "[x11] OSC 8: $what, but it ran with '$(cat "$odir/opened")'"
+			else
+				ok "[x11] OSC 8: $what"
+			fi
+		fi
+	done
+	if ! kill -0 "$pid" 2>/dev/null; then
+		ng "[x11] OSC 8: LilyTerm died"; sed 's/^/      /' "$work/osc8.log" | tail -10
+	fi
+	touch "$odir/quit"
+	wait "$pid" 2>/dev/null
 }
 
 # type_text BACKEND TEXT: type TEXT into the focused widget of LilyTerm

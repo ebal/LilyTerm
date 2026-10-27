@@ -25,6 +25,11 @@
 // It floats over the terminal (a GtkOverlay), so the window keeps its size in
 // characters. It is made the first time it is shown: a window that never
 // searches pays nothing for it.
+//
+// The same overlay shows the target of the OSC 8 link under the mouse in the
+// bottom right corner, as web browsers do. Not a tooltip: that one shows up
+// just below the link, over the next line, and takes the click meant for
+// the link there (ls --hyperlink has one on every line).
 
 #include "search.h"
 
@@ -313,6 +318,38 @@ static gboolean search_set_regex(struct Window *win_data, GtkWidget *vte)
 	}
 	vte_regex_unref(regex);
 	return TRUE;
+}
+
+// Show URI, the target of the OSC 8 link under the mouse, or hide it (NULL).
+// The clicks go through it, to the terminal.
+void show_link_target(struct Window *win_data, const gchar *uri)
+{
+#ifdef SAFEMODE
+	if ((win_data==NULL) || (win_data->overlay==NULL)) return;
+#endif
+	if (uri==NULL)
+	{
+		if (win_data->link_target) gtk_widget_hide(win_data->link_target);
+		return;
+	}
+	if (win_data->link_target==NULL)
+	{
+		win_data->link_target = gtk_frame_new(NULL);
+		gtk_style_context_add_class(gtk_widget_get_style_context(win_data->link_target), "app-notification");
+		gtk_widget_set_halign(win_data->link_target, GTK_ALIGN_END);
+		gtk_widget_set_valign(win_data->link_target, GTK_ALIGN_END);
+		gtk_widget_set_margin_end(win_data->link_target, 12);
+		gtk_widget_set_margin_bottom(win_data->link_target, 4);
+		GtkWidget *label = gtk_label_new(NULL);
+		gtk_label_set_ellipsize(GTK_LABEL(label), PANGO_ELLIPSIZE_MIDDLE);
+		gtk_label_set_max_width_chars(GTK_LABEL(label), 80);
+		g_object_set(G_OBJECT(label), "margin", 4, NULL);
+		gtk_container_add(GTK_CONTAINER(win_data->link_target), label);
+		gtk_overlay_add_overlay(GTK_OVERLAY(win_data->overlay), win_data->link_target);
+		gtk_overlay_set_overlay_pass_through(GTK_OVERLAY(win_data->overlay), win_data->link_target, TRUE);
+	}
+	gtk_label_set_text(GTK_LABEL(gtk_bin_get_child(GTK_BIN(win_data->link_target))), uri);
+	gtk_widget_show_all(win_data->link_target);
 }
 
 // STATUS: why nothing was found, or NULL when all is well

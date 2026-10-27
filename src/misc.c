@@ -891,6 +891,44 @@ gchar *get_mailto_url(const gchar *address)
 	return g_strconcat("mailto:", address, NULL);
 }
 
+// The kind of link (TAG_WWW, TAG_FTP, TAG_FILE or TAG_MAIL) of URI, a
+// hyperlink that a program marked with OSC 8 (ls --hyperlink, gcc, ...),
+// and in *URL the URL to open for it. -1 for one that LilyTerm does not open:
+// another scheme (ssh:, a custom handler, ...), or a file on another machine
+// than HOST_NAME (ls on a server over ssh says file://SERVER/...). A local
+// file:// URL becomes file:///PATH, which open(1) and xdg-open both take.
+// Free *URL with g_free().
+gint get_hyperlink_tag(const gchar *uri, const gchar *host_name, gchar **url)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_hyperlink_tag() with uri = %s, host_name = %s", uri, host_name);
+#endif
+	*url = NULL;
+	if (uri==NULL) return -1;
+
+	// NULL without a valid scheme; any case (HTTP: is http:)
+	gchar *scheme = g_uri_parse_scheme(uri);
+	if (scheme==NULL) return -1;
+	gint tag = -1;
+	if ((g_ascii_strcasecmp(scheme, "http")==0) || (g_ascii_strcasecmp(scheme, "https")==0))
+		tag = TAG_WWW;
+	else if ((g_ascii_strcasecmp(scheme, "ftp")==0) || (g_ascii_strcasecmp(scheme, "ftps")==0))
+		tag = TAG_FTP;
+	else if (g_ascii_strcasecmp(scheme, "mailto")==0)
+		tag = TAG_MAIL;
+	else if (g_ascii_strcasecmp(scheme, "file")==0)
+	{
+		gchar *path = get_local_dir_from_uri(uri, host_name);
+		if (path) *url = g_filename_to_uri(path, NULL, NULL);
+		g_free(path);
+		if (*url) tag = TAG_FILE;
+	}
+	g_free(scheme);
+
+	if ((tag >= 0) && (*url==NULL)) *url = g_strdup(uri);
+	return tag;
+}
+
 // The regex that finds TEXT: TEXT itself with USE_REGEX, else TEXT with its
 // special characters escaped. NULL when there is nothing to find. TEXT stays
 // as it is: the search bar escaped the text of the search in place before,

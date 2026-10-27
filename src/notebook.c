@@ -610,6 +610,9 @@ struct Page *add_page(struct Window *win_data,
 			 G_CALLBACK(vte_button_press), page_data);
 	g_signal_connect(G_OBJECT(page_data->vte), "button-release-event",
 			 G_CALLBACK(vte_button_release), page_data);
+	// show where an OSC 8 link goes: its text can say anything
+	g_signal_connect(G_OBJECT(page_data->vte), "hyperlink-hover-uri-changed",
+			 G_CALLBACK(vte_hyperlink_hover), page_data);
 
 	add_remove_window_title_changed_signal(page_data);
 
@@ -1506,6 +1509,23 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 	return FALSE;
 }
 
+// The pointer moved onto (URI) or off (NULL) an OSC 8 link: show its target
+// in the corner of the window (search.c)
+void vte_hyperlink_hover(GtkWidget *vte, const gchar *uri, GdkRectangle *bbox, struct Page *page_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch vte_hyperlink_hover() with uri = %s", uri);
+#endif
+#ifdef SAFEMODE
+	if ((page_data==NULL) || (page_data->window==NULL)) return;
+#endif
+	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(page_data->window), "Win_Data");
+#ifdef SAFEMODE
+	if (win_data==NULL) return;
+#endif
+	show_link_target(win_data, uri);
+}
+
 gboolean vte_button_release(GtkWidget *vte, GdkEventButton *event, struct Page *page_data)
 {
 #ifdef DETAIL
@@ -1793,6 +1813,20 @@ gchar *get_url(GdkEventButton *event, struct Page *page_data, gint *tag)
 #ifdef SAFEMODE
 	if ((page_data==NULL) || (event==NULL)) return NULL;
 #endif
+	// A hyperlink that the program marked (OSC 8) comes first: it says what
+	// the text links to, a pattern only guesses
+	gchar *hyperlink = vte_terminal_hyperlink_check_event(VTE_TERMINAL(page_data->vte), (GdkEvent*)event);
+	if (hyperlink)
+	{
+		gchar *hyperlink_url = NULL;
+		gint hyperlink_tag = get_hyperlink_tag(hyperlink, g_get_host_name(), &hyperlink_url);
+		g_free(hyperlink);
+		// one that is not opened (ssh:, a file on another machine) is no link
+		if (hyperlink_tag < 0) return NULL;
+		if (tag) *tag = hyperlink_tag;
+		return hyperlink_url;
+	}
+
 	gint vte_tag = -1;
 	gchar *url = vte_terminal_match_check_event (VTE_TERMINAL(page_data->vte), (GdkEvent*)event, &vte_tag);
 	if (url==NULL) return NULL;

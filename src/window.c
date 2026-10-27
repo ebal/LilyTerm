@@ -3215,6 +3215,7 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 	win_data->search_status = NULL;
 	win_data->search_case_button = NULL;
 	win_data->search_regex_button = NULL;
+	win_data->link_target = NULL;
 
 	// win_data->checking_menu_item;
 	// win_data->dialog_activated;

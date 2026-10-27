@@ -34,6 +34,11 @@ with everything inside, or installed with Homebrew.
   expression.
 - Hyperlinks: click a web or `file://` URL, or an email address, to open
   it. An email address opens as a `mailto:` URL in your mail client.
+  Links that programs mark with OSC 8 (`ls --hyperlink`, `gcc`, `git`,
+  `systemctl`, ...) open the same way, and show where they go in the
+  corner of the window when the mouse is over them. Only web, ftp, `mailto:` and `file://` links open,
+  and a `file://` link only to a file on this machine (not one that `ls`
+  printed on a server over ssh).
 - One running LilyTerm for all windows: a second `lilyterm` command opens
   its window in the process that already runs, over a socket. Start
   LilyTerm with `-s` to run a window in its own process.

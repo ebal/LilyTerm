@@ -932,6 +932,8 @@ struct Window
 	GtkWidget *search_status;
 	GtkWidget *search_case_button;
 	GtkWidget *search_regex_button;
+	// the target of the OSC 8 link under the mouse, made when first needed
+	GtkWidget *link_target;
 
 	gboolean checking_menu_item;
 	gboolean kill_color_demo_vte;

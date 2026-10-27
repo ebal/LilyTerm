@@ -156,6 +156,8 @@ void init_new_page(struct Window *win_data,
 	vte_terminal_set_scroll_on_output(VTE_TERMINAL(page_data->vte), FALSE);
 	vte_terminal_set_scroll_on_keystroke(VTE_TERMINAL(page_data->vte), TRUE);
 	vte_terminal_search_set_wrap_around (VTE_TERMINAL(page_data->vte), TRUE);
+	// links that programs mark with OSC 8 (ls --hyperlink, gcc, ...)
+	vte_terminal_set_allow_hyperlink(VTE_TERMINAL(page_data->vte), TRUE);
 
 	set_hyperlink(win_data, page_data);
 	set_cursor_blink(win_data, page_data);

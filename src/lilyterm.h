@@ -72,6 +72,7 @@ gchar *join_pasted_lines(const gchar *str);
 gchar *replace_xdg_open(const gchar *command);
 gchar *get_mailto_url(const gchar *address);
 gchar *get_search_pattern(const gchar *text, gboolean use_regex);
+gint get_hyperlink_tag(const gchar *uri, const gchar *host_name, gchar **url);
 gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name);
 gint macos_us_keyval(guint16 hardware_keycode, gboolean shift);
 GdkRGBA convert_color_to_rgba(GdkColor color);
@@ -312,6 +313,7 @@ void search_bar_hide(struct Window *win_data);
 gboolean search_bar_has_focus(struct Window *win_data);
 gboolean search_bar_key(gint binding);
 gboolean search_find(struct Window *win_data, Dialog_Find_Type type);
+void show_link_target(struct Window *win_data, const gchar *uri);
 
 //
 // **************************** menu.c ****************************

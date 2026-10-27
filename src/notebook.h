@@ -36,6 +36,7 @@ void create_child_process_failed_dialog(struct Window *win_data, gchar *message,
 void clear_arg(struct Window *win_data);
 gboolean vte_button_press(GtkWidget *widget, GdkEventButton *event, struct Page *page_data);
 gboolean vte_button_release(GtkWidget *widget, GdkEventButton *event,  struct Page *page_data);
+void vte_hyperlink_hover(GtkWidget *vte, const gchar *uri, GdkRectangle *bbox, struct Page *page_data);
 void vte_grab_focus(GtkWidget *vte, gpointer user_data);
 gboolean compare_win_page_encoding(GtkWidget *menu_item_encoding, gchar *encoding_str);
 // void vte_size_allocate (GtkWidget *vte, GtkAllocation *allocation, gpointer user_data);

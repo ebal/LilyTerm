@@ -256,6 +256,45 @@ static void test_get_mailto_url(void)
 	g_assert_null(get_mailto_url(NULL));
 }
 
+// ---- OSC 8 hyperlinks: which ones open, with what ----
+
+static void test_get_hyperlink_tag(void)
+{
+	struct { const gchar *uri; gint tag; const gchar *url; } cases[] = {
+		{ "https://example.com/a?b=c#d", TAG_WWW, "https://example.com/a?b=c#d" },
+		{ "HTTP://example.com/", TAG_WWW, "HTTP://example.com/" },
+		{ "ftp://example.com/pub", TAG_FTP, "ftp://example.com/pub" },
+		{ "ftps://example.com/pub", TAG_FTP, "ftps://example.com/pub" },
+		{ "mailto:lily@example.com", TAG_MAIL, "mailto:lily@example.com" },
+		// ls --hyperlink: file://HOST/PATH, opened only on HOST
+		{ "file://mybox/etc/hosts", TAG_FILE, "file:///etc/hosts" },
+		{ "file://mybox.local/etc/hosts", TAG_FILE, "file:///etc/hosts" },
+		{ "file://localhost/etc/hosts", TAG_FILE, "file:///etc/hosts" },
+		{ "file:///etc/hosts", TAG_FILE, "file:///etc/hosts" },
+		{ "file:///tmp/a%20b", TAG_FILE, "file:///tmp/a%20b" },
+		{ "file://server/etc/hosts", -1, NULL },
+		// never opened: another scheme, or none
+		{ "ssh://example.com", -1, NULL },
+		{ "javascript:alert(1)", -1, NULL },
+		{ "x-custom-handler:run", -1, NULL },
+		{ "/etc/hosts", -1, NULL },
+		{ "-rf", -1, NULL },
+		{ "", -1, NULL },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *url = (gchar *)"unchanged";
+		gint tag = get_hyperlink_tag(cases[i].uri, "mybox", &url);
+		g_assert_cmpint(tag, ==, cases[i].tag);
+		g_assert_cmpstr(url, ==, cases[i].url);
+		g_free(url);
+	}
+	gchar *url = (gchar *)"unchanged";
+	g_assert_cmpint(get_hyperlink_tag(NULL, "mybox", &url), ==, -1);
+	g_assert_null(url);
+}
+
 // ---- the regex of the search bar ----
 
 static void test_get_search_pattern(void)
@@ -383,6 +422,7 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/replace-xdg-open", test_replace_xdg_open);
 	g_test_add_func("/misc/mailto-url", test_get_mailto_url);
 	g_test_add_func("/misc/search-pattern", test_get_search_pattern);
+	g_test_add_func("/misc/hyperlink-tag", test_get_hyperlink_tag);
 	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
 	g_test_add_func("/misc/macos-us-keyval", test_macos_us_keyval);
 	return g_test_run();

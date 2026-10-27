@@ -18,6 +18,11 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
   turn on case sensitive and regular expression search. It floats over the
   terminal, so the window keeps its size, and it is only made when it is
   first used. In the bar, copy, paste and select all are for its text.
+- Add OSC 8 hyperlinks: a link that a program marks (`ls --hyperlink`,
+  `gcc`, `git`, `systemctl`, ...) opens with a click like a URL, and its
+  target is shown in the corner of the window when the mouse is over it. Only `http(s)`, `ftp(s)`,
+  `mailto:` and `file://` links open, and a `file://` link only to a file
+  on this machine.
 
 ### Fixed
 

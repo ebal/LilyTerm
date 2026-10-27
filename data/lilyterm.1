@@ -123,6 +123,11 @@ Run a command when starting up. Must be the final option.
 Same as -e/-x option, but will not show a comfirm dialog window.
 .RE
 
+.SH HYPERLINKS
+A click on a web or ftp URL, a \fBfile://\fR URL or an email address opens it with the commands of the profile
+(\fBweb_browser\fR, \fBftp_client\fR, \fBfile_manager\fR, \fBemail_client\fR).
+Links that programs mark with OSC 8 (\fBls \-\-hyperlink\fR, \fBgcc\fR, ...) open the same way, and show their target in the corner of the window when the mouse is over them.
+Only \fBhttp(s)\fR, \fBftp(s)\fR, \fBmailto:\fR and \fBfile://\fR links open, and a \fBfile://\fR link only to a file on this machine.
 .SH KEYBOARD CONTROL
 The following key bindings may custom or disable by the right click menu \fB[Set key binding]\fR.
 They are the defaults on Linux. On macOS the defaults use the Command key instead (\fB<Cmd><T>\fR new tab,
