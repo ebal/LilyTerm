@@ -304,6 +304,25 @@ run_gui_tests() {
 	[ "$backend" = x11 ] && run_word_and_bell_tests "$work"
 	# --- 8. a click on a link (X11: the mouse)
 	[ "$backend" = x11 ] && run_url_click_tests "$work"
+	# --- 9. -e asks before it runs a command (X11: the window name)
+	[ "$backend" = x11 ] && run_execute_confirm_test "$work"
+}
+
+# lilyterm -e asks before it runs its command, in a dialog that comes before
+# the window has a tab. A check for "no tab, no dialog" once took that
+# dialog away too.
+run_execute_confirm_test() {
+	local work=$1 pid
+	timeout 20 "$LILYTERM" -s -e true > "$work/execute.log" 2>&1 &
+	pid=$!
+	if wait_for 10 eval 'xdotool search --onlyvisible --name "Confirm to execute" > /dev/null 2>&1'; then
+		ok "[x11] -e asks before it runs its command"
+	else
+		ng "[x11] -e: no \"Confirm to execute\" dialog"
+		sed 's/^/      /' "$work/execute.log" | head -10
+	fi
+	kill "$pid" 2>/dev/null
+	wait "$pid" 2>/dev/null
 }
 
 # A double click selects a word by word_chars, a bell sets the urgency hint,

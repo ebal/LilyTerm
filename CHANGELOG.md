@@ -9,6 +9,10 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix a possible crash when a dialog opens for a window without a tab.
+
 ## [0.12.0] - 2026-10-20
 
 ### Added

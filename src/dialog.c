@@ -149,6 +149,10 @@ GtkResponseType dialog(GtkWidget *widget, gsize style)
 		dialog_data->current_page_no = gtk_notebook_get_current_page(GTK_NOTEBOOK(
 									page_data->notebook));
 	}
+	// The dialogs below are for the current page, but the one that confirms
+	// a -e command: it comes before the window has a page. A window without
+	// one (still being made, or closing) gets none of the others.
+	if ((page_data==NULL) && (style != CONFIRM_TO_EXECUTE_COMMAND)) goto FINISH;
 
 	gboolean tabs_bar_is_shown = TRUE;
 	gint create_entry_hbox = 0;
