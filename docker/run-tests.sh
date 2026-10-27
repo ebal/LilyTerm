@@ -155,14 +155,17 @@ run_gui_tests() {
 	export LILYTERM_TEST_TAB="left	right" LILYTERM_TEST_EMPTY=
 
 	# --- 1. a command runs inside the terminal, with a sane environment
+	# It stays until the screenshot below is taken: with a fixed sleep, a
+	# terminal that drew slowly (a loaded host) was gone before it was seen.
 	local marker="$work/env.txt"
-	timeout 40 "$LILYTERM" -s -E sh -c "
+	rm -f "$work/run1.quit"
+	timeout 90 "$LILYTERM" -s -E sh -c "
 		{ echo TERM=\$TERM; echo VTE_VERSION=\$VTE_VERSION; echo COLORTERM=\$COLORTERM;
 		  echo WINDOWID=\$WINDOWID; echo SIZE=\$(stty size); tty; } > $marker.tmp
 		mv $marker.tmp $marker
 		printf '\\033[1;37;41m LilyTerm \\033[1;37;42m rendering \\033[1;37;44m test \\033[0m\\n'
 		echo 'The quick brown fox jumps over the lazy dog 0123456789'
-		sleep 12" > "$work/run1.log" 2>&1 &
+		while [ ! -e $work/run1.quit ]; do sleep 0.2; done" > "$work/run1.log" 2>&1 &
 	local pid=$!
 
 	if wait_for 30 test -s "$marker"; then
@@ -203,6 +206,8 @@ run_gui_tests() {
 	else
 		ng "[$backend] nothing seems to be rendered (${colors:-0} distinct colors in $shot)"
 	fi
+	# now the terminal may end: its shell exits, and LilyTerm with it
+	touch "$work/run1.quit"
 
 	# LilyTerm must exit by itself, cleanly, when the last tab closes
 	if wait "$pid"; then

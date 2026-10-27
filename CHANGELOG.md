@@ -15,7 +15,10 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
   static build (3.4 s instead of 12.9 s on 8 cores), and run the test
   script of the source tree in the test image, so that a change of the
   script needs no new image. A release whose macOS job got no runner on
-  GitHub is re-run once by itself (`.github/workflows/retry.yml`).
+  GitHub is re-run once by itself (`.github/workflows/retry.yml`). The
+  Gitea jobs run at the same time; their static job copies the binary out
+  of its test image instead of a second `docker build`, and the first
+  terminal of the tests stays open until it is seen drawn.
 
 ## [0.14.1] - 2026-10-27
 

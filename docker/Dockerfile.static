@@ -228,6 +228,10 @@ RUN apk add --no-cache bash coreutils procps file xvfb xdotool xprop xwd imagema
 ENV LANG=C.UTF-8 NO_AT_BRIDGE=1 XDG_RUNTIME_DIR=/tmp/xdg-runtime \
     LILYTERM=/usr/bin/lilyterm BUILD=/tmp OUT=/tmp/test-output
 COPY --from=build /build/dist/ /
+# The files of LilyTerm alone once more, for the Gitea job to copy out of this
+# image: a second docker build (--target export) could rebuild every
+# dependency when the build cache lost them in between.
+COPY --from=build /build/dist/ /dist/
 COPY docker/run-tests.sh /usr/local/bin/run-tests
 CMD ["run-tests"]
 

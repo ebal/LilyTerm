@@ -125,8 +125,18 @@ jobs:
           path: test-output
           if-no-files-found: ignore
 
+      # From the test image built above, as the export stage lays them out: not
+      # with a second docker build, which rebuilt every dependency (27 min) in
+      # run 143, when the build cache had lost them since the first one
       - name: Export the binary and its data files
-        run: docker build -f docker/Dockerfile.static --target export --output dist .
+        run: |
+          c=lilyterm-export-${{ gitea.run_id }}
+          trap 'docker rm -f "$c" > /dev/null 2>&1' EXIT
+          docker create --name "$c" lilyterm-static-test:ci > /dev/null
+          rm -rf dist && mkdir dist
+          docker cp "$c":/dist/usr/bin/lilyterm dist/lilyterm
+          docker cp "$c":/dist/usr/share dist/share
+          docker cp "$c":/dist/etc dist/etc
 
       - name: Package
         env:
