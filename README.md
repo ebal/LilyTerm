@@ -97,7 +97,8 @@ The .dmg is built for the macOS version of the GitHub runner and later
 On macOS, window transparency is off (GTK+ 3 would draw the title bar
 clear as well). LilyTerm has a menu bar there, and its key bindings use
 the Command key (see [Key bindings](#key-bindings)), so most Ctrl keys go
-to the programs in the terminal. Links open with `open`.
+to the programs in the terminal. Links open with `open`, also with a
+profile that says `xdg-open` (from Linux, or with xdg-utils installed).
 
 #### Or with Homebrew
 

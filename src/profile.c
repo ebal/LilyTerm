@@ -1644,19 +1644,13 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 				win_data->user_command[i].command = check_string_value(keyfile, "command",
 						command[i].name, win_data->user_command[i].command, TRUE, DISABLE_EMPTY_STR);
 #ifdef __APPLE__
-				// macOS has no xdg-open (unless one was installed): use open(1)
+				// Links open with open(1), the native way on macOS, also when
+				// an xdg-open was installed (xdg-utils from Homebrew)
 				gchar *open_command = replace_xdg_open(win_data->user_command[i].command);
 				if (open_command)
 				{
-					gchar *xdg_open = g_find_program_in_path("xdg-open");
-					if (xdg_open==NULL)
-					{
-						g_free(win_data->user_command[i].command);
-						win_data->user_command[i].command = open_command;
-						open_command = NULL;
-					}
-					g_free(xdg_open);
-					g_free(open_command);
+					g_free(win_data->user_command[i].command);
+					win_data->user_command[i].command = open_command;
 				}
 #endif
 				win_data->user_command[i].method = check_integer_value(

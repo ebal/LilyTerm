@@ -11,6 +11,8 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ### Fixed
 
+- Open links with `open` on macOS also when an `xdg-open` is installed
+  (xdg-utils from Homebrew) and the profile says `xdg-open`.
 - Fix a possible crash when a dialog opens for a window without a tab.
 
 ## [0.12.0] - 2026-10-20
