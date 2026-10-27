@@ -77,6 +77,7 @@ void set_allow_bold_text(GtkWidget *menuitem_allow_bold_text, struct Window *win
 void set_open_url_with_ctrl_pressed(GtkWidget *menuitem_open_url_with_ctrl_pressed, struct Window *win_data);
 void set_disable_url_when_ctrl_pressed(GtkWidget *menuitem_disable_url_when_ctrl_pressed, struct Window *win_data);
 void set_audible_bell(GtkWidget *widget, struct Window *win_data);
+void set_copy_on_select(GtkWidget *widget, struct Window *win_data);
 void urgent_beep(GtkWidget *window, struct Page *page_data);
 void launch_hide_and_show_tabs_bar(GtkWidget *widget, Switch_Type show_tabs_bar);
 void copy_url_clipboard(GtkWidget *widget, gpointer user_data);

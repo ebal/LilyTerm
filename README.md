@@ -47,6 +47,11 @@ with everything inside, or installed with Homebrew.
 - Tab names: a tab shows what runs in it, or the directory of the shell,
   as `~/src/LilyTerm` for a directory in your home. The whole name is in
   its tooltip.
+- Copy on select: with [Copy selected text to clipboard] in the right
+  click menu (`copy_on_select = 1` in the profile), a selection goes to the
+  clipboard as well, ready for `Ctrl+V` or `Cmd+V` in other programs. It
+  is off by default; the middle click pastes a selection either way.
+  Text copied to the clipboard has no spaces at the end of its lines.
 - One running LilyTerm for all windows: a second `lilyterm` command opens
   its window in the process that already runs, over a socket. Start
   LilyTerm with `-s` to run a window in its own process.

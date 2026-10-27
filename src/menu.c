@@ -288,6 +288,10 @@ gboolean create_menu(struct Window *win_data)
 	// Urgent bell
 	win_data->menuitem_urgent_bell = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu, _("Urgent bell"), NULL, NULL,
 								G_CALLBACK(set_urgent_bell), win_data);
+	// Copy on select
+	win_data->menuitem_copy_on_select = create_menu_item (CHECK_MENU_ITEM, misc_sub_menu,
+								  _("Copy selected text to clipboard"), NULL, NULL,
+								  G_CALLBACK(set_copy_on_select), win_data);
 	// ----------------------------------------
 	add_separator_menu (misc_sub_menu);
 
@@ -516,7 +520,7 @@ void copy_clipboard(GtkWidget *widget, struct Window *win_data)
 #ifdef SAFEMODE
 	if ((win_data==NULL) || (win_data->current_vte==NULL)) return;
 #endif
-	vte_terminal_copy_clipboard_format(VTE_TERMINAL(win_data->current_vte), VTE_FORMAT_TEXT);
+	copy_selection_to_clipboard(win_data->current_vte);
 }
 
 void paste_clipboard(GtkWidget *widget, struct Window *win_data)
@@ -751,6 +755,17 @@ void set_audible_bell(GtkWidget *menuitem_audible_bell, struct Window *win_data)
 			vte_terminal_set_audible_bell (VTE_TERMINAL(page_data->vte), win_data->audible_bell);
 	}
 	g_ptr_array_unref(all_pages);
+}
+
+void set_copy_on_select(GtkWidget *menuitem_copy_on_select, struct Window *win_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch set_copy_on_select() with win_data = %p", win_data);
+#endif
+#ifdef SAFEMODE
+	if ((menuitem_copy_on_select==NULL) || (win_data==NULL)) return;
+#endif
+	win_data->copy_on_select = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem_copy_on_select));
 }
 
 void set_urgent_bell(GtkWidget *menuitem_urgent_bell, struct Window *win_data)

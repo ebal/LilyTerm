@@ -358,6 +358,65 @@ run_gui_tests() {
 	[ "$backend" = x11 ] && run_osc8_tests "$work"
 	# --- 11. a click on a path (X11: the mouse)
 	[ "$backend" = x11 ] && run_path_click_tests "$work"
+	# --- 12. copy_on_select (X11: the mouse)
+	[ "$backend" = x11 ] && run_copy_on_select_tests "$work"
+}
+
+# With copy_on_select = 1, a selection goes to the clipboard: Ctrl Insert
+# pastes it into the shell, without the spaces at the end of its line. With
+# the default 0 the clipboard stays as it was.
+run_copy_on_select_tests() {
+	local work=$1 cdir="$1/copy" setting id pid got
+	mkdir -p "$cdir"
+	for setting in 1 0; do
+		rm -f "$cdir/line"
+		cat > "$cdir/shell" <<-EOF
+			#!/bin/sh
+			printf '\033[H\033[2J'
+			printf 'copy me   \n'
+			IFS= read -r line && printf '[%s]\n' "\$line" > "$cdir/line.tmp" && mv "$cdir/line.tmp" "$cdir/line"
+			while [ ! -e "$cdir/quit" ]; do sleep 0.2; done
+		EOF
+		chmod +x "$cdir/shell"
+		rm -f "$cdir/quit"
+		"$LILYTERM" -p | sed -e "s/^copy_on_select = .*/copy_on_select = $setting/" > "$cdir/profile"
+		if ! grep -q "^copy_on_select = $setting" "$cdir/profile"; then
+			ng "[x11] copy_on_select: lilyterm -p does not list it"; return
+		fi
+		SHELL="$cdir/shell" timeout 40 "$LILYTERM" -s -u "$cdir/profile" -g 80x5 > "$work/copy-$setting.log" 2>&1 &
+		pid=$!
+		id=''
+		if ! wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+			ng "[x11] copy_on_select = $setting: no LilyTerm window"; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; continue
+		fi
+		sleep 1.5
+		# set by xdotool getwindowgeometry --shell
+		# shellcheck disable=SC2034
+		local WIDTH HEIGHT X Y SCREEN WINDOW
+		eval "$(xdotool getwindowgeometry --shell "$id")"
+		# from the 1st column of the 1st line to the 30th: past its end
+		xdotool mousemove --window "$id" 2 $((HEIGHT / 10)) mousedown 1 \
+			mousemove --window "$id" $((WIDTH * 59 / 160)) $((HEIGHT / 10)) mouseup 1
+		sleep 0.5
+		send_keys x11 ctrl+Insert
+		sleep 0.3
+		send_keys x11 Return
+		wait_for 5 test -s "$cdir/line"
+		got=$(cat "$cdir/line" 2>/dev/null)
+		if [ "$setting" = 1 ]; then
+			if [ "$got" = "[copy me]" ]; then
+				ok "[x11] copy_on_select = 1: the selection is in the clipboard, without the spaces at its end"
+			else
+				ng "[x11] copy_on_select = 1: the shell got '$got', expected '[copy me]'"
+			fi
+		elif [ -s "$cdir/line" ] && [ "$got" != "[copy me]" ]; then
+			ok "[x11] copy_on_select = 0: a selection does not change the clipboard ($got)"
+		else
+			ng "[x11] copy_on_select = 0: the shell got '$got', the selection went to the clipboard"
+		fi
+		touch "$cdir/quit"
+		wait "$pid" 2>/dev/null
+	done
 }
 
 # A path opens with file_manager when it names a file: a relative one in the

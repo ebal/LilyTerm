@@ -610,6 +610,9 @@ struct Page *add_page(struct Window *win_data,
 			 G_CALLBACK(vte_button_press), page_data);
 	g_signal_connect(G_OBJECT(page_data->vte), "button-release-event",
 			 G_CALLBACK(vte_button_release), page_data);
+	// copy_on_select
+	g_signal_connect(G_OBJECT(page_data->vte), "selection-changed",
+			 G_CALLBACK(vte_selection_changed), page_data);
 	// show where an OSC 8 link goes: its text can say anything
 	g_signal_connect(G_OBJECT(page_data->vte), "hyperlink-hover-uri-changed",
 			 G_CALLBACK(vte_hyperlink_hover), page_data);
@@ -1453,6 +1456,8 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 						win_data->audible_bell);
 		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_urgent_bell),
 						win_data->urgent_bell);
+		gtk_check_menu_item_set_active (GTK_CHECK_MENU_ITEM(win_data->menuitem_copy_on_select),
+						win_data->copy_on_select);
 		if (gtk_notebook_get_show_tabs GTK_NOTEBOOK(win_data->notebook))
 		{
 			gtk_widget_hide (win_data->menuitem_show_tabs_bar);
@@ -1507,6 +1512,53 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 		return response;
 	}
 	return FALSE;
+}
+
+// With copy_on_select, a new selection goes to the clipboard too (VTE puts it
+// in the primary selection). Not the matches of the search bar: they would
+// replace the clipboard with each letter typed there.
+void vte_selection_changed(GtkWidget *vte, struct Page *page_data)
+{
+#ifdef DETAIL
+	g_debug("! Launch vte_selection_changed() with page_data = %p", page_data);
+#endif
+#ifdef SAFEMODE
+	if ((page_data==NULL) || (page_data->window==NULL)) return;
+#endif
+	struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(page_data->window), "Win_Data");
+#ifdef SAFEMODE
+	if (win_data==NULL) return;
+#endif
+	if ((! win_data->copy_on_select) || search_bar_has_focus(win_data)) return;
+	if (vte_terminal_get_has_selection(VTE_TERMINAL(vte)))
+		copy_selection_to_clipboard(vte);
+}
+
+// Copy the selection of VTE to the clipboard, without the blanks at the end
+// of its lines (VTE keeps the ones a program wrote, as ls pads its columns)
+void copy_selection_to_clipboard(GtkWidget *vte)
+{
+#ifdef DETAIL
+	g_debug("! Launch copy_selection_to_clipboard() with vte = %p", vte);
+#endif
+#ifdef SAFEMODE
+	if (vte==NULL) return;
+#endif
+#if VTE_CHECK_VERSION(0,76,0)
+	gchar *text = vte_terminal_get_text_selected(VTE_TERMINAL(vte), VTE_FORMAT_TEXT);
+	if ((text==NULL) || (text[0]=='\0'))
+	{
+		g_free(text);
+		return;
+	}
+	gchar *stripped = strip_trailing_blanks(text);
+	extern GtkClipboard *selection_clipboard;
+	gtk_clipboard_set_text(selection_clipboard, stripped, -1);
+	g_free(stripped);
+	g_free(text);
+#else
+	vte_terminal_copy_clipboard_format(VTE_TERMINAL(vte), VTE_FORMAT_TEXT);
+#endif
 }
 
 // The pointer moved onto (URI) or off (NULL) an OSC 8 link: show its target

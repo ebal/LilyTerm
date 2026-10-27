@@ -9,6 +9,20 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Added
+
+- Add [Copy selected text to clipboard] to the right click menu
+  (`copy_on_select` in the profile, off by default): a selection goes to
+  the clipboard as well as to the primary selection. The matches of the
+  search bar do not.
+
+### Changed
+
+- Copy to the clipboard without the spaces and tabs at the end of each
+  line (the padding of `ls` columns and of tables), with copy on select
+  and with [Copy] and its key. The middle click pastes the selection as
+  it is.
+
 ## [0.13.0] - 2026-10-27
 
 ### Added

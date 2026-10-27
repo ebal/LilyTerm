@@ -513,6 +513,7 @@ void init_window_parameters(struct Window *win_data)
 	win_data->open_url_with_ctrl_pressed = FALSE;
 	win_data->disable_url_when_ctrl_pressed = TRUE;
 	win_data->audible_bell = TRUE;
+	win_data->copy_on_select = FALSE;
 	win_data->urgent_bell = TRUE;
 	win_data->erase_binding = erase_binding[DEFAULT_ERASE_BINDING].value;
 	// win_data->current_menuitem_erase_binding;
@@ -1454,6 +1455,10 @@ void get_user_settings(struct Window *win_data, const gchar *encoding)
 								     "main",
 								     "audible_bell",
 								     win_data->audible_bell);
+			win_data->copy_on_select = check_boolean_value(keyfile,
+								       "main",
+								       "copy_on_select",
+								       win_data->copy_on_select);
 			win_data->urgent_bell = check_boolean_value(keyfile,
 								    "main",
 								    "urgent_bell",
@@ -2462,6 +2467,9 @@ GString *save_user_settings(GtkWidget *widget, struct Window *win_data)
 	g_string_append_printf(contents,"# Sets whether or not the terminal will beep\n"
 					"# when the child outputs the \"bl\" sequence.\n"
 					"audible_bell = %d\n\n", win_data->audible_bell);
+	g_string_append_printf(contents,"# Copy the text to the clipboard as soon as it is selected,\n"
+					"# not only to the primary selection (the middle click).\n"
+					"copy_on_select = %d\n\n", win_data->copy_on_select);
 	g_string_append_printf(contents,"# Sets whether or not the window's urgent tag will be set\n"
 					"# when the child outputs the \"bl\" sequence.\n"
 					"urgent_bell = %d\n\n", win_data->urgent_bell);

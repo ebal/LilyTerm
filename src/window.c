@@ -1588,7 +1588,7 @@ gboolean deal_key_press(GtkWidget *window, Key_Bindings type, struct Window *win
 			vte_terminal_select_all(VTE_TERMINAL(win_data->current_vte));
 			break;
 		case KEY_COPY_CLIPBOARD:
-			vte_terminal_copy_clipboard_format(VTE_TERMINAL(win_data->current_vte), VTE_FORMAT_TEXT);
+			copy_selection_to_clipboard(win_data->current_vte);
 			break;
 		case KEY_PASTE_CLIPBOARD:
 		{
@@ -3095,6 +3095,7 @@ void win_data_dup(struct Window *win_data_orig, struct Window *win_data)
 	win_data->menuitem_open_url_with_ctrl_pressed = NULL;
 	win_data->menuitem_disable_url_when_ctrl_pressed = NULL;
 	win_data->menuitem_audible_bell = NULL;
+	win_data->menuitem_copy_on_select = NULL;
 	win_data->menuitem_urgent_bell = NULL;
 	win_data->menuitem_show_tabs_bar = NULL;
 	win_data->menuitem_hide_tabs_bar = NULL;

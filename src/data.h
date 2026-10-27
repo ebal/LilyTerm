@@ -784,6 +784,7 @@ struct Window
 	GtkWidget *menuitem_disable_url_when_ctrl_pressed;
 	GtkWidget *menuitem_audible_bell;
 	GtkWidget *menuitem_urgent_bell;
+	GtkWidget *menuitem_copy_on_select;
 	GtkWidget *menuitem_show_tabs_bar;
 	GtkWidget *menuitem_hide_tabs_bar;
 	GtkWidget *menuitem_always_show_tabs_bar;
@@ -885,6 +886,8 @@ struct Window
 	gboolean open_url_with_ctrl_pressed;
 	gboolean disable_url_when_ctrl_pressed;
 	gboolean audible_bell;
+	// copy every new selection to the clipboard too
+	gboolean copy_on_select;
 	// urgent_bell will stores the currect setting
 	gboolean urgent_bell;
 	// urgent_bell will stores the currect status

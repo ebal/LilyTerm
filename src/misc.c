@@ -985,6 +985,38 @@ gchar *get_clicked_path(const gchar *text, const gchar *dir, const gchar *home)
 	return NULL;
 }
 
+// TEXT without the spaces and tabs at the end of each of its lines: the
+// padding of a table, or of ls, which a terminal keeps as it was written.
+// Free it with g_free().
+gchar *strip_trailing_blanks(const gchar *text)
+{
+	if (text==NULL) return NULL;
+
+	GString *stripped = g_string_sized_new(strlen(text));
+	const gchar *line = text;
+	while (*line)
+	{
+		const gchar *end = strchr(line, '\n');
+		gsize len = end ? (gsize)(end - line) : strlen(line);
+		gsize keep = len;
+		while ((keep > 0) && ((line[keep-1]==' ') || (line[keep-1]=='\t'))) keep--;
+		// keep a \r of a \r\n, but not the blanks before it
+		if ((keep > 0) && (line[keep-1]=='\r'))
+		{
+			gsize before = keep - 1;
+			while ((before > 0) && ((line[before-1]==' ') || (line[before-1]=='\t'))) before--;
+			g_string_append_len(stripped, line, before);
+			g_string_append_c(stripped, '\r');
+		}
+		else
+			g_string_append_len(stripped, line, keep);
+		if (end==NULL) break;
+		g_string_append_c(stripped, '\n');
+		line = end + 1;
+	}
+	return g_string_free(stripped, FALSE);
+}
+
 // DIR as a tab shows it: ~ for HOME, and ~/REST for a directory in it, as
 // shells say it; any other DIR as it is. A HOME of / stays /. Free it with
 // g_free().

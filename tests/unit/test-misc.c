@@ -390,6 +390,30 @@ static void test_get_clicked_path(void)
 	g_free(top);
 }
 
+// ---- copy: no blanks at the end of the lines ----
+
+static void test_strip_trailing_blanks(void)
+{
+	struct { const gchar *in, *out; } cases[] = {
+		{ "copy me   ", "copy me" },
+		{ "a  \nb\t\t\nc", "a\nb\nc" },
+		{ "file1    file2    \nfile3    \n", "file1    file2\nfile3\n" },
+		{ "dos  \r\nline \r\n", "dos\r\nline\r\n" },
+		{ "   \n", "\n" },
+		{ "  lead and  inner  ", "  lead and  inner" },
+		{ "\n\n", "\n\n" },
+		{ "", "" },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *out = strip_trailing_blanks(cases[i].in);
+		g_assert_cmpstr(out, ==, cases[i].out);
+		g_free(out);
+	}
+	g_assert_null(strip_trailing_blanks(NULL));
+}
+
 // ---- the directory as a tab shows it ----
 
 static void test_get_short_dir_name(void)
@@ -551,6 +575,7 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/path-regex", test_path_regex);
 	g_test_add_func("/misc/clicked-path", test_get_clicked_path);
 	g_test_add_func("/misc/short-dir-name", test_get_short_dir_name);
+	g_test_add_func("/misc/strip-trailing-blanks", test_strip_trailing_blanks);
 	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
 	g_test_add_func("/misc/macos-us-keyval", test_macos_us_keyval);
 	return g_test_run();
