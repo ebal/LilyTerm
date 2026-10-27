@@ -929,6 +929,62 @@ gint get_hyperlink_tag(const gchar *uri, const gchar *host_name, gchar **url)
 	return tag;
 }
 
+// The pattern of a path in the terminal, that a click opens:
+//   /etc/hosts  ~/notes.txt  ./build  ../lib/x.c	(from /, ~, . or ..)
+//   src/main.c				(relative: a / and an .ext)
+//   main.c:42				(a bare name: only with a line)
+// each with :LINE or :LINE:COL after it, as compilers and grep print them.
+// It starts after a space, a quote, a bracket or a "=" (--file=/x): never in
+// the middle of a URL or a word ("and/or" and "10/27" are no paths), and
+// does not end with a "." (the end of a sentence).
+#define PATH_CHAR "[^\\s\"'`<>()\\[\\]{}|;,:=]"
+const gchar *get_path_regex(void)
+{
+	return "(?<![^\\s\"'`(\\[<=])"
+	       "(?:(?:~|\\.\\.?)?/" PATH_CHAR "+(?:/" PATH_CHAR "+)*"
+	       "|" PATH_CHAR "+/(?:" PATH_CHAR "+/)*" PATH_CHAR "*\\.[A-Za-z0-9_]+"
+	       "|" PATH_CHAR "+\\.[A-Za-z0-9_]+(?=:[0-9]))"
+	       "(?<!\\.)"
+	       "(?::[0-9]+(?::[0-9]+)?)?";
+}
+
+// The file that TEXT, a path that the pattern above found, names: with the
+// :LINE[:COL] dropped, ~ for HOME, and a relative one in DIR (the directory
+// of the shell). NULL when there is no such file or directory: the pattern
+// only says that it looks like one. Free it with g_free().
+gchar *get_clicked_path(const gchar *text, const gchar *dir, const gchar *home)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_clicked_path() with text = %s, dir = %s, home = %s", text, dir, home);
+#endif
+	if ((text==NULL) || (text[0]=='\0')) return NULL;
+
+	gchar *path = g_strdup(text);
+	// :LINE and :LINE:COL
+	gint i;
+	for (i=0; i<2; i++)
+	{
+		gchar *colon = strrchr(path, ':');
+		if ((colon==NULL) || (colon[1]=='\0') || (strspn(colon+1, "0123456789") != strlen(colon+1))) break;
+		*colon = '\0';
+	}
+
+	gchar *full = NULL;
+	if (path[0]=='/')
+		full = g_canonicalize_filename(path, NULL);
+	else if ((path[0]=='~') && ((path[1]=='/') || (path[1]=='\0')))
+	{
+		if (home && (home[0]=='/')) full = g_canonicalize_filename(path[1] ? path + 2 : ".", home);
+	}
+	else if (dir && (dir[0]=='/'))
+		full = g_canonicalize_filename(path, dir);
+	g_free(path);
+
+	if (full && g_file_test(full, G_FILE_TEST_EXISTS)) return full;
+	g_free(full);
+	return NULL;
+}
+
 // The regex that finds TEXT: TEXT itself with USE_REGEX, else TEXT with its
 // special characters escaped. NULL when there is nothing to find. TEXT stays
 // as it is: the search bar escaped the text of the search in place before,

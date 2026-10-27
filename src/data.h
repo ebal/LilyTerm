@@ -1106,6 +1106,8 @@ struct Page
 // ---- other---- //
 
 	gint tag[COMMAND];
+	// the VTE tag of the pattern of paths (misc.c: get_path_regex()), -1 for none
+	gint path_tag;
 	gboolean match_regex_setted;
 };
 

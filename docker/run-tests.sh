@@ -354,6 +354,71 @@ run_gui_tests() {
 	[ "$backend" = x11 ] && run_execute_confirm_test "$work"
 	# --- 10. a click on an OSC 8 hyperlink (X11: the mouse)
 	[ "$backend" = x11 ] && run_osc8_tests "$work"
+	# --- 11. a click on a path (X11: the mouse)
+	[ "$backend" = x11 ] && run_path_click_tests "$work"
+}
+
+# A path opens with file_manager when it names a file: a relative one in the
+# directory of the shell (not of LilyTerm), with its :LINE:COL dropped, an
+# absolute one without the "." of the end of a sentence, and one in ~. A path
+# that names no file runs nothing.
+run_path_click_tests() {
+	local work=$1 pdir="$1/paths" id pid
+	mkdir -p "$pdir/proj/src"
+	: > "$pdir/proj/src/main.c"
+	: > "$HOME/notes.txt"
+	cat > "$pdir/shell" <<-EOF
+		#!/bin/sh
+		cd "$pdir/proj" || exit 1
+		printf '\033[H\033[2J'
+		printf '%s\n' 'src/main.c:42:5: error: x' 'see /etc/hosts.' 'src/missing.c:3: error' '~/notes.txt'
+		while [ ! -e "$pdir/quit" ]; do sleep 0.2; done
+	EOF
+	printf '#!/bin/sh\nprintf "%%s\\n" "$@" > "%s/opened.tmp" && mv "%s/opened.tmp" "%s/opened"\n' \
+		"$pdir" "$pdir" "$pdir" > "$pdir/open"
+	chmod +x "$pdir/shell" "$pdir/open"
+	"$LILYTERM" -p | sed -e "s|^file_manager = .*|file_manager = $pdir/open|" \
+		-e 's/^file_method = .*/file_method = 1/' > "$pdir/profile"
+	SHELL="$pdir/shell" timeout 60 "$LILYTERM" -s -u "$pdir/profile" -g 80x6 > "$work/paths.log" 2>&1 &
+	pid=$!
+	if ! wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+		ng "[x11] paths: no LilyTerm window"; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; return
+	fi
+	sleep 1.5
+	# set by xdotool getwindowgeometry --shell
+	# shellcheck disable=SC2034
+	local WIDTH HEIGHT X Y SCREEN WINDOW line col want what
+	eval "$(xdotool getwindowgeometry --shell "$id")"
+	for line in 1 2 3 4; do
+		case $line in
+			1) col=5; want="file://$pdir/proj/src/main.c"; what='src/main.c:42:5 opens the file in the directory of the shell';;
+			2) col=8; want=file:///etc/hosts; what='/etc/hosts. opens /etc/hosts';;
+			3) col=5; want=''; what='src/missing.c:3, no such file, runs nothing';;
+			4) col=5; want="file://$HOME/notes.txt"; what='a path in the home (~/notes.txt) opens the file';;
+		esac
+		rm -f "$pdir/opened"
+		xdotool mousemove --window "$id" $((WIDTH * (2 * col + 1) / 160)) $((HEIGHT * (2 * line - 1) / 12)) click 1
+		if [ -n "$want" ]; then
+			if wait_for 5 test -s "$pdir/opened" && [ "$(cat "$pdir/opened")" = "$want" ]; then
+				ok "[x11] paths: $what"
+			else
+				ng "[x11] paths: $what: got '$(cat "$pdir/opened" 2>/dev/null)', expected '$want'"
+			fi
+		else
+			sleep 2
+			if [ -e "$pdir/opened" ]; then
+				ng "[x11] paths: $what, but it ran with '$(cat "$pdir/opened")'"
+			else
+				ok "[x11] paths: $what"
+			fi
+		fi
+	done
+	if ! kill -0 "$pid" 2>/dev/null; then
+		ng "[x11] paths: LilyTerm died"; sed 's/^/      /' "$work/paths.log" | tail -10
+	fi
+	touch "$pdir/quit"
+	wait "$pid" 2>/dev/null
+	rm -f "$HOME/notes.txt"
 }
 
 # Links that the program marks with OSC 8: their text says nothing of where

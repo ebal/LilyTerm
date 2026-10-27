@@ -259,6 +259,16 @@ void set_hyperlink(struct Window *win_data, struct Page *page_data)
 							   page_data->tag[i],
 							   "pointer");
 		}
+		// a path opens with file_manager, if it names a file (get_url())
+		page_data->path_tag = -1;
+		VteRegex *path_regex = vte_regex_new_for_match(get_path_regex(), -1,
+							       PCRE2_UTF | PCRE2_NO_UTF_CHECK | PCRE2_MULTILINE, NULL);
+		if (path_regex)
+		{
+			page_data->path_tag = vte_terminal_match_add_regex(VTE_TERMINAL(page_data->vte), path_regex, 0);
+			vte_regex_unref(path_regex);
+			vte_terminal_match_set_cursor_name(VTE_TERMINAL(page_data->vte), page_data->path_tag, "pointer");
+		}
 		page_data->match_regex_setted = TRUE;
 	}
 	else
@@ -276,6 +286,7 @@ void clean_hyperlink(struct Window *win_data, struct Page *page_data)
 	if (! page_data->match_regex_setted) return;
 
 	page_data->match_regex_setted = FALSE;
+	page_data->path_tag = -1;
 	vte_terminal_match_remove_all(VTE_TERMINAL(page_data->vte));
 }
 

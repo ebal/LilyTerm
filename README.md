@@ -39,6 +39,11 @@ with everything inside, or installed with Homebrew.
   corner of the window when the mouse is over them. Only web, ftp, `mailto:` and `file://` links open,
   and a `file://` link only to a file on this machine (not one that `ls`
   printed on a server over ssh).
+- Paths: click a path to open it with the file manager command, as
+  `open` / `xdg-open` do: `/etc/hosts`, `~/notes.txt`, `./build`,
+  `src/main.c` and, with a line number as compilers print them,
+  `main.c:42:5`. A relative path is taken in the directory of the shell.
+  Only a file or directory that exists opens.
 - One running LilyTerm for all windows: a second `lilyterm` command opens
   its window in the process that already runs, over a socket. Start
   LilyTerm with `-s` to run a window in its own process.

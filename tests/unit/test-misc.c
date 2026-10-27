@@ -6,6 +6,8 @@
  * also with the sanitizers (SANITIZE=1).
  */
 
+#include <glib/gstdio.h>
+
 #include "misc.h"
 
 // The globals of the rest of LilyTerm that misc.c uses
@@ -295,6 +297,99 @@ static void test_get_hyperlink_tag(void)
 	g_assert_null(url);
 }
 
+// ---- paths that a click opens ----
+
+static void test_path_regex(void)
+{
+	// the text, and what the pattern finds in it (NULL: nothing)
+	struct { const gchar *text, *match; } cases[] = {
+		{ "cat /etc/hosts", "/etc/hosts" },
+		{ "see /etc/hosts.", "/etc/hosts" },
+		{ "~/notes.txt", "~/notes.txt" },
+		{ "./build/x", "./build/x" },
+		{ "../lib/x.c:12", "../lib/x.c:12" },
+		{ "src/main.c:42:5: error: x", "src/main.c:42:5" },
+		{ "main.c:42: warning", "main.c:42" },
+		{ "In file src/a-b_c.h,", "src/a-b_c.h" },
+		{ "--output=/tmp/out.log", "/tmp/out.log" },
+		{ "\"/etc/hosts\"", "/etc/hosts" },
+		{ "(/usr/lib)", "/usr/lib" },
+		// no paths
+		{ "this and/or that", NULL },
+		{ "on 10/27 at noon", NULL },
+		{ "main.c without a line", NULL },
+		{ "https://example.com/a/b.html", NULL },
+		{ "user@host:/srv/x", NULL },
+		{ "a/b", NULL },
+		{ "/", NULL },
+	};
+	GRegex *regex = g_regex_new(get_path_regex(), G_REGEX_OPTIMIZE, 0, NULL);
+	g_assert_nonnull(regex);
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		GMatchInfo *info = NULL;
+		gchar *match = NULL;
+		if (g_regex_match(regex, cases[i].text, 0, &info))
+			match = g_match_info_fetch(info, 0);
+		if (g_strcmp0(match, cases[i].match))
+			g_test_message("'%s': found '%s', expected '%s'", cases[i].text, match, cases[i].match);
+		g_assert_cmpstr(match, ==, cases[i].match);
+		g_free(match);
+		g_match_info_free(info);
+	}
+	g_regex_unref(regex);
+}
+
+static void test_get_clicked_path(void)
+{
+	gchar *top = g_dir_make_tmp("lilyterm-path-XXXXXX", NULL);
+	g_assert_nonnull(top);
+	gchar *src = g_build_filename(top, "src", NULL);
+	gchar *file = g_build_filename(top, "src", "main.c", NULL);
+	gchar *notes = g_build_filename(top, "notes.txt", NULL);
+	g_assert_cmpint(g_mkdir(src, 0700), ==, 0);
+	g_assert_true(g_file_set_contents(file, "", 0, NULL));
+	g_assert_true(g_file_set_contents(notes, "", 0, NULL));
+
+	struct { const gchar *text; const gchar *dir; const gchar *want; } cases[] = {
+		{ "src/main.c", top, file },
+		{ "src/main.c:42", top, file },
+		{ "src/main.c:42:5", top, file },
+		{ "./src/main.c", top, file },
+		{ "main.c:3", src, file },
+		{ "../notes.txt", src, notes },
+		{ "~/notes.txt", "/nowhere", notes },
+		{ "~", "/nowhere", top },
+		{ file, "/nowhere", file },
+		{ "src", top, src },
+		// no such file: nothing to open
+		{ "src/other.c", top, NULL },
+		{ "src/main.c", "/nowhere", NULL },
+		{ "src/main.c", NULL, NULL },
+		{ "", top, NULL },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		// "~" is TOP as the home
+		gchar *path = get_clicked_path(cases[i].text, cases[i].dir, top);
+		g_assert_cmpstr(path, ==, cases[i].want);
+		g_free(path);
+	}
+	g_assert_null(get_clicked_path(NULL, top, top));
+	g_assert_null(get_clicked_path("~/notes.txt", top, NULL));
+
+	g_remove(file);
+	g_remove(notes);
+	g_rmdir(src);
+	g_rmdir(top);
+	g_free(file);
+	g_free(notes);
+	g_free(src);
+	g_free(top);
+}
+
 // ---- the regex of the search bar ----
 
 static void test_get_search_pattern(void)
@@ -423,6 +518,8 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/mailto-url", test_get_mailto_url);
 	g_test_add_func("/misc/search-pattern", test_get_search_pattern);
 	g_test_add_func("/misc/hyperlink-tag", test_get_hyperlink_tag);
+	g_test_add_func("/misc/path-regex", test_path_regex);
+	g_test_add_func("/misc/clicked-path", test_get_clicked_path);
 	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
 	g_test_add_func("/misc/macos-us-keyval", test_macos_us_keyval);
 	return g_test_run();

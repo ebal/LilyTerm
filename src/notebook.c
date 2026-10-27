@@ -1831,6 +1831,22 @@ gchar *get_url(GdkEventButton *event, struct Page *page_data, gint *tag)
 	gchar *url = vte_terminal_match_check_event (VTE_TERMINAL(page_data->vte), (GdkEvent*)event, &vte_tag);
 	if (url==NULL) return NULL;
 
+	// A path: the file it names, in the directory of the shell, if there is one
+	if ((page_data->path_tag >= 0) && (vte_tag == page_data->path_tag))
+	{
+		struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(page_data->window), "Win_Data");
+		const gchar *home = (win_data && win_data->home) ? win_data->home : g_get_home_dir();
+		gchar *dir = get_init_dir(page_data->pid, page_data->vte, NULL, (gchar *)home);
+		gchar *path = get_clicked_path(url, dir, home);
+		g_free(dir);
+		g_free(url);
+		if (path==NULL) return NULL;
+		url = g_filename_to_uri(path, NULL, NULL);
+		g_free(path);
+		if (url && tag) *tag = TAG_FILE;
+		return url;
+	}
+
 	// VTE numbers the regexes of a terminal on, also after vte_terminal_match_remove_all():
 	// find which command (TAG_WWW, ...) the matched regex belongs to.
 	gint i;
