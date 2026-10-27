@@ -1503,6 +1503,23 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 			g_free(url);
 			url = mailto_url;
 		}
+		// a file (a path, or a file:// link): a program opens its directory
+		if ((url != NULL) && (tag == TAG_FILE))
+		{
+			gchar *path = g_filename_from_uri(url, NULL, NULL);
+			gchar *open_path = get_file_to_open(path);
+			if (open_path && g_strcmp0(open_path, path))
+			{
+				gchar *dir_url = g_filename_to_uri(open_path, NULL, NULL);
+				if (dir_url)
+				{
+					g_free(url);
+					url = dir_url;
+				}
+			}
+			g_free(open_path);
+			g_free(path);
+		}
 
 		// url = NULL -> we don't need to free it.
 		gboolean response = FALSE;
@@ -1886,6 +1903,15 @@ gchar *get_url(GdkEventButton *event, struct Page *page_data, gint *tag)
 	// A path: the file it names, in the directory of the shell, if there is one
 	if ((page_data->path_tag >= 0) && (vte_tag == page_data->path_tag))
 	{
+		// not the path that ssh (or mosh, ...) printed: it is on another machine
+		gchar **stats = get_pid_stat(get_tpgid(page_data->pid), 4);
+		gboolean remote = stats && stats[0] && stats[1] && stats[2] && is_remote_login(stats[2]);
+		g_strfreev(stats);
+		if (remote)
+		{
+			g_free(url);
+			return NULL;
+		}
 		struct Window *win_data = (struct Window *)g_object_get_data(G_OBJECT(page_data->window), "Win_Data");
 		const gchar *home = (win_data && win_data->home) ? win_data->home : g_get_home_dir();
 		gchar *dir = get_init_dir(page_data->pid, page_data->vte, NULL, (gchar *)home);

@@ -132,6 +132,8 @@ Only \fBhttp(s)\fR, \fBftp(s)\fR, \fBmailto:\fR and \fBfile://\fR links open, an
 A click on a path opens it with \fBfile_manager\fR, if it names a file or directory that exists:
 \fB/etc/hosts\fR, \fB~/notes.txt\fR, \fB./build\fR, \fBsrc/main.c\fR, and \fBmain.c:42:5\fR as compilers print them (the line is dropped).
 A relative path is taken in the directory of the shell.
+A program (an executable file, or an \fB.app\fR) is not run: its directory opens, also for a \fBfile://\fR link.
+While \fBssh\fR, \fBmosh\fR, \fBet\fR or \fBtelnet\fR runs in the tab, paths do not open: they are the ones of the other machine.
 .SH KEYBOARD CONTROL
 The following key bindings may custom or disable by the right click menu \fB[Set key binding]\fR.
 They are the defaults on Linux. On macOS the defaults use the Command key instead (\fB<Cmd><T>\fR new tab,

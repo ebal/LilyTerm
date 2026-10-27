@@ -360,6 +360,54 @@ run_gui_tests() {
 	[ "$backend" = x11 ] && run_path_click_tests "$work"
 	# --- 12. copy_on_select (X11: the mouse)
 	[ "$backend" = x11 ] && run_copy_on_select_tests "$work"
+	[ "$backend" = x11 ] && run_search_keeps_clipboard_test "$work"
+}
+
+# With copy_on_select, two lines are selected (and copied); Ctrl F starts a
+# search for the first one. Its match must not take the place of the two
+# lines in the clipboard: Esc, Ctrl Insert pastes both into the shell.
+# (confirm_to_paste = 0: no dialog for the paste of two lines.)
+run_search_keeps_clipboard_test() {
+	local work=$1 kdir="$1/keep" id pid
+	mkdir -p "$kdir"
+	cat > "$kdir/shell" <<-EOF
+		#!/bin/sh
+		printf '\033[H\033[2J'
+		printf 'line one\nline two\n'
+		IFS= read -r a && IFS= read -r b && printf '[%s|%s]\n' "\$a" "\$b" > "$kdir/line.tmp" && mv "$kdir/line.tmp" "$kdir/line"
+		while [ ! -e "$kdir/quit" ]; do sleep 0.2; done
+	EOF
+	chmod +x "$kdir/shell"
+	"$LILYTERM" -p | sed -e 's/^copy_on_select = .*/copy_on_select = 1/' \
+		-e 's/^confirm_to_paste = .*/confirm_to_paste = 0/' > "$kdir/profile"
+	SHELL="$kdir/shell" timeout 40 "$LILYTERM" -s -u "$kdir/profile" -g 80x6 > "$work/keep.log" 2>&1 &
+	pid=$!
+	if ! wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+		ng "[x11] search and clipboard: no LilyTerm window"; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; return
+	fi
+	sleep 1.5
+	# set by xdotool getwindowgeometry --shell
+	# shellcheck disable=SC2034
+	local WIDTH HEIGHT X Y SCREEN WINDOW
+	eval "$(xdotool getwindowgeometry --shell "$id")"
+	# from the start of the 1st line to past the end of the 2nd
+	xdotool mousemove --window "$id" 2 $((HEIGHT / 12)) mousedown 1 \
+		mousemove --window "$id" $((WIDTH * 25 / 160)) $((HEIGHT * 3 / 12)) mouseup 1
+	sleep 0.5
+	send_keys x11 ctrl+f
+	sleep 0.8
+	send_keys x11 Escape
+	sleep 0.3
+	send_keys x11 ctrl+Insert
+	sleep 0.3
+	send_keys x11 Return
+	if wait_for 5 test -s "$kdir/line" && [ "$(cat "$kdir/line")" = "[line one|line two]" ]; then
+		ok "[x11] Ctrl F with copy_on_select keeps the two selected lines in the clipboard"
+	else
+		ng "[x11] Ctrl F with copy_on_select: the shell got '$(cat "$kdir/line" 2>/dev/null)', expected '[line one|line two]'"
+	fi
+	touch "$kdir/quit"
+	wait "$pid" 2>/dev/null
 }
 
 # With copy_on_select = 1, a selection goes to the clipboard: Ctrl Insert
@@ -422,17 +470,20 @@ run_copy_on_select_tests() {
 # A path opens with file_manager when it names a file: a relative one in the
 # directory of the shell (not of LilyTerm), with its :LINE:COL dropped, an
 # absolute one without the "." of the end of a sentence, and one in ~. A path
-# that names no file runs nothing.
+# that names no file runs nothing. A program (an executable file) is not run:
+# its directory opens (open(1) on macOS would run it in Terminal.app).
 run_path_click_tests() {
 	local work=$1 pdir="$1/paths" id pid
 	mkdir -p "$pdir/proj/src"
 	: > "$pdir/proj/src/main.c"
+	printf '#!/bin/sh\n' > "$pdir/proj/run.sh"
+	chmod +x "$pdir/proj/run.sh"
 	: > "$HOME/notes.txt"
 	cat > "$pdir/shell" <<-EOF
 		#!/bin/sh
 		cd "$pdir/proj" || exit 1
 		printf '\033[H\033[2J'
-		printf '%s\n' 'src/main.c:42:5: error: x' 'see /etc/hosts.' 'src/missing.c:3: error' '~/notes.txt'
+		printf '%s\n' 'src/main.c:42:5: error: x' 'see /etc/hosts.' 'src/missing.c:3: error' '~/notes.txt' './run.sh'
 		while [ ! -e "$pdir/quit" ]; do sleep 0.2; done
 	EOF
 	printf '#!/bin/sh\nprintf "%%s\\n" "$@" > "%s/opened.tmp" && mv "%s/opened.tmp" "%s/opened"\n' \
@@ -450,8 +501,9 @@ run_path_click_tests() {
 	# shellcheck disable=SC2034
 	local WIDTH HEIGHT X Y SCREEN WINDOW line col want what
 	eval "$(xdotool getwindowgeometry --shell "$id")"
-	for line in 1 2 3 4; do
+	for line in 1 2 3 4 5; do
 		case $line in
+			5) col=3; want="file://$pdir/proj"; what='./run.sh, a program, opens its directory and does not run';;
 			1) col=5; want="file://$pdir/proj/src/main.c"; what='src/main.c:42:5 opens the file in the directory of the shell';;
 			2) col=8; want=file:///etc/hosts; what='/etc/hosts. opens /etc/hosts';;
 			3) col=5; want=''; what='src/missing.c:3, no such file, runs nothing';;
@@ -480,6 +532,39 @@ run_path_click_tests() {
 	touch "$pdir/quit"
 	wait "$pid" 2>/dev/null
 	rm -f "$HOME/notes.txt"
+
+	# In ssh (here a script of that name, the foreground program of the tab),
+	# a path is one of the other machine: /etc/hosts must not open the local one
+	mkdir -p "$pdir/bin"
+	cat > "$pdir/bin/ssh" <<-EOF
+		#!/bin/sh
+		printf '\033[H\033[2J/etc/hosts\n'
+		while [ ! -e "$pdir/quit-ssh" ]; do sleep 0.2; done
+	EOF
+	cat > "$pdir/ssh-shell" <<-EOF
+		#!/bin/sh
+		exec "$pdir/bin/ssh"
+	EOF
+	chmod +x "$pdir/bin/ssh" "$pdir/ssh-shell"
+	rm -f "$pdir/opened" "$pdir/quit-ssh"
+	SHELL="$pdir/ssh-shell" timeout 40 "$LILYTERM" -s -u "$pdir/profile" -g 80x6 > "$work/paths-ssh.log" 2>&1 &
+	pid=$!
+	id=''
+	if wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+		sleep 1.5
+		eval "$(xdotool getwindowgeometry --shell "$id")"
+		xdotool mousemove --window "$id" $((WIDTH * 11 / 160)) $((HEIGHT / 12)) click 1
+		sleep 2
+		if [ -e "$pdir/opened" ]; then
+			ng "[x11] paths: a path that ssh printed opened '$(cat "$pdir/opened")' here"
+		else
+			ok "[x11] paths: a path that ssh printed opens nothing here"
+		fi
+	else
+		ng "[x11] paths: no LilyTerm window for the ssh test"
+	fi
+	touch "$pdir/quit-ssh"
+	wait "$pid" 2>/dev/null
 }
 
 # Links that the program marks with OSC 8: their text says nothing of where

@@ -985,6 +985,42 @@ gchar *get_clicked_path(const gchar *text, const gchar *dir, const gchar *home)
 	return NULL;
 }
 
+// What a click on PATH (a path, or a file:// link) opens with the file
+// manager command: PATH itself, but the directory of a program, which
+// open(1) would run (a Unix executable runs in Terminal.app, an .app starts).
+// A click shows where a program is; it does not start it. Free it with
+// g_free().
+gchar *get_file_to_open(const gchar *path)
+{
+	if (path==NULL) return NULL;
+
+	gboolean program = FALSE;
+	if (g_file_test(path, G_FILE_TEST_IS_DIR))
+	{
+		gsize len = strlen(path);
+		while ((len > 1) && (path[len-1]=='/')) len--;
+		program = (len > 4) && (g_ascii_strncasecmp(path + len - 4, ".app", 4)==0);
+	}
+	else
+		program = g_file_test(path, G_FILE_TEST_IS_EXECUTABLE);
+
+	if (! program) return g_strdup(path);
+	gchar *trimmed = g_strdup(path);
+	gsize len = strlen(trimmed);
+	while ((len > 1) && (trimmed[len-1]=='/')) trimmed[--len] = '\0';
+	gchar *dir = g_path_get_dirname(trimmed);
+	g_free(trimmed);
+	return dir;
+}
+
+// TRUE if PROGRAM (the name of the foreground program of a tab) logs in to
+// another machine: the paths it prints are not the ones of this machine.
+gboolean is_remote_login(const gchar *program)
+{
+	const gchar *remote[] = { "ssh", "mosh-client", "et", "telnet", "autossh", NULL };
+	return program && check_string_in_array((gchar *)program, (gchar **)remote);
+}
+
 // TEXT without the spaces and tabs at the end of each of its lines: the
 // padding of a table, or of ls, which a terminal keeps as it was written.
 // Free it with g_free().

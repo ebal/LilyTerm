@@ -9,6 +9,22 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix a click on a path printed in an `ssh` (or `mosh`, `et`, `telnet`)
+  session opening the file of the same name on this machine: while such a
+  program runs in the tab, paths do not open.
+- Fix `Ctrl+F` with copy on select replacing a selection of several lines
+  in the clipboard with its first line.
+- Fix the sample `lilyterm.conf`, which did not list `copy_on_select`.
+
+### Security
+
+- Do not run a program with a click on its path or on a `file://` link to
+  it: its directory opens instead. On macOS, `open` runs an executable
+  file in Terminal.app and starts an `.app`, so `which python3` and a
+  click started Python.
+
 ## [0.14.0] - 2026-10-27
 
 ### Added

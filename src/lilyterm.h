@@ -77,6 +77,8 @@ const gchar *get_path_regex(void);
 gchar *get_clicked_path(const gchar *text, const gchar *dir, const gchar *home);
 gchar *get_short_dir_name(const gchar *dir, const gchar *home);
 gchar *strip_trailing_blanks(const gchar *text);
+gchar *get_file_to_open(const gchar *path);
+gboolean is_remote_login(const gchar *program);
 gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name);
 gint macos_us_keyval(guint16 hardware_keycode, gboolean shift);
 GdkRGBA convert_color_to_rgba(GdkColor color);

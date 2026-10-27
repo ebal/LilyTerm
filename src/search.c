@@ -74,6 +74,12 @@ void search_bar_show(struct Window *win_data)
 		if (selection_primary) selection = gtk_clipboard_wait_for_text(selection_primary);
 #endif
 	}
+	// The focus first: the text below starts a search, whose match must not
+	// go to the clipboard (copy_on_select) in place of the selection there
+	gtk_widget_show_all(win_data->search_bar);
+	search_show_status(win_data, NULL);
+	gtk_widget_grab_focus(win_data->search_entry);
+
 	// NULL for an empty selection, or one of line breaks only
 	gchar *first_line = selection ? strtok(selection, "\n\r") : NULL;
 	if (first_line)
@@ -81,10 +87,8 @@ void search_bar_show(struct Window *win_data)
 	else if (win_data->find_string)
 		gtk_entry_set_text(GTK_ENTRY(win_data->search_entry), win_data->find_string);
 	g_free(selection);
-
-	gtk_widget_show_all(win_data->search_bar);
-	search_show_status(win_data, NULL);
-	gtk_widget_grab_focus(win_data->search_entry);
+	// typing replaces it
+	gtk_editable_select_region(GTK_EDITABLE(win_data->search_entry), 0, -1);
 }
 
 // Close the search bar, and give the focus back to the terminal. The match
@@ -102,13 +106,15 @@ void search_bar_hide(struct Window *win_data)
 }
 
 // TRUE if the focus is in the search bar: the keys of text editing are for
-// it then, not for the key bindings of the terminal.
+// it then, not for the key bindings of the terminal. (The focus of the window,
+// also while another window is active.)
 gboolean search_bar_has_focus(struct Window *win_data)
 {
 #ifdef SAFEMODE
 	if (win_data==NULL) return FALSE;
 #endif
-	return win_data->search_entry && gtk_widget_has_focus(win_data->search_entry);
+	return win_data->search_entry && gtk_widget_get_visible(win_data->search_bar) &&
+	       gtk_widget_is_focus(win_data->search_entry);
 }
 
 // TRUE if the key binding BINDING is for the entry of the search bar while it

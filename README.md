@@ -43,7 +43,10 @@ with everything inside, or installed with Homebrew.
   `open` / `xdg-open` do: `/etc/hosts`, `~/notes.txt`, `./build`,
   `src/main.c` and, with a line number as compilers print them,
   `main.c:42:5`. A relative path is taken in the directory of the shell.
-  Only a file or directory that exists opens.
+  Only a file or directory that exists opens. A program (an executable
+  file, or an `.app`) is not run: its folder opens. While `ssh`, `mosh`,
+  `et` or `telnet` runs in the tab, paths do not open: they are the ones
+  of the other machine.
 - Tab names: a tab shows what runs in it, or the directory of the shell,
   as `~/src/LilyTerm` for a directory in your home. The whole name is in
   its tooltip.

@@ -390,6 +390,65 @@ static void test_get_clicked_path(void)
 	g_free(top);
 }
 
+// ---- a click on a program shows its directory, it does not run it ----
+
+static void test_get_file_to_open(void)
+{
+	gchar *top = g_dir_make_tmp("lilyterm-open-XXXXXX", NULL);
+	g_assert_nonnull(top);
+	gchar *script = g_build_filename(top, "build.sh", NULL);
+	gchar *text = g_build_filename(top, "notes.txt", NULL);
+	gchar *dir = g_build_filename(top, "src", NULL);
+	gchar *app = g_build_filename(top, "Calculator.app", NULL);
+	gchar *app_slash = g_strconcat(app, "/", NULL);
+	g_assert_true(g_file_set_contents(script, "#!/bin/sh\n", -1, NULL));
+	g_assert_cmpint(g_chmod(script, 0755), ==, 0);
+	g_assert_true(g_file_set_contents(text, "", 0, NULL));
+	g_assert_cmpint(g_mkdir(dir, 0700), ==, 0);
+	g_assert_cmpint(g_mkdir(app, 0700), ==, 0);
+
+	struct { const gchar *path, *want; } cases[] = {
+		{ script, top },	// a program: its directory
+		{ app, top },		// an application bundle (macOS)
+		{ app_slash, top },
+		{ text, text },		// a file: itself
+		{ dir, dir },		// a directory: itself
+		{ "/nowhere/x", "/nowhere/x" },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *out = get_file_to_open(cases[i].path);
+		g_assert_cmpstr(out, ==, cases[i].want);
+		g_free(out);
+	}
+	g_assert_null(get_file_to_open(NULL));
+
+	g_remove(script);
+	g_remove(text);
+	g_rmdir(dir);
+	g_rmdir(app);
+	g_rmdir(top);
+	g_free(app_slash);
+	g_free(app);
+	g_free(dir);
+	g_free(text);
+	g_free(script);
+	g_free(top);
+}
+
+static void test_is_remote_login(void)
+{
+	const gchar *remote[] = { "ssh", "mosh-client", "et", "telnet", "autossh" };
+	const gchar *local[] = { "bash", "zsh", "vim", "make", "less", "sshd", "ssh-agent", "sshfs", "" };
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(remote); i++)
+		g_assert_true(is_remote_login(remote[i]));
+	for (i=0; i<G_N_ELEMENTS(local); i++)
+		g_assert_false(is_remote_login(local[i]));
+	g_assert_false(is_remote_login(NULL));
+}
+
 // ---- copy: no blanks at the end of the lines ----
 
 static void test_strip_trailing_blanks(void)
@@ -576,6 +635,8 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/clicked-path", test_get_clicked_path);
 	g_test_add_func("/misc/short-dir-name", test_get_short_dir_name);
 	g_test_add_func("/misc/strip-trailing-blanks", test_strip_trailing_blanks);
+	g_test_add_func("/misc/file-to-open", test_get_file_to_open);
+	g_test_add_func("/misc/remote-login", test_is_remote_login);
 	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
 	g_test_add_func("/misc/macos-us-keyval", test_macos_us_keyval);
 	return g_test_run();
