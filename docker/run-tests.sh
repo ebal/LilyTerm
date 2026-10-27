@@ -422,20 +422,23 @@ run_word_and_bell_tests() {
 # VTE numbers them on: LilyTerm used to take that number for the index of the
 # command, which ran past the end of the list and crashed.
 run_url_click_tests() {
-	local work=$1 udir="$1/url" id url=https://example.com/lilyterm-test
+	local work=$1 udir="$1/url" id url=https://example.com/lilyterm-test mail=lily@example.com
 	mkdir -p "$udir"
 	cat > "$udir/shell" <<-EOF
 		#!/bin/sh
-		printf '\033[H\033[2J$url\n'
+		printf '\033[H\033[2J$url\n$mail\n'
 		while [ ! -e "$udir/quit" ]; do sleep 0.2; done
 	EOF
 	printf '#!/bin/sh\nprintf "%%s\\n" "$@" > "%s/opened.tmp" && mv "%s/opened.tmp" "%s/opened"\n' \
 		"$udir" "$udir" "$udir" > "$udir/browser"
 	chmod +x "$udir/shell" "$udir/browser"
 	"$LILYTERM" -p | sed -e "s|^web_browser = .*|web_browser = $udir/browser|" \
-		-e 's/^web_method = .*/web_method = 1/' > "$udir/profile"
-	if ! grep -q "^web_browser = $udir/browser" "$udir/profile" || ! grep -q '^web_method = 1' "$udir/profile"; then
-		ng "[x11] links: lilyterm -p does not list web_browser and web_method"; return
+		-e 's/^web_method = .*/web_method = 1/' \
+		-e "s|^email_client = .*|email_client = $udir/browser|" \
+		-e 's/^email_method = .*/email_method = 1/' > "$udir/profile"
+	if ! grep -q "^web_browser = $udir/browser" "$udir/profile" || ! grep -q '^web_method = 1' "$udir/profile" ||
+	   ! grep -q "^email_client = $udir/browser" "$udir/profile" || ! grep -q '^email_method = 1' "$udir/profile"; then
+		ng "[x11] links: lilyterm -p does not list web_browser, web_method, email_client and email_method"; return
 	fi
 	SHELL="$udir/shell" timeout 40 "$LILYTERM" -s -u "$udir/profile" -g 80x5 > "$work/url.log" 2>&1 &
 	local pid=$!
@@ -458,6 +461,15 @@ run_url_click_tests() {
 		sed 's/^/      /' "$work/url.log" | tail -10
 	else
 		ng "[x11] links: web_browser got '$(cat "$udir/opened" 2>/dev/null)', expected '$url'"
+	fi
+	# An email address without mailto: is opened as a mailto: URL: open(1)
+	# and xdg-open took "user@host" for a file. It is on the second line.
+	rm -f "$udir/opened"
+	xdotool mousemove --window "$id" $((WIDTH * 8 / 80)) $((HEIGHT * 3 / 10)) click 1
+	if wait_for 5 test -s "$udir/opened" && [ "$(cat "$udir/opened")" = "mailto:$mail" ]; then
+		ok "[x11] a click on an email address runs email_client with mailto:$mail"
+	else
+		ng "[x11] links: email_client got '$(cat "$udir/opened" 2>/dev/null)', expected 'mailto:$mail'"
 	fi
 	touch "$udir/quit"
 	wait "$pid" 2>/dev/null

@@ -1489,6 +1489,12 @@ gboolean vte_button_press(GtkWidget *vte, GdkEventButton *event, struct Page *pa
 
 		gint tag;
 		gchar *url = get_url(event, page_data, &tag);
+		if ((url != NULL) && (tag == TAG_MAIL))
+		{
+			gchar *mailto_url = get_mailto_url(url);
+			g_free(url);
+			url = mailto_url;
+		}
 
 		// url = NULL -> we don't need to free it.
 		gboolean response = FALSE;

@@ -235,6 +235,27 @@ static void test_replace_xdg_open(void)
 	g_assert_null(replace_xdg_open(NULL));
 }
 
+// ---- a clicked email address -> mailto: URL ----
+
+static void test_get_mailto_url(void)
+{
+	struct { const gchar *in, *out; } cases[] = {
+		{ "user@example.com", "mailto:user@example.com" },
+		{ "mailto:user@example.com", "mailto:user@example.com" },
+		{ "MailTo:user@example.com", "MailTo:user@example.com" },
+		{ "mailto", "mailto:mailto" },
+		{ "", "mailto:" },
+	};
+	guint i;
+	for (i=0; i<G_N_ELEMENTS(cases); i++)
+	{
+		gchar *out = get_mailto_url(cases[i].in);
+		g_assert_cmpstr(out, ==, cases[i].out);
+		g_free(out);
+	}
+	g_assert_null(get_mailto_url(NULL));
+}
+
 // ---- the directory a shell reports with OSC 7 ----
 
 static void test_get_local_dir_from_uri(void)
@@ -326,6 +347,7 @@ int main(int argc, char *argv[])
 	g_test_add_func("/misc/join-pasted-lines", test_join_pasted_lines);
 	g_test_add_func("/misc/split-pid-stat", test_split_pid_stat);
 	g_test_add_func("/misc/replace-xdg-open", test_replace_xdg_open);
+	g_test_add_func("/misc/mailto-url", test_get_mailto_url);
 	g_test_add_func("/misc/local-dir-from-uri", test_get_local_dir_from_uri);
 	g_test_add_func("/misc/macos-us-keyval", test_macos_us_keyval);
 	return g_test_run();

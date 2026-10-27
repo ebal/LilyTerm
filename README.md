@@ -28,7 +28,7 @@ with everything inside, or installed with Homebrew.
 - Key bindings: change or disable every key binding with [Set key binding]
   in the right click menu.
 - Hyperlinks: click a web or `file://` URL, or an email address, to open
-  it.
+  it. An email address opens as a `mailto:` URL in your mail client.
 - One running LilyTerm for all windows: a second `lilyterm` command opens
   its window in the process that already runs, over a socket.
 - Wayland and X11, with the same binary.

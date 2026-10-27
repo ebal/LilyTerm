@@ -70,6 +70,7 @@ gchar *join_strings_to_string(const gchar separator, const gint total, const Str
 gchar *colorful_max_new_lines(gchar *string, gint max, gint output_line);
 gchar *join_pasted_lines(const gchar *str);
 gchar *replace_xdg_open(const gchar *command);
+gchar *get_mailto_url(const gchar *address);
 gchar *get_local_dir_from_uri(const gchar *uri, const gchar *host_name);
 gint macos_us_keyval(guint16 hardware_keycode, gboolean shift);
 GdkRGBA convert_color_to_rgba(GdkColor color);

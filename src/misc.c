@@ -876,6 +876,21 @@ gchar *replace_xdg_open(const gchar *command)
 	return g_strconcat("open", args, NULL);
 }
 
+// The email address ADDRESS that was clicked, as a mailto: URL. The link may
+// say "user@host" alone, but open(1) and xdg-open take that for a file, and
+// mail clients take mailto: URLs too. Free the returned string with g_free().
+gchar *get_mailto_url(const gchar *address)
+{
+#ifdef DETAIL
+	g_debug("! Launch get_mailto_url() with address = %s", address);
+#endif
+	if (address==NULL) return NULL;
+
+	if (g_ascii_strncasecmp(address, "mailto:", 7)==0)
+		return g_strdup(address);
+	return g_strconcat("mailto:", address, NULL);
+}
+
 // The directory of URI, a "file://HOST/PATH" that a shell reported with OSC 7,
 // if HOST is this machine (HOST_NAME, "localhost" or none). The one of a shell
 // on another machine (over ssh) is not a directory here. The names must be
