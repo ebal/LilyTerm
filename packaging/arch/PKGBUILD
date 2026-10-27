@@ -5,7 +5,7 @@
 # To update: set pkgver (and pkgrel=1), then `makepkg -f`.
 
 pkgname=lilyterm
-pkgver=0.12.0
+pkgver=0.12.1
 pkgrel=1
 pkgdesc="A light and easy to use libvte based terminal emulator for X11 and Wayland"
 arch=('x86_64' 'aarch64')

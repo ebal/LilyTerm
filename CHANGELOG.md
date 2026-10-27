@@ -9,6 +9,8 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-27
+
 ### Fixed
 
 - Open links with `open` on macOS also when an `xdg-open` is installed
@@ -1520,7 +1522,8 @@ Update homepage, blog, phorum, IRC information.
 
 - Initial revision.
 
-[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.12.0...HEAD
+[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/ebal/LilyTerm/compare/v0.12.0...v0.12.1
 [0.12.0]: https://github.com/ebal/LilyTerm/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/ebal/LilyTerm/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/ebal/LilyTerm/compare/v0.11.0...v0.11.1
