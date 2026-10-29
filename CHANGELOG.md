@@ -9,6 +9,16 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix `ssh` to a computer on the local network failing with "No route to
+  host" in LilyTerm on macOS after an update, while it worked in
+  Terminal.app: each release was signed ad hoc, so it was a new app for
+  macOS, without the Local Network permission of the one before. The app
+  is now signed with the same certificate in every release, and says why
+  it asks for that permission (`NSLocalNetworkUsageDescription`). The
+  permission has to be given once more, to the first release signed so.
+
 ### Changed
 
 - Build LilyTerm with a parallel `make` in the test suite and in the

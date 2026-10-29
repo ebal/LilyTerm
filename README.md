@@ -117,6 +117,16 @@ inside, so it needs nothing else.
 
 3. Open LilyTerm from Launchpad, Spotlight or the Applications folder.
    It starts a login shell, so your `~/.zprofile` is read as in Terminal.
+4. The first time a program in LilyTerm connects to a computer on your
+   local network (`ssh` to `192.168.x.x`), macOS asks to allow LilyTerm
+   to find devices on the local network: allow it. Without it, `ssh`
+   says "No route to host" for those computers only. If you said no, or
+   it does not ask: System Settings > Privacy & Security > Local Network,
+   switch LilyTerm off and on, and start LilyTerm again.
+
+Every release since 0.14.2 is signed with the same certificate, so macOS
+keeps that permission when you update. (0.14.1 and before were signed ad
+hoc: each one was a new app for macOS, and asked again, or not at all.)
 
 The .dmg is built for the macOS version of the GitHub runner and later
 (`LSMinimumSystemVersion` in the app). Intel Macs are not supported.

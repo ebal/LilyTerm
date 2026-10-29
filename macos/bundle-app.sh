@@ -211,6 +211,8 @@ cat > "$CONTENTS/Info.plist" << EOF
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>GPL-3.0-or-later</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>The programs in LilyTerm, as ssh, connect to computers on your local network.</string>
 </dict>
 </plist>
 EOF
@@ -278,14 +280,35 @@ done
 [ $failed -eq 0 ] || die "the app is not self-contained"
 echo "   $(wc -l < "$MACHO_LIST" | tr -d ' ') Mach-O files, all inside the app"
 
-# ---- sign ad hoc: Apple Silicon runs no unsigned code ----
+# ---- sign: Apple Silicon runs no unsigned code ----
+#
+# With SIGN_IDENTITY (a code signing certificate, in SIGN_KEYCHAIN if set)
+# the app is the same app for macOS in every release: it keeps the
+# permissions it was given, as Local Network (ssh to a computer at home). Ad
+# hoc, every build is another app, and ssh gets "No route to host" there
+# after an update. The certificate may be self-signed: no timestamp then.
 
-echo "== signing (ad hoc)"
+if [ -n "${SIGN_IDENTITY:-}" ]; then
+	echo "== signing with \"$SIGN_IDENTITY\""
+else
+	echo "== signing (ad hoc: macOS forgets the permissions of LilyTerm with each update)"
+fi
+sign() {
+	if [ -z "${SIGN_IDENTITY:-}" ]; then
+		codesign --force --sign - "$1"
+	elif [ -n "${SIGN_KEYCHAIN:-}" ]; then
+		codesign --force --timestamp=none --sign "$SIGN_IDENTITY" --keychain "$SIGN_KEYCHAIN" "$1"
+	else
+		codesign --force --timestamp=none --sign "$SIGN_IDENTITY" "$1"
+	fi
+}
 while IFS= read -r file; do
-	codesign --force --sign - "$file"
+	sign "$file"
 done < "$MACHO_LIST"
-codesign --force --sign - "$APP"
+sign "$APP"
 codesign --verify --deep --strict "$APP"
+# what macOS knows the app by: the same in every release with a certificate
+echo "   designated requirement: $(codesign -d -r- "$APP" 2>&1 | sed -n 's/^designated => //p')"
 
 # ---- the .dmg ----
 

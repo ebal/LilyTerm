@@ -138,6 +138,37 @@ jobs:
           HOMEBREW_NO_ENV_HINTS: 1
         run: brew install gtk+3 vte3 librsvg adwaita-icon-theme pkgconf gettext
 
+      # The same certificate for every release: macOS keeps the permissions it
+      # gave LilyTerm (Local Network: ssh to a computer at home). Without the
+      # secrets (a fork) the app is signed ad hoc, as before.
+      - name: Import the signing certificate
+        env:
+          MACOS_SIGN_P12: ${{ secrets.MACOS_SIGN_P12 }}
+          MACOS_SIGN_PASSWORD: ${{ secrets.MACOS_SIGN_PASSWORD }}
+        run: |
+          if [ -z "$MACOS_SIGN_P12" ]; then
+            echo "No MACOS_SIGN_P12 secret: the app is signed ad hoc"
+            exit 0
+          fi
+          kc=$RUNNER_TEMP/signing.keychain-db
+          kc_password=$(openssl rand -hex 16)
+          security create-keychain -p "$kc_password" "$kc"
+          security set-keychain-settings -lut 3600 "$kc"
+          security unlock-keychain -p "$kc_password" "$kc"
+          echo "$MACOS_SIGN_P12" | base64 --decode > "$RUNNER_TEMP/signing.p12"
+          security import "$RUNNER_TEMP/signing.p12" -k "$kc" -P "$MACOS_SIGN_PASSWORD" -T /usr/bin/codesign
+          rm -f "$RUNNER_TEMP/signing.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$kc_password" "$kc" > /dev/null
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          # self-signed: trusted for code signing on this runner only
+          security find-certificate -c "LilyTerm (ebal) Code Signing" -p "$kc" > "$RUNNER_TEMP/signing.pem"
+          sudo security add-trusted-cert -d -r trustRoot -p codeSign \
+            -k /Library/Keychains/System.keychain "$RUNNER_TEMP/signing.pem"
+          security find-identity -v -p codesigning "$kc"
+          echo "SIGN_IDENTITY=LilyTerm (ebal) Code Signing" >> "$GITHUB_ENV"
+          echo "SIGN_KEYCHAIN=$kc" >> "$GITHUB_ENV"
+
       - name: Build LilyTerm.app and the .dmg
         run: macos/bundle-app.sh release
 
