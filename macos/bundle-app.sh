@@ -62,9 +62,13 @@ tar -C "$TOP" --exclude ./.git --exclude ./release --exclude ./dist -cf - . | ta
 
 mkdir -p "$MACOS" "$FRAMEWORKS"
 mv "$WORK/stage$RES_PREFIX" "$RES"
-# Not just "lilyterm": the file system of macOS ignores case, and the
-# launcher is called LilyTerm.
-mv "$RES/bin/lilyterm" "$MACOS/lilyterm-bin"
+# The program itself is the main executable of the app, no launcher script:
+# macOS knows the app, and the Local Network permission it gave it (ssh to
+# a computer at home), by the Mach-O main executable, and finds the new one
+# after an update. A script has none: the permission went to the program it
+# started, another program for macOS in every release. LilyTerm sets up its
+# GTK+ 3 itself in the app (macos_app_init() in src/misc.c).
+mv "$RES/bin/lilyterm" "$MACOS/LilyTerm"
 rmdir "$RES/bin"
 
 # ---- the libraries ----
@@ -118,7 +122,7 @@ bundle_file() {
 
 # Loadable modules (image loaders, input methods): copy them and their
 # libraries, and write their cache with @RESOURCES@ in place of the path of
-# the app, which the launcher fills in.
+# the app, which LilyTerm fills in when it starts.
 #   bundle_modules SRC_DIR DEST_DIR CACHE QUERY_COMMAND
 bundle_modules() {
 	local src=$1 dest=$2 cache=$3 query=$4 module name
@@ -144,7 +148,7 @@ bundle_modules() {
 }
 
 echo "== copying the libraries"
-bundle_file "$MACOS/lilyterm-bin" "$MACOS/lilyterm-bin"
+bundle_file "$MACOS/LilyTerm" "$MACOS/LilyTerm"
 
 echo "== copying the image loaders"
 PIXBUF_DIR=lib/gdk-pixbuf-2.0/2.10.0
@@ -181,7 +185,7 @@ cp -RL "$BREW/etc/fonts" "$RES/etc/fonts"
 
 # ---- the app ----
 
-echo "== writing Info.plist, the launcher and the icon"
+echo "== writing Info.plist and the icon"
 cat > "$CONTENTS/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -217,36 +221,6 @@ cat > "$CONTENTS/Info.plist" << EOF
 </plist>
 EOF
 
-cat > "$MACOS/LilyTerm" << 'EOF'
-#!/bin/bash
-# Start LilyTerm with the GTK+ 3 that is inside this app, not one of Homebrew.
-APP=$(cd "$(dirname "$0")/../.." && pwd -P)
-RES=$APP/Contents/Resources
-
-CACHE=$HOME/Library/Caches/LilyTerm
-mkdir -p "$CACHE"
-sed "s|@RESOURCES@|$RES|g" "$RES/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.in" > "$CACHE/loaders.cache"
-sed "s|@RESOURCES@|$RES|g" "$RES/lib/gtk-3.0/3.0.0/immodules.cache.in" > "$CACHE/immodules.cache"
-
-export GDK_PIXBUF_MODULE_FILE=$CACHE/loaders.cache
-export GTK_IM_MODULE_FILE=$CACHE/immodules.cache
-export GTK_DATA_PREFIX=$RES
-export GTK_EXE_PREFIX=$RES
-export GTK_PATH=$RES/lib/gtk-3.0
-export GIO_MODULE_DIR=$RES/lib/gio/modules
-export GSETTINGS_SCHEMA_DIR=$RES/share/glib-2.0/schemas
-export GSETTINGS_BACKEND=memory
-export XDG_DATA_DIRS=$RES/share
-export FONTCONFIG_PATH=$RES/etc/fonts
-export FONTCONFIG_FILE=$RES/etc/fonts/fonts.conf
-
-# Started from Finder, an app gets no locale and starts in /. A login shell
-# then reads ~/.zprofile, like in Terminal.
-export LANG=${LANG:-en_US.UTF-8}
-cd "$HOME" || exit 1
-exec "$APP/Contents/MacOS/lilyterm-bin" --login "$@"
-EOF
-chmod 755 "$MACOS/LilyTerm"
 
 ICONSET=$WORK/LilyTerm.iconset
 mkdir "$ICONSET"
@@ -260,7 +234,8 @@ iconutil -c icns "$ICONSET" -o "$RES/LilyTerm.icns"
 
 echo "== checking that the app is self-contained"
 MACHO_LIST=$WORK/macho.list
-find "$APP" -type f \( -name '*.dylib' -o -name '*.so' -o -name lilyterm-bin \) > "$MACHO_LIST"
+find "$APP" -type f \( -name '*.dylib' -o -name '*.so' \) > "$MACHO_LIST"
+echo "$MACOS/LilyTerm" >> "$MACHO_LIST"
 failed=0
 while IFS= read -r file; do
 	self=$(otool -D "$file" | sed -n 2p)
@@ -284,9 +259,10 @@ echo "   $(wc -l < "$MACHO_LIST" | tr -d ' ') Mach-O files, all inside the app"
 #
 # With SIGN_IDENTITY (a code signing certificate, in SIGN_KEYCHAIN if set)
 # the app is the same app for macOS in every release: it keeps the
-# permissions it was given, as Local Network (ssh to a computer at home). Ad
-# hoc, every build is another app, and ssh gets "No route to host" there
-# after an update. The certificate may be self-signed: no timestamp then.
+# permissions it was given, as Local Network (ssh to a computer at home),
+# with its main executable a Mach-O (see above). Ad hoc, every build is
+# another app, and ssh gets "No route to host" there after an update. The
+# certificate may be self-signed: no timestamp then.
 
 if [ -n "${SIGN_IDENTITY:-}" ]; then
 	echo "== signing with \"$SIGN_IDENTITY\""
@@ -302,11 +278,15 @@ sign() {
 		codesign --force --timestamp=none --sign "$SIGN_IDENTITY" "$1"
 	fi
 }
+# the libraries and modules first; the main executable with the app, as
+# the app (its identifier, its Info.plist)
 while IFS= read -r file; do
-	sign "$file"
+	[ "$file" = "$MACOS/LilyTerm" ] || sign "$file"
 done < "$MACHO_LIST"
 sign "$APP"
 codesign --verify --deep --strict "$APP"
+file "$MACOS/LilyTerm" | grep -q 'Mach-O' || die "the main executable is not a Mach-O"
+echo "   main executable: $(dwarfdump --uuid "$MACOS/LilyTerm" | awk '{print $2, $3}')"
 # what macOS knows the app by: the same in every release with a certificate
 # (codesign shows an implicit one, as here, after a "# ")
 echo "   designated requirement: $(codesign -d -r- "$APP" 2>&1 | sed -n 's/^#* *designated => //p')"

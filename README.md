@@ -128,9 +128,12 @@ inside, so it needs nothing else.
    it does not ask: System Settings > Privacy & Security > Local Network,
    switch LilyTerm off and on, and start LilyTerm again.
 
-Every release since 0.14.2 is signed with the same certificate, so macOS
-keeps that permission when you update. (0.14.1 and before were signed ad
-hoc: each one was a new app for macOS, and asked again, or not at all.)
+macOS keeps that permission when you update LilyTerm, since 0.14.4: the
+app is signed with the same certificate in every release, and LilyTerm
+itself is its main executable, which macOS knows the permission by. (Up to
+0.14.3, a script started LilyTerm, and macOS gave the permission to the
+program it started, another one in every release: ssh said "No route to
+host" after an update. Allow LilyTerm once more after updating to 0.14.4.)
 
 The .dmg is built for the macOS version of the GitHub runner and later
 (`LSMinimumSystemVersion` in the app). Intel Macs are not supported.

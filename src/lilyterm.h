@@ -60,6 +60,7 @@ gboolean check_string_in_array(gchar *str, gchar **lists);
 gchar *get_proc_data(pid_t pid, gchar *file, gsize *length);
 #ifdef __APPLE__
 gboolean macos_proc_is_root(pid_t pid);
+void macos_app_init(int *argc, char ***argv);
 #endif
 gchar **split_string(const gchar *str, const gchar *split, gint max_tokens);
 gint count_char_in_string(const gchar *str, const gchar split);

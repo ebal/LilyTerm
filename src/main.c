@@ -50,6 +50,10 @@ extern gchar *restricted_locale_message;
 int main( int   argc,
 	  char *argv[])
 {
+#ifdef __APPLE__
+	// in LilyTerm.app: what the launcher script did, before GTK+ and the locale
+	macos_app_init(&argc, &argv);
+#endif
 
 	// i18n support. We need to support i18n under console, too.
 	setlocale(LC_ALL, "");

@@ -20,6 +20,8 @@
 #include "misc.h"
 #ifdef __APPLE__
 #  include <sys/sysctl.h>
+#  include <mach-o/dyld.h>
+#  include <limits.h>
 #endif
 extern gboolean proc_exist;
 extern gchar *proc_file_system_path;
@@ -1544,3 +1546,104 @@ void lilyterm_vte_set_allow_bold(VteTerminal *vte, gboolean allow_bold)
 	vte_terminal_set_allow_bold(vte, allow_bold);
 }
 G_GNUC_END_IGNORE_DEPRECATIONS
+
+#ifdef __APPLE__
+// Write the module cache CACHE_IN of the app (lib/...cache.in in Resources)
+// to CACHE in CACHE_DIR, with @RESOURCES@ replaced by RES, and set VAR to it
+static void macos_app_write_cache(const gchar *res, const gchar *cache_in, const gchar *cache_dir,
+				  const gchar *cache, const gchar *var)
+{
+	gchar *in_path = g_build_filename(res, cache_in, NULL);
+	gchar *out_path = g_build_filename(cache_dir, cache, NULL);
+	gchar *contents = NULL;
+	if (g_file_get_contents(in_path, &contents, NULL, NULL))
+	{
+		gchar **parts = g_strsplit(contents, "@RESOURCES@", -1);
+		gchar *filled = g_strjoinv(res, parts);
+		if (! g_file_set_contents(out_path, filled, -1, NULL))
+			g_warning("can not write %s", out_path);
+		g_free(filled);
+		g_strfreev(parts);
+		g_free(contents);
+	}
+	g_setenv(var, out_path, TRUE);
+	g_free(in_path);
+	g_free(out_path);
+}
+
+// In LilyTerm.app this program is the one macOS starts (CFBundleExecutable),
+// not a launcher script: macOS knows an app, and the Local Network
+// permission it gave it (ssh to a computer at home), by the Mach-O main
+// executable of the bundle, and finds the new one after an update. A script
+// has none, and the permission went to the program it started, as another
+// program in every release. So do here what the script did: use the GTK+ 3
+// inside the app, not one of Homebrew, start in the home with a locale (from
+// Finder, an app gets none and starts in /), and with a login shell, which
+// reads ~/.zprofile as in Terminal. ARGC and ARGV get the --login.
+// Nothing out of an app (a build of Homebrew or of the source).
+void macos_app_init(int *argc, char ***argv)
+{
+	char exe[PATH_MAX];
+	uint32_t size = sizeof(exe);
+	char real[PATH_MAX];
+	if ((_NSGetExecutablePath(exe, &size) != 0) || (realpath(exe, real) == NULL)) return;
+
+	// APP/Contents/MacOS/LilyTerm
+	gchar *macos_dir = g_path_get_dirname(real);
+	gchar *contents = g_path_get_dirname(macos_dir);
+	gchar *app = g_path_get_dirname(contents);
+	gchar *res = g_build_filename(contents, "Resources", NULL);
+	gboolean in_app = g_str_has_suffix(macos_dir, "/Contents/MacOS") && g_str_has_suffix(app, ".app") &&
+			  g_file_test(res, G_FILE_TEST_IS_DIR);
+	g_free(macos_dir);
+	g_free(contents);
+	g_free(app);
+	if (! in_app)
+	{
+		g_free(res);
+		return;
+	}
+
+	const gchar *home = g_getenv("HOME");
+	if ((home==NULL) || (home[0]=='\0')) home = g_get_home_dir();
+	gchar *cache_dir = g_build_filename(home, "Library", "Caches", "LilyTerm", NULL);
+	g_mkdir_with_parents(cache_dir, 0700);
+	macos_app_write_cache(res, "lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.in", cache_dir, "loaders.cache",
+			      "GDK_PIXBUF_MODULE_FILE");
+	macos_app_write_cache(res, "lib/gtk-3.0/3.0.0/immodules.cache.in", cache_dir, "immodules.cache",
+			      "GTK_IM_MODULE_FILE");
+	g_free(cache_dir);
+
+	const gchar *paths[][2] = { { "GTK_DATA_PREFIX", "" },
+				    { "GTK_EXE_PREFIX", "" },
+				    { "GTK_PATH", "lib/gtk-3.0" },
+				    { "GIO_MODULE_DIR", "lib/gio/modules" },
+				    { "GSETTINGS_SCHEMA_DIR", "share/glib-2.0/schemas" },
+				    { "XDG_DATA_DIRS", "share" },
+				    { "FONTCONFIG_PATH", "etc/fonts" },
+				    { "FONTCONFIG_FILE", "etc/fonts/fonts.conf" },
+				    { NULL, NULL } };
+	gint i;
+	for (i=0; paths[i][0]; i++)
+	{
+		gchar *path = paths[i][1][0] ? g_build_filename(res, paths[i][1], NULL) : g_strdup(res);
+		g_setenv(paths[i][0], path, TRUE);
+		g_free(path);
+	}
+	g_setenv("GSETTINGS_BACKEND", "memory", TRUE);
+	g_free(res);
+
+	const gchar *lang = g_getenv("LANG");
+	if ((lang==NULL) || (lang[0]=='\0')) g_setenv("LANG", "en_US.UTF-8", TRUE);
+	// main() starts the shell in $PWD
+	if (chdir(home) == 0) g_setenv("PWD", home, TRUE);
+
+	// for the whole run: GTK+ keeps ARGV
+	gchar **login_argv = g_new0(gchar *, *argc + 2);
+	login_argv[0] = (*argv)[0];
+	login_argv[1] = "--login";
+	for (i=1; i<*argc; i++) login_argv[i+1] = (*argv)[i];
+	*argv = login_argv;
+	(*argc)++;
+}
+#endif

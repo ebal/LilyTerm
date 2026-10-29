@@ -9,6 +9,16 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix ssh to a computer on the local network failing with "No route to
+  host" after each update on macOS: the Local Network permission went to
+  `lilyterm-bin`, a program the launcher script of the app started, and
+  macOS knows such a program by its build (its Mach-O UUID), new in every
+  release. LilyTerm itself is now the main executable of the app, which
+  macOS finds again after an update, and sets up its GTK+ 3 itself; the
+  signing certificate of 0.14.2 alone did not keep the permission.
+
 ## [0.14.3] - 2026-10-29
 
 ### Fixed
