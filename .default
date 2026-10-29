@@ -1,6 +1,6 @@
 PACKAGE = LilyTerm
 BINARY = lilyterm
-VERSION = 0.14.4
+VERSION = 0.14.5
 
 # The original author; this modernized fork is maintained at MAINSITE
 AUTHOR = Lu, Chao-Ming (Tetralet)
