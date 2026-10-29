@@ -308,7 +308,8 @@ done < "$MACHO_LIST"
 sign "$APP"
 codesign --verify --deep --strict "$APP"
 # what macOS knows the app by: the same in every release with a certificate
-echo "   designated requirement: $(codesign -d -r- "$APP" 2>&1 | sed -n 's/^designated => //p')"
+# (codesign shows an implicit one, as here, after a "# ")
+echo "   designated requirement: $(codesign -d -r- "$APP" 2>&1 | sed -n 's/^#* *designated => //p')"
 
 # ---- the .dmg ----
 
