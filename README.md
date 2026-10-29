@@ -44,9 +44,13 @@ with everything inside, or installed with Homebrew.
   `src/main.c` and, with a line number as compilers print them,
   `main.c:42:5`. A relative path is taken in the directory of the shell.
   Only a file or directory that exists opens. A program (an executable
-  file, or an `.app`) is not run: its folder opens. While `ssh`, `mosh`,
-  `et` or `telnet` runs in the tab, paths do not open: they are the ones
-  of the other machine.
+  file, an `.app`, or a file that runs a command when it is opened, as a
+  `.terminal`, `.command`, `.fileloc` or `.desktop` file) is not run: its
+  folder opens. While `ssh`, `mosh`, `et`, `telnet`, `docker`, `podman`,
+  `kubectl` or `lxc` runs in the tab, paths do not open: they are the ones
+  of the other machine or of the container. (LilyTerm tells by the name of
+  the program in the foreground of the tab, so a program that starts ssh
+  for you is not known.)
 - Tab names: a tab shows what runs in it, or the directory of the shell,
   as `~/src/LilyTerm` for a directory in your home. The whole name is in
   its tooltip.

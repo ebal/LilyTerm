@@ -9,6 +9,22 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix a click on a path printed in `docker exec` (or `podman`, `kubectl`,
+  `lxc`) opening the file of the same name on this machine, as for `ssh`.
+- Fix two Gitea runs at the same time (a push and a pull request) taking
+  each other's test image, and so testing and packaging the other one's
+  build: each job uses the ID of the image it built, not a shared tag.
+
+### Security
+
+- Do not open a file that runs a command or opens another file with a
+  click on its path or on a `file://` link to it, as a program is not
+  run: a `.terminal` file of Terminal.app runs the command it holds, and
+  `.command`, `.tool`, `.fileloc`, `.inetloc`, `.webloc` and `.desktop`
+  files run or open something else. Their folder opens instead.
+
 ## [0.14.2] - 2026-10-29
 
 ### Fixed

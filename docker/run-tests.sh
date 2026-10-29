@@ -487,12 +487,14 @@ run_path_click_tests() {
 	: > "$pdir/proj/src/main.c"
 	printf '#!/bin/sh\n' > "$pdir/proj/run.sh"
 	chmod +x "$pdir/proj/run.sh"
+	# not executable, but open(1) runs the command a .terminal file holds
+	: > "$pdir/proj/Profile.terminal"
 	: > "$HOME/notes.txt"
 	cat > "$pdir/shell" <<-EOF
 		#!/bin/sh
 		cd "$pdir/proj" || exit 1
 		printf '\033[H\033[2J'
-		printf '%s\n' 'src/main.c:42:5: error: x' 'see /etc/hosts.' 'src/missing.c:3: error' '~/notes.txt' './run.sh'
+		printf '%s\n' 'src/main.c:42:5: error: x' 'see /etc/hosts.' 'src/missing.c:3: error' '~/notes.txt' './run.sh' './Profile.terminal'
 		while [ ! -e "$pdir/quit" ]; do sleep 0.2; done
 	EOF
 	printf '#!/bin/sh\nprintf "%%s\\n" "$@" > "%s/opened.tmp" && mv "%s/opened.tmp" "%s/opened"\n' \
@@ -500,7 +502,8 @@ run_path_click_tests() {
 	chmod +x "$pdir/shell" "$pdir/open"
 	"$LILYTERM" -p | sed -e "s|^file_manager = .*|file_manager = $pdir/open|" \
 		-e 's/^file_method = .*/file_method = 1/' > "$pdir/profile"
-	SHELL="$pdir/shell" timeout 60 "$LILYTERM" -s -u "$pdir/profile" -g 80x6 > "$work/paths.log" 2>&1 &
+	# 8 rows: the 6 lines and the cursor below them, nothing scrolled away
+	SHELL="$pdir/shell" timeout 60 "$LILYTERM" -s -u "$pdir/profile" -g 80x8 > "$work/paths.log" 2>&1 &
 	pid=$!
 	if ! wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
 		ng "[x11] paths: no LilyTerm window"; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; return
@@ -510,8 +513,9 @@ run_path_click_tests() {
 	# shellcheck disable=SC2034
 	local WIDTH HEIGHT X Y SCREEN WINDOW line col want what
 	eval "$(xdotool getwindowgeometry --shell "$id")"
-	for line in 1 2 3 4 5; do
+	for line in 1 2 3 4 5 6; do
 		case $line in
+			6) col=3; want="file://$pdir/proj"; what='./Profile.terminal opens its directory and does not run';;
 			5) col=3; want="file://$pdir/proj"; what='./run.sh, a program, opens its directory and does not run';;
 			1) col=5; want="file://$pdir/proj/src/main.c"; what='src/main.c:42:5 opens the file in the directory of the shell';;
 			2) col=8; want=file:///etc/hosts; what='/etc/hosts. opens /etc/hosts';;
@@ -519,7 +523,7 @@ run_path_click_tests() {
 			4) col=5; want="file://$HOME/notes.txt"; what='a path in the home (~/notes.txt) opens the file';;
 		esac
 		rm -f "$pdir/opened"
-		xdotool mousemove --window "$id" $((WIDTH * (2 * col + 1) / 160)) $((HEIGHT * (2 * line - 1) / 12)) click 1
+		xdotool mousemove --window "$id" $((WIDTH * (2 * col + 1) / 160)) $((HEIGHT * (2 * line - 1) / 16)) click 1
 		if [ -n "$want" ]; then
 			if wait_for 5 test -s "$pdir/opened" && [ "$(cat "$pdir/opened")" = "$want" ]; then
 				ok "[x11] paths: $what"
@@ -542,38 +546,42 @@ run_path_click_tests() {
 	wait "$pid" 2>/dev/null
 	rm -f "$HOME/notes.txt"
 
-	# In ssh (here a script of that name, the foreground program of the tab),
-	# a path is one of the other machine: /etc/hosts must not open the local one
+	# In ssh or docker exec (here a script of that name, the foreground program
+	# of the tab), a path is one of the other machine or of the container:
+	# /etc/hosts must not open the one here
+	local remote
 	mkdir -p "$pdir/bin"
-	cat > "$pdir/bin/ssh" <<-EOF
-		#!/bin/sh
-		printf '\033[H\033[2J/etc/hosts\n'
-		while [ ! -e "$pdir/quit-ssh" ]; do sleep 0.2; done
-	EOF
-	cat > "$pdir/ssh-shell" <<-EOF
-		#!/bin/sh
-		exec "$pdir/bin/ssh"
-	EOF
-	chmod +x "$pdir/bin/ssh" "$pdir/ssh-shell"
-	rm -f "$pdir/opened" "$pdir/quit-ssh"
-	SHELL="$pdir/ssh-shell" timeout 40 "$LILYTERM" -s -u "$pdir/profile" -g 80x6 > "$work/paths-ssh.log" 2>&1 &
-	pid=$!
-	id=''
-	if wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
-		sleep 1.5
-		eval "$(xdotool getwindowgeometry --shell "$id")"
-		xdotool mousemove --window "$id" $((WIDTH * 11 / 160)) $((HEIGHT / 12)) click 1
-		sleep 2
-		if [ -e "$pdir/opened" ]; then
-			ng "[x11] paths: a path that ssh printed opened '$(cat "$pdir/opened")' here"
+	for remote in ssh docker; do
+		cat > "$pdir/bin/$remote" <<-EOF
+			#!/bin/sh
+			printf '\\033[H\\033[2J/etc/hosts\\n'
+			while [ ! -e "$pdir/quit-remote" ]; do sleep 0.2; done
+		EOF
+		cat > "$pdir/remote-shell" <<-EOF
+			#!/bin/sh
+			exec "$pdir/bin/$remote"
+		EOF
+		chmod +x "$pdir/bin/$remote" "$pdir/remote-shell"
+		rm -f "$pdir/opened" "$pdir/quit-remote"
+		SHELL="$pdir/remote-shell" timeout 40 "$LILYTERM" -s -u "$pdir/profile" -g 80x6 > "$work/paths-$remote.log" 2>&1 &
+		pid=$!
+		id=''
+		if wait_for 15 eval 'id=$(xdotool search --onlyvisible --class lilyterm 2>/dev/null | tail -n1); [ -n "$id" ]'; then
+			sleep 1.5
+			eval "$(xdotool getwindowgeometry --shell "$id")"
+			xdotool mousemove --window "$id" $((WIDTH * 11 / 160)) $((HEIGHT / 12)) click 1
+			sleep 2
+			if [ -e "$pdir/opened" ]; then
+				ng "[x11] paths: a path that $remote printed opened '$(cat "$pdir/opened")' here"
+			else
+				ok "[x11] paths: a path that $remote printed opens nothing here"
+			fi
 		else
-			ok "[x11] paths: a path that ssh printed opens nothing here"
+			ng "[x11] paths: no LilyTerm window for the $remote test"
 		fi
-	else
-		ng "[x11] paths: no LilyTerm window for the ssh test"
-	fi
-	touch "$pdir/quit-ssh"
-	wait "$pid" 2>/dev/null
+		touch "$pdir/quit-remote"
+		wait "$pid" 2>/dev/null
+	done
 }
 
 # Links that the program marks with OSC 8: their text says nothing of where

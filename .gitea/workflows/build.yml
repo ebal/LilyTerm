@@ -37,13 +37,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build the test image
-        run: docker build -f docker/Dockerfile.dev -t lilyterm-dev:ci .
+        # its ID, not a tag of its own: two runs at a time (a push and a pull
+        # request) would take each other's image with a shared tag
+        run: docker build -f docker/Dockerfile.dev --iidfile image.iid .
 
       - name: Build LilyTerm and run the tests on X11 and Wayland
         run: |
           c=lilyterm-dev-${{ gitea.run_id }}
           trap 'docker rm -f "$c" > /dev/null 2>&1' EXIT
-          docker create --name "$c" lilyterm-dev:ci > /dev/null
+          docker create --name "$c" "$(cat image.iid)" > /dev/null
           docker cp . "$c":/src
           status=0
           docker start -a "$c" || status=$?
@@ -68,13 +70,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build the test image
-        run: docker build -f docker/Dockerfile.dev -t lilyterm-dev:ci .
+        # its ID, not a tag of its own: two runs at a time (a push and a pull
+        # request) would take each other's image with a shared tag
+        run: docker build -f docker/Dockerfile.dev --iidfile image.iid .
 
       - name: Build with the sanitizers and run the tests on X11 and Wayland
         run: |
           c=lilyterm-sanitize-${{ gitea.run_id }}
           trap 'docker rm -f "$c" > /dev/null 2>&1' EXIT
-          docker create --name "$c" -e SANITIZE=1 lilyterm-dev:ci > /dev/null
+          docker create --name "$c" -e SANITIZE=1 "$(cat image.iid)" > /dev/null
           docker cp . "$c":/src
           status=0
           docker start -a "$c" || status=$?
@@ -104,13 +108,14 @@ jobs:
           echo "epoch=$(git log -1 --format=%ct)" >> "$GITHUB_OUTPUT"
 
       - name: Build the static binary and its test image
-        run: docker build -f docker/Dockerfile.static --target test -t lilyterm-static-test:ci .
+        # its ID, not a shared tag (see the test job)
+        run: docker build -f docker/Dockerfile.static --target test --iidfile image.iid .
 
       - name: Test the static binary on X11 and Wayland
         run: |
           c=lilyterm-static-${{ gitea.run_id }}
           trap 'docker rm -f "$c" > /dev/null 2>&1' EXIT
-          docker create --name "$c" lilyterm-static-test:ci > /dev/null
+          docker create --name "$c" "$(cat image.iid)" > /dev/null
           status=0
           docker start -a "$c" || status=$?
           mkdir -p test-output
@@ -132,7 +137,7 @@ jobs:
         run: |
           c=lilyterm-export-${{ gitea.run_id }}
           trap 'docker rm -f "$c" > /dev/null 2>&1' EXIT
-          docker create --name "$c" lilyterm-static-test:ci > /dev/null
+          docker create --name "$c" "$(cat image.iid)" > /dev/null
           rm -rf dist && mkdir dist
           docker cp "$c":/dist/usr/bin/lilyterm dist/lilyterm
           docker cp "$c":/dist/usr/share dist/share

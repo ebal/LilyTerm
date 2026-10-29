@@ -406,6 +406,32 @@ static void test_get_file_to_open(void)
 	g_assert_true(g_file_set_contents(text, "", 0, NULL));
 	g_assert_cmpint(g_mkdir(dir, 0700), ==, 0);
 	g_assert_cmpint(g_mkdir(app, 0700), ==, 0);
+	// files that run a command or open another file, without being executable
+	const gchar *runs[] = { "Profile.terminal", "Profile.TERMINAL", "go.command", "x.tool",
+				"link.fileloc", "link.inetloc", "page.webloc", "app.desktop", NULL };
+	// and their look-alikes, which are files like any other
+	const gchar *plain[] = { "notes.terminal.txt", "terminal", "desktop", NULL };
+	gint n;
+	for (n=0; runs[n]; n++)
+	{
+		gchar *f = g_build_filename(top, runs[n], NULL);
+		g_assert_true(g_file_set_contents(f, "", 0, NULL));
+		gchar *out = get_file_to_open(f);
+		g_assert_cmpstr(out, ==, top);
+		g_free(out);
+		g_remove(f);
+		g_free(f);
+	}
+	for (n=0; plain[n]; n++)
+	{
+		gchar *f = g_build_filename(top, plain[n], NULL);
+		g_assert_true(g_file_set_contents(f, "", 0, NULL));
+		gchar *out = get_file_to_open(f);
+		g_assert_cmpstr(out, ==, f);
+		g_free(out);
+		g_remove(f);
+		g_free(f);
+	}
 
 	struct { const gchar *path, *want; } cases[] = {
 		{ script, top },	// a program: its directory
@@ -439,8 +465,10 @@ static void test_get_file_to_open(void)
 
 static void test_is_remote_login(void)
 {
-	const gchar *remote[] = { "ssh", "mosh-client", "et", "telnet", "autossh" };
-	const gchar *local[] = { "bash", "zsh", "vim", "make", "less", "sshd", "ssh-agent", "sshfs", "" };
+	const gchar *remote[] = { "ssh", "mosh-client", "et", "telnet", "autossh",
+				  "docker", "podman", "kubectl", "lxc" };
+	const gchar *local[] = { "bash", "zsh", "vim", "make", "less", "sshd", "ssh-agent", "sshfs",
+				 "dockerd", "containerd", "toolbox", "distrobox", "" };
 	guint i;
 	for (i=0; i<G_N_ELEMENTS(remote); i++)
 		g_assert_true(is_remote_login(remote[i]));

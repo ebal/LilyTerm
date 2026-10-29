@@ -987,13 +987,18 @@ gchar *get_clicked_path(const gchar *text, const gchar *dir, const gchar *home)
 
 // What a click on PATH (a path, or a file:// link) opens with the file
 // manager command: PATH itself, but the directory of a program, which
-// open(1) would run (a Unix executable runs in Terminal.app, an .app starts).
-// A click shows where a program is; it does not start it. Free it with
-// g_free().
+// open(1) would run (a Unix executable runs in Terminal.app, an .app starts),
+// and of a file that runs a command or opens another file without being
+// executable: a .terminal file of Terminal.app (its CommandString), a
+// .command or .tool, a .fileloc, .inetloc or .webloc (a link), and a
+// .desktop launcher. A click shows where it is; it does not start it.
+// Free it with g_free().
 gchar *get_file_to_open(const gchar *path)
 {
 	if (path==NULL) return NULL;
 
+	const gchar *runs[] = { ".terminal", ".command", ".tool", ".fileloc", ".inetloc", ".webloc",
+				".desktop", NULL };
 	gboolean program = FALSE;
 	if (g_file_test(path, G_FILE_TEST_IS_DIR))
 	{
@@ -1002,7 +1007,16 @@ gchar *get_file_to_open(const gchar *path)
 		program = (len > 4) && (g_ascii_strncasecmp(path + len - 4, ".app", 4)==0);
 	}
 	else
+	{
 		program = g_file_test(path, G_FILE_TEST_IS_EXECUTABLE);
+		gsize len = strlen(path);
+		gint i;
+		for (i=0; runs[i] && (! program); i++)
+		{
+			gsize ext_len = strlen(runs[i]);
+			program = (len > ext_len) && (g_ascii_strcasecmp(path + len - ext_len, runs[i])==0);
+		}
+	}
 
 	if (! program) return g_strdup(path);
 	gchar *trimmed = g_strdup(path);
@@ -1014,10 +1028,13 @@ gchar *get_file_to_open(const gchar *path)
 }
 
 // TRUE if PROGRAM (the name of the foreground program of a tab) logs in to
-// another machine: the paths it prints are not the ones of this machine.
+// another machine, or runs in a container (docker exec, kubectl exec, ...):
+// the paths it prints are not the ones of this machine. (Not toolbox or
+// distrobox: they share the home, and their paths are the ones here.)
 gboolean is_remote_login(const gchar *program)
 {
-	const gchar *remote[] = { "ssh", "mosh-client", "et", "telnet", "autossh", NULL };
+	const gchar *remote[] = { "ssh", "mosh-client", "et", "telnet", "autossh",
+				  "docker", "podman", "kubectl", "lxc", NULL };
 	return program && check_string_in_array((gchar *)program, (gchar **)remote);
 }
 
