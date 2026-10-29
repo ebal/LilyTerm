@@ -9,6 +9,8 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+## [0.14.4] - 2026-10-29
+
 ### Fixed
 
 - Fix ssh to a computer on the local network failing with "No route to
@@ -1641,7 +1643,8 @@ Update homepage, blog, phorum, IRC information.
 
 - Initial revision.
 
-[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.14.3...HEAD
+[unreleased]: https://github.com/ebal/LilyTerm/compare/v0.14.4...HEAD
+[0.14.4]: https://github.com/ebal/LilyTerm/compare/v0.14.3...v0.14.4
 [0.14.3]: https://github.com/ebal/LilyTerm/compare/v0.14.2...v0.14.3
 [0.14.2]: https://github.com/ebal/LilyTerm/compare/v0.14.1...v0.14.2
 [0.14.1]: https://github.com/ebal/LilyTerm/compare/v0.14.0...v0.14.1
