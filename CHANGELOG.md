@@ -9,6 +9,15 @@ Lu, Chao-Ming (Tetralet); their entries are converted from its ChangeLog.
 
 ## [Unreleased]
 
+### Changed
+
+- The macOS app is lighter, with nothing lost: 75 MB instead of 96 MB,
+  and a .dmg of 20 MB instead of 34 MB. It leaves out the mouse pointers
+  of the Adwaita theme (18 MB; GDK on macOS takes those of the system),
+  the image loaders other than SVG (LilyTerm opens no image file, and the
+  PNG icons load without one) with libtiff, libwebp, liblzma and libzstd,
+  and the .dmg is compressed with LZMA (macOS 10.15 or later opens it).
+
 ## [0.14.4] - 2026-10-29
 
 ### Fixed

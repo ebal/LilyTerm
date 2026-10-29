@@ -122,22 +122,27 @@ bundle_file() {
 
 # Loadable modules (image loaders, input methods): copy them and their
 # libraries, and write their cache with @RESOURCES@ in place of the path of
-# the app, which LilyTerm fills in when it starts.
-#   bundle_modules SRC_DIR DEST_DIR CACHE QUERY_COMMAND
+# the app, which LilyTerm fills in when it starts. Only the modules that
+# match PATTERN (default: all of them).
+#   bundle_modules SRC_DIR DEST_DIR CACHE QUERY_COMMAND [PATTERN]
 bundle_modules() {
-	local src=$1 dest=$2 cache=$3 query=$4 module name
+	local src=$1 dest=$2 cache=$3 query=$4 pattern=${5:-*.so} module name
+	local modules=()
 	[ -d "$src" ] || { echo "   (no $src: built in)"; return 0; }
-	ls "$src"/*.so > /dev/null 2>&1 || { echo "   (no module in $src)"; return 0; }
+	for module in "$src"/$pattern; do
+		[ -e "$module" ] && modules+=("$module")
+	done
+	[ ${#modules[@]} -gt 0 ] || { echo "   (no module $pattern in $src)"; return 0; }
 	mkdir -p "$dest"
 	# Query the modules of Homebrew before rewriting the copies: the copies
 	# only load from inside the app. The cache names each module by its path
 	# (in the Cellar, or through opt/), and the input methods also name
 	# where their translations are: point both into the app.
-	"$query" "$src"/*.so | sed -E \
+	"$query" "${modules[@]}" | sed -E \
 		-e '/^#/d' \
 		-e "s|\"[^\"]*/$(basename "$src")/|\"@RESOURCES@/${dest#"$RES"/}/|g" \
 		-e 's|"[^"]*/share/locale"|"@RESOURCES@/share/locale"|g' > "$cache"
-	for module in "$src"/*.so; do
+	for module in "${modules[@]}"; do
 		name=$(basename "$module")
 		cp -L "$module" "$dest/"
 		chmod u+w "$dest/$name"
@@ -150,11 +155,16 @@ bundle_modules() {
 echo "== copying the libraries"
 bundle_file "$MACOS/LilyTerm" "$MACOS/LilyTerm"
 
-echo "== copying the image loaders"
+# Only the SVG loader: LilyTerm opens no image file, and the icons of GTK+
+# are PNG (built in gdk-pixbuf, as JPEG) and SVG. Not the other ten, nor
+# libtiff, libwebp, liblzma, ... for the TIFF one.
+echo "== copying the image loader for SVG"
 PIXBUF_DIR=lib/gdk-pixbuf-2.0/2.10.0
 mkdir -p "$RES/$PIXBUF_DIR"
 bundle_modules "$BREW/$PIXBUF_DIR/loaders" "$RES/$PIXBUF_DIR/loaders" \
-	"$RES/$PIXBUF_DIR/loaders.cache.in" "$BREW/bin/gdk-pixbuf-query-loaders"
+	"$RES/$PIXBUF_DIR/loaders.cache.in" "$BREW/bin/gdk-pixbuf-query-loaders" 'libpixbufloader[-_]svg.so'
+ls "$RES/$PIXBUF_DIR/loaders/"libpixbufloader[-_]svg.so > /dev/null 2>&1 ||
+	die "no SVG loader in $BREW/$PIXBUF_DIR/loaders: brew install librsvg"
 touch "$RES/$PIXBUF_DIR/loaders.cache.in"
 
 echo "== copying the input methods"
@@ -177,6 +187,9 @@ cp "$BREW"/share/glib-2.0/schemas/*.xml "$RES/share/glib-2.0/schemas/"
 for theme in Adwaita hicolor; do
 	[ -d "$BREW/share/icons/$theme" ] || die "the icon theme $theme is missing: brew install adwaita-icon-theme"
 	cp -RL "$BREW/share/icons/$theme" "$RES/share/icons/"
+	# The mouse pointers of X11 and Wayland (18 MB): GDK on macOS takes
+	# those of the system (NSCursor), it never reads them
+	rm -rf "$RES/share/icons/$theme/cursors"
 	"$BREW/bin/gtk3-update-icon-cache" -q -f -t "$RES/share/icons/$theme" ||
 		"$BREW/bin/gtk-update-icon-cache" -q -f -t "$RES/share/icons/$theme" || true
 done
@@ -312,6 +325,7 @@ LilyTerm $VERSION for macOS on Apple Silicon (macOS $MACOS_MIN or later)
 https://github.com/ebal/LilyTerm
 EOF
 rm -f "$OUT/$NAME.dmg"
-hdiutil create -volname "LilyTerm $VERSION" -srcfolder "$DMG_ROOT" -fs HFS+ -format UDZO "$OUT/$NAME.dmg" > /dev/null
+# LZMA (ULMO): 40% smaller than zlib (UDZO); macOS 10.15 or later opens it
+hdiutil create -volname "LilyTerm $VERSION" -srcfolder "$DMG_ROOT" -fs HFS+ -format ULMO "$OUT/$NAME.dmg" > /dev/null
 du -sh "$APP" "$OUT/$NAME.dmg"
 echo "== done: $OUT/$NAME.dmg"
